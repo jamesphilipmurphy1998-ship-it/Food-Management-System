@@ -378,6 +378,29 @@
     if (name === "export-templates") loadExcelSavesIntoCache(function () { renderExportTemplates(); });
     if (name === "recipes") window.renderRecipesList();
     if (name === "project-recipes") window.renderProjectRecipesList();
+    persistLastView(name);
+  }
+
+  // Remembers where the user was so a page refresh (F5) returns to the same spot instead of
+  // resetting to the dashboard. "login" is deliberately never persisted as a destination.
+  var LAST_VIEW_KEY = "ncLastView";
+  function persistLastView(name) {
+    if (!name || name === "login") return;
+    try {
+      localStorage.setItem(LAST_VIEW_KEY, JSON.stringify({ view: name, recipeId: name === "recipe-detail" ? currentRecipeId : null }));
+    } catch (e) { /* ignore (e.g. private browsing) */ }
+  }
+  function restoreLastView() {
+    var saved = null;
+    try { saved = JSON.parse(localStorage.getItem(LAST_VIEW_KEY) || "null"); } catch (e) { saved = null; }
+    if (!saved || !saved.view || !document.getElementById("view-" + saved.view)) { switchView("dashboard"); return; }
+    if (saved.view === "recipe-detail" && saved.recipeId) {
+      var stillExists = Recipes.getRecipes().some(function (r) { return r.id === saved.recipeId; });
+      if (stillExists) { openRecipe(saved.recipeId); return; }
+      switchView("recipes");
+      return;
+    }
+    switchView(saved.view);
   }
 
   function goBack() {
@@ -387,6 +410,13 @@
     } else {
       switchView("projects", { isBack: true });
     }
+  }
+
+  function goBackFromRecipeDetail() {
+    var entry = recipeNavStack.pop();
+    if (!entry) { switchView("recipes"); return; }
+    if (entry.type === "recipe") { openRecipe(entry.id, null, true); return; }
+    switchView(entry.name);
   }
 
   function getProjects() {
@@ -1281,7 +1311,7 @@
 
   function openNewIngredientModal() {
     editIngredientId = null;
-    ["new-ing-name", "new-ing-code", "new-ing-secondary-code", "new-ing-kj", "new-ing-kcal", "new-ing-fat", "new-ing-sat", "new-ing-carb", "new-ing-sugar", "new-ing-fibre", "new-ing-protein", "new-ing-salt", "new-ing-cost", "new-ing-supplier", "new-ing-description-tags", "new-ing-density"].forEach(function (id) {
+    ["new-ing-name", "new-ing-code", "new-ing-secondary-code", "new-ing-kj", "new-ing-kcal", "new-ing-fat", "new-ing-sat", "new-ing-carb", "new-ing-sugar", "new-ing-fibre", "new-ing-protein", "new-ing-salt", "new-ing-cost", "new-ing-supplier", "new-ing-description-tags", "new-ing-density", "new-ing-unit-weight"].forEach(function (id) {
       var el = document.getElementById(id);
       if (el) el.value = "";
     });
@@ -1356,6 +1386,8 @@
     }
     var densityEl = document.getElementById("new-ing-density");
     if (densityEl) densityEl.value = (data.density != null && data.density > 0) ? data.density : "";
+    var unitWeightEl = document.getElementById("new-ing-unit-weight");
+    if (unitWeightEl) unitWeightEl.value = (data.unitWeightG != null && data.unitWeightG > 0) ? data.unitWeightG : "";
     var supplierEl = document.getElementById("new-ing-supplier");
     if (supplierEl) supplierEl.value = data.supplier || "";
     document.getElementById("new-ing-fvn").checked = !!data.fvn;
@@ -1500,6 +1532,7 @@
       costUOM: (document.getElementById("new-ing-cost-uom") && document.getElementById("new-ing-cost-uom").value) || "",
       costUom: (document.getElementById("new-ing-cost-uom") && document.getElementById("new-ing-cost-uom").value) || "",
       density: (function () { var el = document.getElementById("new-ing-density"); var v = el ? parseFloat(el.value) : NaN; return (v != null && !isNaN(v) && v > 0) ? v : 1; })(),
+      unitWeightG: (function () { var el = document.getElementById("new-ing-unit-weight"); var v = el ? parseFloat(el.value) : NaN; return (v != null && !isNaN(v) && v > 0) ? v : 0; })(),
       supplier: supplierEl ? supplierEl.value.trim() : "",
       allergens: allergens,
       fvn: document.getElementById("new-ing-fvn").checked,
@@ -1537,7 +1570,7 @@
    * whether to show the version-change prompt at all (the backend independently determines
    * whether a version is actually created; this never blocks a save, only skips a needless prompt). */
   function ingredientDataDiffers(data, ing) {
-    var numKeys = ["kj", "kcal", "fat", "sat", "carb", "sugar", "fibre", "protein", "salt", "cost", "density"];
+    var numKeys = ["kj", "kcal", "fat", "sat", "carb", "sugar", "fibre", "protein", "salt", "cost", "density", "unitWeightG"];
     var strKeys = ["name", "code", "cat", "costUOM", "supplier"];
     for (var i = 0; i < numKeys.length; i++) {
       if ((parseFloat(data[numKeys[i]]) || 0) !== (parseFloat(ing[numKeys[i]]) || 0)) return true;
@@ -2799,7 +2832,23 @@
     recalcCurrentRecipe();
   }
 
-  function openRecipe(id, fromView) {
+  // Tracks recipe-detail navigation history specifically, since drilling from one recipe into
+  // a sub-recipe stays on the same "recipe-detail" view (switchView's own history stack only
+  // tracks distinct view NAMES, so it can't tell recipe A and recipe B apart) — without this,
+  // Back from a sub-recipe always fell through to a hardcoded "recipes" list default instead
+  // of returning to whichever recipe/page the user actually came from.
+  var recipeNavStack = [];
+
+  function openRecipe(id, fromView, isBack) {
+    if (!isBack) {
+      var prevViewEl = document.querySelector(".view.active");
+      var prevViewName = prevViewEl && prevViewEl.id ? prevViewEl.id.replace("view-", "") : "";
+      if (prevViewName === "recipe-detail" && currentRecipeId && currentRecipeId !== id) {
+        recipeNavStack.push({ type: "recipe", id: currentRecipeId });
+      } else if (prevViewName !== "recipe-detail") {
+        recipeNavStack.push({ type: "view", name: fromView || prevViewName || "recipes" });
+      }
+    }
     window.recipeDetailBackView = fromView || "recipes";
     currentRecipeId = id;
     var recipes = Recipes.getRecipes();
@@ -2926,6 +2975,20 @@
     }
     var editUomEl = document.getElementById("edit-rec-cost-uom");
     if (editUomEl) editUomEl.value = (r.costUOM || r.uom || "") && (Data.UOM_OPTIONS || ["G", "KG", "L", "ML", "M", "EACH"]).indexOf(r.costUOM || r.uom) >= 0 ? (r.costUOM || r.uom) : "G";
+    var editUnitWeightEl = document.getElementById("edit-rec-unit-weight");
+    if (editUnitWeightEl) {
+      if (r.unitWeightG != null && r.unitWeightG > 0) {
+        editUnitWeightEl.value = r.unitWeightG;
+        editUnitWeightEl.placeholder = "unknown";
+      } else {
+        // No manual override set — leave the field itself blank (so saving as-is keeps this
+        // live-derived rather than freezing a snapshot), but show the current tally as the
+        // placeholder so it's visible what it would default to.
+        editUnitWeightEl.value = "";
+        var tallyG = (r.ingredients || []).reduce(function (s, ri) { return s + recipeLineWeightForTotal(ri); }, 0);
+        editUnitWeightEl.placeholder = tallyG > 0 ? Data.round(tallyG) + " (from ingredients)" : "unknown";
+      }
+    }
     openModal("modal-recipe-edit-name");
   }
 
@@ -3214,6 +3277,18 @@
     Recipes.saveRecipe(r);
   }
 
+  /** Mirrors ingredientDataDiffers — used only to decide whether to show the version-change
+   * prompt at all (client-side heuristic; never blocks a save). */
+  function recipeDataDiffers(data, r) {
+    var strKeys = ["name", "code", "recipeType", "costUOM", "uom"];
+    for (var i = 0; i < strKeys.length; i++) {
+      if ((data[strKeys[i]] || "").toString() !== (r[strKeys[i]] || "").toString()) return true;
+    }
+    if ((parseFloat(data.unitWeightG) || 0) !== (parseFloat(r.unitWeightG) || 0)) return true;
+    if (JSON.stringify((data.descriptionTags || []).slice().sort()) !== JSON.stringify((r.descriptionTags || []).slice().sort())) return true;
+    return false;
+  }
+
   function saveEditRecipeName() {
     if (!currentRecipeId) return;
     var name = (document.getElementById("edit-rec-name").value || "").trim();
@@ -3222,18 +3297,35 @@
     var recipes = Recipes.getRecipes();
     var r = recipes.find(function (rec) { return rec.id === currentRecipeId; });
     if (!r) return;
-    r.name = name;
-    r.code = code;
-    r.descriptionTags = parseDescriptionTags(document.getElementById("edit-rec-description-tags"));
+    var editUomEl = document.getElementById("edit-rec-cost-uom");
+    var editUnitWeightEl = document.getElementById("edit-rec-unit-weight");
+    var uwVal = editUnitWeightEl ? parseFloat(editUnitWeightEl.value) : NaN;
+    var data = {
+      name: name,
+      code: code,
+      descriptionTags: parseDescriptionTags(document.getElementById("edit-rec-description-tags")),
+      recipeType: (document.getElementById("edit-rec-recipe-type") || {}).value || r.recipeType || "finishedProduct",
+      costUOM: (editUomEl && editUomEl.value) ? editUomEl.value : (r.costUOM || r.uom),
+      uom: (editUomEl && editUomEl.value) ? editUomEl.value : r.uom,
+      unitWeightG: (!isNaN(uwVal) && uwVal > 0) ? uwVal : 0
+    };
+    if (recipeDataDiffers(data, r)) {
+      var nextVersion = ((r.versionHistory || []).length) + 1;
+      var comment = window.prompt("This change will be saved as version " + nextVersion + ". Describe what changed (optional) — or click Cancel to discard this change and keep editing.", "");
+      if (comment === null) return; // Cancel — abort the save entirely, don't touch the recipe.
+      var history = (r.versionHistory || []).slice();
+      history.push(new Date().toISOString() + (comment.trim() ? " — " + comment.trim() : ""));
+      r.versionHistory = history;
+    }
+    r.name = data.name;
+    r.code = data.code;
+    r.descriptionTags = data.descriptionTags;
     var editProjectEl = document.getElementById("edit-rec-project");
     if (editProjectEl) setRecipeProjectInTags(r, editProjectEl.value.trim());
-    var editRecipeTypeEl = document.getElementById("edit-rec-recipe-type");
-    if (editRecipeTypeEl) r.recipeType = editRecipeTypeEl.value || "finishedProduct";
-    var editUomEl = document.getElementById("edit-rec-cost-uom");
-    if (editUomEl && editUomEl.value) {
-      r.costUOM = editUomEl.value;
-      r.uom = editUomEl.value;
-    }
+    r.recipeType = data.recipeType;
+    r.costUOM = data.costUOM;
+    r.uom = data.uom;
+    r.unitWeightG = data.unitWeightG;
     Recipes.saveRecipe(r);
     closeModal("modal-recipe-edit-name");
     openRecipe(currentRecipeId);
@@ -3607,7 +3699,13 @@
     }
     var ingMatches = ingredients.filter(function (i) { return ingScore(i).match; }).sort(function (a, b) { return ingScore(b).score - ingScore(a).score; }).slice(0, 6);
     var subMatches = [];
-    if (r && (r.recipeType || "finishedProduct") === "finishedProduct") {
+    if (r) {
+      // Sub-recipes must be addable to ANY recipe, not just "finished products" — nesting a
+      // sub-recipe inside another sub-recipe is completely normal (e.g. LR MIX inside HR FRIED
+      // CHICKEN, itself inside a finished pack). Restricting this to finishedProduct-only made
+      // most BCP/prep items (which are almost always modeled as sub-recipes) unsearchable while
+      // building anything else. Single-ingredient sub-recipes are included too — they're valid,
+      // commonly-used components (e.g. "BCP Chives Prepared"), not just display wrappers.
       function subScore(rec) {
         var nameR = searchWordsMatch(rec.name, q);
         var codeR = searchWordsMatch(rec.code, q);
@@ -3615,7 +3713,6 @@
       }
       subMatches = recipes.filter(function (rec) {
         if ((rec.recipeType || "finishedProduct") !== "subRecipe" || rec.id === currentRecipeId) return false;
-        if (isSingleIngredientRecipe(rec)) return false;
         return subScore(rec).match;
       }).sort(function (a, b) { return subScore(b).score - subScore(a).score; }).slice(0, 4);
     }
@@ -3840,6 +3937,20 @@
     var totalLabelEl = document.getElementById("total-weight-label");
     if (totalLabelEl) totalLabelEl.textContent = (recipeUom === "EACH") ? "Total: " : "Total weight: ";
     document.getElementById("total-weight").textContent = totalDisplay;
+    // For EACH-based recipes, "1 EACH" stays the primary total (that's correct and unchanged)
+    // — but also show the real underlying weight where we can derive one, using each line's
+    // known per-unit weight (recipeLineWeightForTotal already excludes packaging and any
+    // EACH-counted ingredient with no weight entered, rather than guessing).
+    var secondaryWrap = document.getElementById("total-weight-secondary-wrap");
+    var secondaryEl = document.getElementById("total-weight-secondary");
+    if (secondaryWrap && secondaryEl) {
+      if (recipeUom === "EACH" && totalW > 0) {
+        secondaryEl.textContent = Data.round(totalW) + "g";
+        secondaryWrap.style.display = "";
+      } else {
+        secondaryWrap.style.display = "none";
+      }
+    }
     if (r.ingredients.length === 0) { body.innerHTML = ""; empty.style.display = ""; return; }
     empty.style.display = "none";
     var totalCost = 0;
@@ -3862,8 +3973,10 @@
         var lineCost = subCostPerUom * costBase * lineScrapMultiplier;
         totalCost += lineCost;
         var isSingle = isSingleIngredientRecipe(subRec);
+        // Cost is a property of the ingredient/item, not this recipe — edit it in the
+        // Ingredient Centre (or that single-ingredient item's own view), not here.
         var costPerUomDisplay = isSingle
-          ? "<input class=\"form-input\" type=\"number\" value=\"" + (subRec.ownCost || 0) + "\" min=\"0\" step=\"any\" style=\"width:70px;padding:4px 6px;font-size:12px;font-family:var(--nc-mono)\" onchange=\"updateSubRecipeOwnCost('" + ri.subRecipeId.replace(/'/g, "\\'") + "', this.value)\" title=\"Own cost per kg from the sheet/API. Leave 0 to derive from the base ingredient instead.\">"
+          ? (subRec.ownCost > 0 ? "£" + subRec.ownCost.toFixed(3) : "<span style=\"color:var(--nc-gray-300)\">—</span>")
           : (subCostPerUom > 0 ? "£" + subCostPerUom.toFixed(3) : "<span style=\"color:var(--nc-gray-300)\">—</span>");
         // Visual-only comparison: tallied cost / sheet cost. Never changes which value is used.
         if (!isSingle && subRec.sheetCost && subRec.sheetCost > 0) {
@@ -3883,7 +3996,7 @@
         return "<tr class=\"row-clickable\" style=\"cursor:pointer\" onclick=\"if(!event.target.closest('input,select,button')){" + rowClick + "}\" oncontextmenu=\"" + rowCtx + "\">" +
           "<td oncontextmenu=\"" + rowCtx + "\" style=\"font-size:12px;color:var(--nc-gray-600);font-family:var(--nc-mono)\">" + codePart + "</td><td oncontextmenu=\"" + rowCtx + "\" class=\"bold\">" + subBadge + subRec.name + "</td>" +
           "<td onclick=\"event.stopPropagation()\" oncontextmenu=\"" + rowCtx + "\"><div style=\"display:flex;gap:4px;align-items:center\"><input class=\"form-input\" type=\"number\" value=\"" + ri.qty + "\" min=\"0\" step=\"any\" style=\"width:70px;padding:4px 8px\" onchange=\"updateSubRecipeQty('" + ri.subRecipeId.replace(/'/g, "\\'") + "', this.value)\" oncontextmenu=\"" + rowCtx + "\"><select class=\"form-select\" style=\"width:56px;padding:4px 4px;font-size:11px\" onchange=\"updateSubRecipeUom('" + ri.subRecipeId.replace(/'/g, "\\'") + "', this.value)\" oncontextmenu=\"" + rowCtx + "\">" + uomSel + "</select></div></td>" +
-          "<td oncontextmenu=\"" + rowCtx + "\" class=\"num\" style=\"font-family:var(--nc-mono);font-size:12px\">" + (qtyPerBuom > 0 ? qtyPerBuom.toFixed(3) + " " + subRecipeUom : "0") + "</td>" +
+          "<td oncontextmenu=\"" + rowCtx + "\" class=\"num\" style=\"font-family:var(--nc-mono);font-size:12px\">" + (qtyPerBuom > 0 ? qtyPerBuom.toFixed(3) + " " + subRecipeUom : "0") + (lineUom === "EACH" && qtyGForPct > 0 ? "<br><span style=\"color:var(--nc-gray-400);font-size:11px\">(" + Data.round(qtyGForPct) + "g)</span>" : "") + "</td>" +
           "<td oncontextmenu=\"" + rowCtx + "\" class=\"num\">" + pct + "%</td>" +
           "<td onclick=\"event.stopPropagation()\" oncontextmenu=\"" + rowCtx + "\" class=\"num\">" +
             "<input type=\"number\" class=\"form-input\" min=\"0\" max=\"99\" step=\"any\" value=\"" + lineScrapPct + "\" style=\"width:55px;padding:4px 6px\" onchange=\"updateRecipeLineScrapPct('sub:" + ri.subRecipeId.replace(/'/g, "\\'") + "', this.value)\" title=\"This input's own scrap when used in this recipe (e.g. oil lost to frying) — not this sub-recipe's own separate scrap.\" oncontextmenu=\"" + rowCtx + "\">%" +
@@ -3911,23 +4024,27 @@
       return "<tr class=\"row-clickable\" style=\"cursor:pointer\" onclick=\"if(!event.target.closest('input,select,button')){openIngredientView('" + ri.ingredientId.replace(/'/g, "\\'") + "')}\" oncontextmenu=\"" + ingCtx + "\">" +
         "<td oncontextmenu=\"" + ingCtx + "\" style=\"font-size:12px;color:var(--nc-gray-600);font-family:var(--nc-mono)\">" + (ing.code && ing.code.trim() ? ing.code : "—") + "</td><td oncontextmenu=\"" + ingCtx + "\" class=\"bold\">" + ingBadge + ing.name + noNutBadge + "</td>" +
         "<td onclick=\"event.stopPropagation()\" oncontextmenu=\"" + ingCtx + "\"><div style=\"display:flex;gap:4px;align-items:center\"><input class=\"form-input\" type=\"number\" value=\"" + ri.qty + "\" min=\"0\" step=\"any\" style=\"width:70px;padding:4px 8px\" onchange=\"updateIngredientQty('" + ri.ingredientId + "', this.value)\" oncontextmenu=\"" + ingCtx + "\"><select class=\"form-select\" style=\"width:56px;padding:4px 4px;font-size:11px\" onchange=\"updateIngredientUom('" + ri.ingredientId + "', this.value)\" oncontextmenu=\"" + ingCtx + "\">" + uomSel + "</select></div></td>" +
-        "<td oncontextmenu=\"" + ingCtx + "\" class=\"num\" style=\"font-family:var(--nc-mono);font-size:12px\">" + (qtyPerBuom > 0 ? qtyPerBuom.toFixed(3) + " " + costUOM : "0") + "</td>" +
+        "<td oncontextmenu=\"" + ingCtx + "\" class=\"num\" style=\"font-family:var(--nc-mono);font-size:12px\">" + (qtyPerBuom > 0 ? qtyPerBuom.toFixed(3) + " " + costUOM : "0") + (lineUom === "EACH" && qtyGForPct > 0 ? "<br><span style=\"color:var(--nc-gray-400);font-size:11px\">(" + Data.round(qtyGForPct) + "g)</span>" : "") + "</td>" +
         "<td oncontextmenu=\"" + ingCtx + "\" class=\"num\">" + pct + "%</td>" +
         "<td onclick=\"event.stopPropagation()\" oncontextmenu=\"" + ingCtx + "\" class=\"num\"><input type=\"number\" class=\"form-input\" min=\"0\" max=\"99\" step=\"any\" value=\"" + lineScrapPct + "\" style=\"width:55px;padding:4px 6px\" onchange=\"updateRecipeLineScrapPct('ing:" + ri.ingredientId.replace(/'/g, "\\'") + "', this.value)\" title=\"This ingredient's own scrap when used in this recipe.\" oncontextmenu=\"" + ingCtx + "\">%</td>" +
-        "<td onclick=\"event.stopPropagation()\" oncontextmenu=\"" + ingCtx + "\"><input class=\"form-input\" type=\"number\" value=\"" + (ing.cost || 0) + "\" min=\"0\" step=\"any\" style=\"width:80px;padding:4px 6px;font-size:12px;font-family:var(--nc-mono)\" onchange=\"updateIngredientCostFromRecipe('" + ing.id + "', this.value)\" title=\"Cost per kg\" oncontextmenu=\"" + ingCtx + "\"></td>" +
+        "<td oncontextmenu=\"" + ingCtx + "\"><span style=\"font-size:12px;font-family:var(--nc-mono);color:var(--nc-gray-600)\" title=\"Edit this ingredient's cost in Ingredient Centre\">" + (ing.cost > 0 ? "£" + Number(ing.cost).toFixed(3) : "<span style=\"color:var(--nc-gray-300)\">—</span>") + "</span></td>" +
         "<td oncontextmenu=\"" + ingCtx + "\" class=\"num\" style=\"font-family:var(--nc-mono);font-size:12px\">" + costDisplay + "</td>" +
         "<td oncontextmenu=\"" + ingCtx + "\">" + (ing.fvn ? '<span class="badge badge-green" style="font-size:10px">FVN</span>' : "—") + "</td>" +
         "<td onclick=\"event.stopPropagation()\" oncontextmenu=\"" + ingCtx + "\"><button class=\"btn btn-sm btn-danger\" onclick=\"removeIngredientFromRecipe('" + ri.ingredientId + "')\">×</button></td></tr>";
     });
-    // totalCost already includes each line's own scrap scaling (see the map above) — no
-    // separate whole-recipe multiplier, since different lines can scrap differently.
+    // The comparison figure must be "cost per 1 unit of this recipe's own UOM" (matching
+    // sheetCost's basis) — NOT the raw sum of line costs, which is "cost of the batch as
+    // literally specified" and can differ noticeably whenever the batch's total weight isn't
+    // exactly 1kg. Recomputed via the same engine a parent recipe uses when referencing this
+    // one, so the two are always consistent.
+    var totalCostPerUom = getSubRecipeCostPerUom(r, ingredients, recipeUom);
     var totalRow = "<tr class=\"recipe-totals-row\" style=\"font-weight:700;background:var(--nc-gray-50);border-top:2px solid var(--nc-gray-300)\">" +
       "<td colspan=\"2\">Total</td>" +
       "<td class=\"num\" style=\"font-family:var(--nc-mono)\">" + totalDisplay + "</td>" +
       "<td class=\"num\">100%</td>" +
       "<td></td>" +
       "<td></td>" +
-      "<td class=\"num\" style=\"font-family:var(--nc-mono);font-size:12px\">£" + totalCost.toFixed(3) +
+      "<td class=\"num\" style=\"font-family:var(--nc-mono);font-size:12px\">£" + totalCostPerUom.toFixed(3) +
       (r.sheetCost && r.sheetCost > 0 ? "<span style=\"color:var(--nc-gray-400);font-size:11px\"> / £" + r.sheetCost.toFixed(3) + "</span>" : "") + "</td>" +
       "<td></td><td></td></tr>";
     body.innerHTML = rowsHtml.join("") + totalRow;
@@ -3938,13 +4055,29 @@
     visited = visited || {};
     if (subRec.id && visited[subRec.id]) return 0;
     if (subRec.id) visited[subRec.id] = true;
-    // Own cost from the sheet/API is authoritative when present — it should agree with the
-    // derived-from-base cost below, but wins if they ever don't. Only falls through to the
-    // derived link while own cost is unset (e.g. a development item with no cost feed yet).
-    if (isSingleIngredientRecipe(subRec) && subRec.ownCost && subRec.ownCost > 0) {
-      var ownTotalG = (subRec.ingredients || []).reduce(function (s, ri) { return s + Data.qtyToGrams(ri.qty, ri.uom); }, 0);
-      return subRec.ownCost * ownTotalG / 1000;
+    // Own cost from the sheet/API is authoritative when present, for ANY recipe — not just
+    // single-ingredient ones. Some items (e.g. "RM Wasabi Sachet 1.5g") have orphaned/misfiled
+    // BOM lines in the source sheet that don't really belong to them, while the sheet's own
+    // declared cost for the item is consistent everywhere it's actually used. Trusting the
+    // declared cost over summing those bogus lines is what fixes that class of item. Only
+    // falls through to the derived sum while own cost is unset (e.g. a development item with
+    // no cost feed yet).
+    if (subRec.ownCost && subRec.ownCost > 0) {
+      // ownCost is already defined as "cost per 1 unit of THIS recipe's own declared UOM"
+      // (verified against the source sheet: ParentCost / ParentNoofPortions) — it needs no
+      // weight-based derivation at all, for any UOM. Both callers of this function
+      // (getSubRecipeCostPerUom, calcSubRecipeCost) treat it as already-per-unit and skip
+      // their own weight division for this same case, so this must simply pass it through.
+      return subRec.ownCost;
     }
+    // For EACH/M-based recipes there is no weight-normalization step downstream (costPerUom
+    // returns this total directly) — scrap has to inflate cost here to have any effect at all.
+    // For weight-based (KG/G/L/ML) recipes, scrap must NOT inflate cost — verified against the
+    // source sheet (e.g. HR FRIED CHICKEN: cost stays raw, the OUTPUT weight shrinks by scrap%
+    // instead — costPerKg = Σqty×cost / Σqty×(1-scrap%), confirmed to match BC's own StandardCost
+    // to within rounding). That weight-side reduction happens in getSubRecipeCostPerUom instead.
+    var ownUomForScrap = (subRec.costUOM || subRec.uom || "G").toString().toUpperCase();
+    var scrapAffectsCost = (ownUomForScrap === "EACH" || ownUomForScrap === "M");
     var cost = 0;
     (subRec.ingredients || []).forEach(function (ri) {
       // Scrap is per LINE — how much of THIS specific input is lost when used in THIS
@@ -3952,12 +4085,17 @@
       // The same ingredient can scrap differently in different recipes, so this can never be
       // a single whole-recipe multiplier. Nutrition is unaffected — chopping/frying doesn't
       // change the composition of what remains, so calcRecipeNutrition needs no equivalent.
-      var scrapMultiplier = (ri.scrapPct && ri.scrapPct > 0 && ri.scrapPct < 100) ? (100 / (100 - ri.scrapPct)) : 1;
+      var scrapMultiplier = (scrapAffectsCost && ri.scrapPct && ri.scrapPct > 0 && ri.scrapPct < 100) ? (100 / (100 - ri.scrapPct)) : 1;
       if (ri.subRecipeId) {
         var sr = Recipes.getRecipes().find(function (r) { return r.id === ri.subRecipeId; });
         if (sr && !visited[ri.subRecipeId]) {
           var subRecipeUom = (sr.costUOM || sr.uom || sr.serving_uom || "G").toString().toUpperCase();
-          var subCostPerUom = getSubRecipeCostPerUom(sr, ingredients, subRecipeUom, visited);
+          // Pass a COPY of visited, not the shared object — visited must only guard against
+          // this branch being its own ancestor (a true cycle). Sharing/mutating one object
+          // across sibling lines wrongly zeroes out any sub-recipe used by more than one line
+          // of the same parent (e.g. a packaging item or oil that appears in two components) —
+          // the second occurrence would look "already visited" and silently return 0.
+          var subCostPerUom = getSubRecipeCostPerUom(sr, ingredients, subRecipeUom, Object.assign({}, visited));
           cost += subCostPerUom * Data.qtyToCostBase(ri.qty, ri.uom, subRecipeUom) * scrapMultiplier;
         }
       } else {
@@ -3968,18 +4106,65 @@
     return cost;
   }
 
+  // Like recipeLineWeightForTotal, but WITHOUT its blanket "EACH/M unit -> 0" rule: that rule
+  // is fine for the recipe table's own "Total weight" display (where an EACH/M line is
+  // basically always packaging), but real food is sometimes legitimately counted in EACH too
+  // (e.g. "2.5 whole cucumbers") — zeroing those wrongly nukes the weight denominator here.
+  // Only genuine packaging (by category/supplier/"NF " naming) is excluded.
+  function costWeightForLine(ri, ingredients) {
+    if (!ri) return 0;
+    var lineUom = (ri.uom || "G").toString().toUpperCase();
+    if (ri.ingredientId) {
+      var ingredient = ingredients.find(function (i) { return i.id === ri.ingredientId; });
+      if (ingredient && isPackagingItem(ingredient)) return 0;
+      // EACH has no inherent weight — 1 EACH is never "100g" or any other guessed figure.
+      // Use the ingredient's own real unit weight when it's been entered; otherwise exclude
+      // this line from the weight total entirely (like packaging) rather than invent a number
+      // that would silently distort every recipe's cost-per-kg.
+      if (lineUom === "EACH") {
+        var unitG = ingredient ? Number(ingredient.unitWeightG || 0) : 0;
+        if (unitG <= 0) return 0;
+        var scrapPctEach = (ri.scrapPct && ri.scrapPct > 0 && ri.scrapPct < 100) ? ri.scrapPct : 0;
+        return ri.qty * unitG * (1 - scrapPctEach / 100);
+      }
+    }
+    if (ri.subRecipeId) {
+      var subRecipe = Recipes.getRecipes().find(function (r) { return r.id === ri.subRecipeId; });
+      if (subRecipe && isSingleIngredientRecipe(subRecipe)) {
+        var baseLine = (subRecipe.ingredients || [])[0];
+        var baseIngredient = baseLine && baseLine.ingredientId ? ingredients.find(function (i) { return i.id === baseLine.ingredientId; }) : null;
+        if (baseIngredient && isPackagingItem(baseIngredient)) return 0;
+      }
+      // A sub-recipe referenced by EACH count has no per-each weight defined on the recipe
+      // itself (only ingredients carry unitWeightG) — exclude rather than guess.
+      if (lineUom === "EACH") return 0;
+    }
+    // Scrap shrinks the OUTPUT weight this line actually contributes, not the cost — verified
+    // against the source sheet's own math. A line with 20% scrap that weighs in at 1kg only
+    // yields 0.8kg of usable output, so it should count as 0.8kg toward the batch's total yield.
+    var scrapPct = (ri.scrapPct && ri.scrapPct > 0 && ri.scrapPct < 100) ? ri.scrapPct : 0;
+    return Data.qtyToGrams(ri.qty, ri.uom) * (1 - scrapPct / 100);
+  }
+
   /** Cost per single unit of the given UOM for this recipe. EACH/M = total cost (per 1); KG/G/L/ML = cost per kg. */
   function getSubRecipeCostPerUom(subRec, ingredients, recipeUom, visited) {
     recipeUom = (recipeUom || "G").toString().toUpperCase();
     var totalCost = getSubRecipeTotalCost(subRec, ingredients, visited || {});
     if (recipeUom === "EACH" || recipeUom === "M") return totalCost;
-    var totalG = (subRec.ingredients || []).reduce(function (s, ri) { return s + Data.qtyToGrams(ri.qty, ri.uom); }, 0);
+    // ownCost is already per-unit — no weight division needed or wanted (matches
+    // getSubRecipeTotalCost's own early return for this same case).
+    if (subRec.ownCost && subRec.ownCost > 0) return totalCost;
+    // Packaging lines (trays, film, labels) must not count toward the weight denominator of a
+    // per-kg cost — otherwise mixing food (KG) with packaging in one recipe wrongly dilutes its
+    // cost-per-kg using packaging's arbitrary placeholder pseudo-weight.
+    var totalG = (subRec.ingredients || []).reduce(function (s, ri) { return s + costWeightForLine(ri, ingredients); }, 0);
     if (totalG <= 0) return 0;
     return (totalCost / totalG) * 1000;
   }
 
   function calcSubRecipeCost(subRec, ingredients, visited) {
-    var totalG = (subRec.ingredients || []).reduce(function (s, ri) { return s + Data.qtyToGrams(ri.qty, ri.uom); }, 0);
+    if (subRec.ownCost && subRec.ownCost > 0) return subRec.ownCost;
+    var totalG = (subRec.ingredients || []).reduce(function (s, ri) { return s + costWeightForLine(ri, ingredients); }, 0);
     if (totalG <= 0) return 0;
     var totalCost = getSubRecipeTotalCost(subRec, ingredients, visited);
     return (totalCost / totalG) * 1000;
@@ -4013,12 +4198,35 @@
     return totalCost;
   }
 
+  /** Weight (grams) of 1 unit of this recipe's own UOM — its own manually-entered weight when
+   * set, otherwise derived recursively from its own lines (which may themselves derive from
+   * further sub-recipes). Lets weight flow up through as many levels as have the underlying
+   * info, instead of stopping dead the moment one level has no manual entry. Display-only —
+   * never used for cost/UOM. */
+  function getRecipeUnitWeightG(rec, visited) {
+    visited = visited || {};
+    if (!rec) return 0;
+    if (rec.id && visited[rec.id]) return 0;
+    if (rec.id) visited[rec.id] = true;
+    if (rec.unitWeightG && rec.unitWeightG > 0) return rec.unitWeightG;
+    var total = 0;
+    (rec.ingredients || []).forEach(function (ri) { total += recipeLineWeightForTotal(ri, visited); });
+    return total;
+  }
+
   /** Weight (grams) for recipe total weight and %. Packaging is always excluded; costs are unchanged. */
-  function recipeLineWeightForTotal(ri) {
+  function recipeLineWeightForTotal(ri, visited) {
     if (!ri) return 0;
+    var uom = (ri.uom || "G").toString().toUpperCase();
     if (ri.ingredientId) {
       var ingredient = Ingredients.getIngredients().find(function (i) { return i.id === ri.ingredientId; });
       if (ingredient && isPackagingItem(ingredient)) return 0;
+      // EACH has no inherent weight. Use the ingredient's own real unit weight when it's been
+      // entered; otherwise exclude, the same way packaging is excluded, rather than guess.
+      if (uom === "EACH") {
+        var unitG = ingredient ? Number(ingredient.unitWeightG || 0) : 0;
+        return unitG > 0 ? ri.qty * unitG : 0;
+      }
     }
     if (ri.subRecipeId) {
       var subRecipe = Recipes.getRecipes().find(function (r) { return r.id === ri.subRecipeId; });
@@ -4027,9 +4235,17 @@
         var baseIngredient = baseLine && baseLine.ingredientId ? Ingredients.getIngredients().find(function (i) { return i.id === baseLine.ingredientId; }) : null;
         if (baseIngredient && isPackagingItem(baseIngredient)) return 0;
       }
+      // Display-only weight total: recurse into the sub-recipe's own derived weight (its own
+      // manual entry if set, else derived from ITS lines, and so on) — not just a one-level
+      // read of a manually-entered field — so weight flows up through as many levels as have
+      // the underlying info. Deliberately NOT used in costWeightForLine — cost/UOM unaffected.
+      if (uom === "EACH") {
+        if (!subRecipe) return 0;
+        var subUnitG = getRecipeUnitWeightG(subRecipe, Object.assign({}, visited || {}));
+        return subUnitG > 0 ? ri.qty * subUnitG : 0;
+      }
     }
-    var uom = (ri.uom || "G").toString().toUpperCase();
-    if (uom === "EACH" || uom === "M") return 0;
+    if (uom === "M") return 0;
     return Data.qtyToGrams(ri.qty, ri.uom);
   }
 
@@ -4303,7 +4519,7 @@
         costCell = "<td><span style=\"font-size:12px;color:var(--nc-gray-600);font-family:var(--nc-mono)\">" + subLabel + "</span></td>";
       } else {
         var uomLabel = (item.costUom || "KG");
-        costCell = "<td><div style=\"display:flex;align-items:center;gap:4px\"><input class=\"form-input\" type=\"number\" value=\"" + item.costPerKg + "\" min=\"0\" step=\"any\" style=\"width:70px;padding:3px 6px;font-size:12px;font-family:var(--nc-mono)\" onchange=\"updateIngredientCostFromRecipe('" + item.ing.id + "', this.value)\"><span style=\"font-size:11px;color:var(--nc-gray-500)\">per " + uomLabel + "</span></div></td>";
+        costCell = "<td><span style=\"font-size:12px;font-family:var(--nc-mono);color:var(--nc-gray-600)\" title=\"Edit this ingredient's cost in Ingredient Centre\">" + (item.costPerKg > 0 ? "£" + Number(item.costPerKg).toFixed(3) : "<span style=\"color:var(--nc-gray-300)\">—</span>") + " <span style=\"font-size:11px;color:var(--nc-gray-500)\">per " + uomLabel + "</span></span></td>";
       }
       var lineBadge = getRecipeLineBadge(item.ri, ingredients, recipes);
       return "<tr><td>" + lineBadge + item.name + "</td><td class=\"num\">" + qtyDisplay + "</td>" + costCell +
@@ -4969,7 +5185,10 @@
       var isPackaging = itemName.toLowerCase().indexOf("nf ") === 0 || (Data.isPackagingBySupplier && Data.isPackagingBySupplier(supplier));
       if (isPackaging) {
         cat = "Packaging";
-        costUom = "EACH";
+        // Default to EACH only when the sheet didn't already specify a real UOM — some NF
+        // items are film/wrap rolls genuinely measured in M, and the sheet's own UOM for that
+        // row is authoritative when present.
+        if (!costUom) costUom = "EACH";
       }
       var itemData = {
         itemName: itemName,
@@ -5039,17 +5258,21 @@
       var parentName = parentVal;
       var parentKey = normKey(parentName);
       if (!parentKey) return;
-      if (!recipeGroups[parentKey]) recipeGroups[parentKey] = { name: parentName, code: mappings.parent !== undefined ? getVal("parent") : "", items: [], parentUom: "", parentCost: 0 };
+      if (!recipeGroups[parentKey]) recipeGroups[parentKey] = { name: parentName, code: mappings.parent !== undefined ? getVal("parent") : "", items: [], parentUom: "", parentCost: 0, parentNoofPortions: 0 };
       var rawParentUom = mappings.parentuom !== undefined ? getVal("parentuom") : "";
       if (rawParentUom) {
         var nu = normParentUom(rawParentUom);
         if (nu) recipeGroups[parentKey].parentUom = nu;
       }
-      // ParentCost is the recipe/finished-product's own total cost repeated on every line of
-      // that recipe in the sheet — comparison-only, never overrides the tallied cost.
+      // ParentCost is the recipe/finished-product's own WHOLE-BATCH total cost, not a per-unit
+      // cost — e.g. BC's own StandardCost for an item equals ParentCost / ParentNoofPortions
+      // exactly. Comparison-only, never overrides the tallied cost.
       if (mappings.parentcost !== undefined) {
         var pc = parseNum("parentcost");
-        if (pc > 0 && !recipeGroups[parentKey].parentCost) recipeGroups[parentKey].parentCost = pc;
+        if (pc > 0 && !recipeGroups[parentKey].parentCost) {
+          recipeGroups[parentKey].parentCost = pc;
+          recipeGroups[parentKey].parentNoofPortions = mappings.parentnoofportions !== undefined ? parseNum("parentnoofportions") : 0;
+        }
       }
       recipeGroups[parentKey].items.push(itemData);
     });
@@ -5107,13 +5330,20 @@
       // Sheet cost is captured for every recipe now (not just single-ingredient ones) so it
       // can be shown alongside the tallied cost for comparison — display-only for now, it
       // does not change which value the app actually uses in calculations.
-      var groupOwnCost = group.parentCost > 0 ? group.parentCost : itemOwnCostByKey[parentKey];
+      // ParentCost is a whole-batch total — divide by ParentNoofPortions to get the true
+      // per-unit comparison value. Sanity clamp: a real per-unit food cost is never in the
+      // thousands — a value this large means the column mapping picked up the wrong cell.
+      var normalizedParentCost = group.parentCost > 0 ? (group.parentNoofPortions > 0 ? group.parentCost / group.parentNoofPortions : group.parentCost) : 0;
+      var groupOwnCost = (normalizedParentCost > 0 && normalizedParentCost < 1000) ? normalizedParentCost : itemOwnCostByKey[parentKey];
       if (groupOwnCost == null) groupOwnCost = itemOwnCostByKey[norm(group.code)];
       if (existingRecipe) {
         recId = existingRecipe.id;
         existingRecipe.recipeType = recipeType;
         if (group.parentUom) existingRecipe.costUOM = group.parentUom;
-        if (groupOwnCost != null && groupOwnCost > 0) existingRecipe.sheetCost = groupOwnCost;
+        // The sheet's own declared cost is authoritative — trust it over summing this item's
+        // own BOM lines, since some items have orphaned/misfiled component rows that don't
+        // really belong to them (see backend ImportService.cs for the full reasoning).
+        if (groupOwnCost != null && groupOwnCost > 0) { existingRecipe.sheetCost = groupOwnCost; existingRecipe.ownCost = groupOwnCost; }
       } else {
         recId = Data.genId();
         var newRec = {
@@ -5128,7 +5358,7 @@ desc: "Imported from " + (fname || "spreadsheet"),
           created: new Date().toISOString()
         };
         if (group.parentUom) newRec.costUOM = group.parentUom;
-        if (groupOwnCost != null && groupOwnCost > 0) newRec.sheetCost = groupOwnCost;
+        if (groupOwnCost != null && groupOwnCost > 0) { newRec.sheetCost = groupOwnCost; newRec.ownCost = groupOwnCost; }
         recipes.push(newRec);
         recipeCount++;
       }
@@ -5171,7 +5401,9 @@ desc: "Imported from " + (fname || "spreadsheet"),
         recId = existingSingleRec.id;
         existingSingleRec.recipeType = "subRecipe";
         existingSingleRec.ingredients = [singleLine];
-        if (group.parentUom) existingSingleRec.costUOM = group.parentUom;
+        // Falls back to the base ingredient's own cost UOM when the sheet didn't supply a
+        // Parent UOM — not "G", which would silently shrink this line wherever it's later used.
+        existingSingleRec.costUOM = group.parentUom || existingBase.costUOM || "KG";
       } else {
         recId = Data.genId();
         var singleRec = {
@@ -5182,6 +5414,7 @@ desc: "Imported from " + (fname || "spreadsheet"),
           type: "food",
           recipeType: "subRecipe",
           serving: 100,
+          costUOM: group.parentUom || existingBase.costUOM || "KG",
           ingredients: [singleLine],
           created: new Date().toISOString()
         };
@@ -5304,6 +5537,7 @@ desc: "Imported from " + (fname || "spreadsheet"),
   // Attach globals for HTML onclick
   window.switchView = switchView;
   window.goBack = goBack;
+  window.goBackFromRecipeDetail = goBackFromRecipeDetail;
   window.switchReportsTab = switchReportsTab;
   window.openNewProjectModal = openNewProjectModal;
   window.openEditProjectModal = openEditProjectModal;
@@ -5531,7 +5765,7 @@ desc: "Imported from " + (fname || "spreadsheet"),
     renderAllergenCheckboxes([]);
     if (typeof populateProjectSelects === "function") populateProjectSelects();
     bindExportExcelDropzone();
-    switchView("dashboard");
+    restoreLastView();
   } catch (err) {
     console.error("Startup render error:", err);
     if (typeof showToast === "function") showToast("Load error — try Import Data to restore");

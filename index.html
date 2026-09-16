@@ -565,7 +565,7 @@
           <button class="btn btn-sm" id="recipe-detail-toggle-approved" onclick="toggleRecipeApproved()">Mark as approved</button>
           <button class="btn" onclick="duplicateCurrentRecipe()">Duplicate</button>
           <button class="btn btn-danger" onclick="deleteCurrentRecipe()">Delete</button>
-          <button class="btn" onclick="switchView(window.recipeDetailBackView || 'recipes')">← Back</button>
+          <button class="btn" onclick="goBackFromRecipeDetail()">← Back</button>
         </div>
       </div>
       <div id="recipe-detail-meta" style="margin-top:8px;">
@@ -591,7 +591,10 @@
         <div class="card">
           <div class="card-header">
             <h2>Recipe Ingredients</h2>
-            <span style="font-size:12px;color:var(--nc-gray-400)"><span id="total-weight-label">Total weight: </span><strong id="total-weight">0g</strong></span>
+            <span style="font-size:12px;color:var(--nc-gray-400);text-align:right">
+              <span id="total-weight-label">Total weight: </span><strong id="total-weight">0g</strong>
+              <span id="total-weight-secondary-wrap" style="display:none"><br><span style="font-size:11px">Total weight: </span><strong id="total-weight-secondary" style="font-size:11px">0g</strong></span>
+            </span>
           </div>
           <div class="ingredient-search-wrap" style="margin-bottom:12px">
             <input class="form-input" type="text" placeholder="Type to search & add ingredient..." id="recipe-ing-search" oninput="searchIngredientForRecipe()" onfocus="searchIngredientForRecipe()">
@@ -992,6 +995,11 @@
         <input class="form-input" type="number" id="new-ing-density" step="any" min="0.001" placeholder="1" title="Used to convert between KG and L in recipes. N/A for EACH or M.">
         <p style="font-size:11px;color:var(--nc-gray-400);margin:2px 0 0" id="new-ing-density-hint">Optional. Default 1. Used when switching ingredient between KG and L in a recipe.</p>
       </div>
+      <div class="form-group">
+        <label class="form-label">Weight per EACH (g)</label>
+        <input class="form-input" type="number" id="new-ing-unit-weight" step="any" min="0" placeholder="unknown" title="Weight in grams of 1 EACH of this ingredient (e.g. one whole cucumber). Leave blank when unknown — a blank value excludes this ingredient from recipe weight totals rather than guessing, the same way packaging is excluded.">
+        <p style="font-size:11px;color:var(--nc-gray-400);margin:2px 0 0">Optional. Only needed when this ingredient is counted in EACH but should still count toward a recipe's weight/cost-per-kg. Leave blank if unknown.</p>
+      </div>
       <div class="form-group"><label class="form-label">Supplier</label><input class="form-input" type="text" id="new-ing-supplier" placeholder="e.g. Supplier name"></div>
     </div>
     <p style="font-size:11px;color:var(--nc-gray-400);margin:8px 0 4px;font-weight:600">ALLERGENS (select all that apply)</p>
@@ -1197,6 +1205,11 @@
           <option value="EACH">EACH</option>
         </select>
         <p style="font-size:11px;color:var(--nc-gray-400);margin:2px 0 0">Reference UOM for this recipe (e.g. per 100g, per EACH).</p>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Weight (g)</label>
+        <input class="form-input" type="number" id="edit-rec-unit-weight" step="any" min="0" placeholder="unknown" style="width:100px;padding:6px 8px;font-size:13px" title="Weight in grams of 1 unit of this recipe's own UOM (e.g. 1 EACH). Doesn't change the UOM itself or its cost. Leave blank to keep this auto-derived from the recipe's own ingredients (shown as the placeholder) — type a value to override it with a fixed number instead.">
+        <p style="font-size:11px;color:var(--nc-gray-400);margin:2px 0 0">Leave blank to auto-derive from ingredients (shown greyed out above) — enter a value to override.</p>
       </div>
     </div>
     <div class="form-group">
@@ -1476,15 +1489,15 @@
   </div>
 </div>
 
-<script src="data.js?v=20260916-scrap-automap"></script>
+<script src="data.js?v=20260916-parentnoofportions"></script>
 <script src="storage.js"></script>
 <script src="ingredients.js"></script>
 <script src="recipes.js"></script>
 <script src="hfss.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="app.js?v=20260916-single-recipe-dedup"></script>
-<script src="excel-import.js?v=20260916-name-col-e-pinned"></script>
+<script src="app.js?v=20260916-line-weight-faded"></script>
+<script src="excel-import.js?v=20260916-parentnoofportions-col-k"></script>
 <script src="reports.js"></script>
 </body>
 </html>

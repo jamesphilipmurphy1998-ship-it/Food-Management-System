@@ -27,6 +27,12 @@ public sealed class Ingredient
     public string CostUOM { get; set; } = "KG";
     /// <summary>Density in kg/L (default 1). Used to convert between KG and L in recipes.</summary>
     public decimal Density { get; set; } = 1;
+    /// <summary>Weight in grams of 1 EACH of this ingredient (e.g. one whole cucumber). 0 = not
+    /// known. Only used when this ingredient is counted in EACH but needs to contribute real
+    /// weight toward a recipe's total/cost-per-kg — never assume a value, since a wrong guess
+    /// silently corrupts cost-per-kg math. Leave 0 to exclude it from weight totals entirely
+    /// (the same way packaging is excluded), rather than inventing a number.</summary>
+    public decimal UnitWeightG { get; set; }
     public string Supplier { get; set; } = "";
     public List<string> Allergens { get; set; } = [];
     public bool Fvn { get; set; }
@@ -79,6 +85,10 @@ public sealed class Recipe
     /// single-ingredient ones) purely for comparison against the tallied/computed cost.
     /// Display-only — unlike OwnCost, this never overrides what the app actually calculates.</summary>
     public decimal SheetCost { get; set; } = 0;
+    /// <summary>Weight in grams of 1 unit of this recipe's own UOM (e.g. 1 EACH for a sushi
+    /// piece). 0 = not known. Recorded alongside the UOM without changing it — not yet used in
+    /// any cost/weight calculation.</summary>
+    public decimal UnitWeightG { get; set; }
 }
 
 public sealed class BomRow
@@ -116,6 +126,10 @@ public sealed class BomRow
     /// (e.g. a "ParentCost" column repeated on every line of that recipe). Comparison-only —
     /// never overrides the tallied cost calculation.</summary>
     public decimal ParentCost { get; set; }
+    /// <summary>Batch size ParentCost was computed against (e.g. BC's "ParentNoofPortions").
+    /// ParentCost is a whole-batch total, not a per-unit cost — divide by this to get the true
+    /// per-unit comparison value. 0 = not supplied (treat ParentCost as already per-unit).</summary>
+    public decimal ParentNoofPortions { get; set; }
 }
 
 public sealed class RecipeStructureImportRequest

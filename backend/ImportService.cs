@@ -66,8 +66,11 @@ public sealed class ImportService(InMemoryStore store) : IImportService
             if (itemName.StartsWith("NF ", StringComparison.OrdinalIgnoreCase)) category = "Packaging";
 
             var costUom = !string.IsNullOrWhiteSpace(row.CostUom) ? NormUom(row.CostUom) : null;
-            // NF lines are non-food packaging/countable items and must never inherit a weight UOM.
-            if (itemName.StartsWith("NF ", StringComparison.OrdinalIgnoreCase)) costUom = "EACH";
+            // NF items default to EACH (most are countable packaging: boxes, labels, lids) but
+            // only when the sheet didn't already specify a real UOM — some NF items are film/
+            // wrap rolls genuinely measured in M, and the sheet's own UnitofMeasureCode for that
+            // row is authoritative when present, overriding this blanket default would be wrong.
+            if (costUom is null && itemName.StartsWith("NF ", StringComparison.OrdinalIgnoreCase)) costUom = "EACH";
 
             var item = new ItemData
             {
@@ -123,17 +126,25 @@ public sealed class ImportService(InMemoryStore store) : IImportService
                 {
                     Name = parentVal,
                     Code = parentCode,
-                    Uom = NormServingUom(row.ParentUom), // Parent/recipe UOM only (sub & finished recipes). Not the item purchase UOM.
-                    ParentCost = row.ParentCost
+                    // Parent/recipe UOM only (sub & finished recipes). Not the item purchase UOM.
+                    // Left blank (not defaulted to "G" yet) when the sheet didn't supply one —
+                    // single-component recipes fall back to the base ingredient's own cost UOM
+                    // instead, which NormServingUom's blanket "G" default would otherwise mask.
+                    Uom = string.IsNullOrWhiteSpace(row.ParentUom) ? "" : NormUom(row.ParentUom),
+                    ParentCost = row.ParentCost,
+                    ParentNoofPortions = row.ParentNoofPortions
                 };
                 recipeGroups[parentKey] = group;
             }
             else
             {
                 if (string.IsNullOrWhiteSpace(group.Uom) && !string.IsNullOrWhiteSpace(row.ParentUom))
-                    group.Uom = NormServingUom(row.ParentUom);
+                    group.Uom = NormUom(row.ParentUom);
                 if (group.ParentCost <= 0 && row.ParentCost > 0)
+                {
                     group.ParentCost = row.ParentCost;
+                    group.ParentNoofPortions = row.ParentNoofPortions;
+                }
             }
             group.Items.Add(item);
         }
@@ -197,7 +208,18 @@ public sealed class ImportService(InMemoryStore store) : IImportService
             // Sheet cost captured for every recipe (not just single-ingredient) purely for
             // display comparison against the tallied cost — never overrides the computed value.
             allItemDataByKey.TryGetValue(parentKey, out var ownGroupRow);
-            var groupSheetCost = group.ParentCost > 0 ? group.ParentCost : (ownGroupRow?.CostPerKg ?? 0);
+            // ParentCost from the sheet is a whole-batch total, not a per-unit cost — e.g. BC's
+            // own "StandardCost" for an item equals its ParentCost / ParentNoofPortions exactly
+            // (verified against the source BOM: LR MIX's ParentCost 6.3897 / ParentNoofPortions
+            // 1.38306 = 4.61998, its StandardCost everywhere else it's referenced). Divide it
+            // down to a true per-unit figure before using it as the comparison value.
+            var normalizedParentCost = group.ParentCost > 0
+                ? (group.ParentNoofPortions > 0 ? group.ParentCost / group.ParentNoofPortions : group.ParentCost)
+                : 0;
+            // Sanity clamp: a real per-unit food cost is never in the thousands — a value this
+            // large means the column mapping picked up the wrong cell for that row, so fall
+            // back rather than store an obviously-bogus value.
+            var groupSheetCost = (normalizedParentCost > 0 && normalizedParentCost < 1000) ? normalizedParentCost : (ownGroupRow?.CostPerKg ?? 0);
             if (existing is null)
             {
                 existing = new Recipe
@@ -208,7 +230,15 @@ public sealed class ImportService(InMemoryStore store) : IImportService
                     RecipeType = recipeType,
                     Uom = string.IsNullOrWhiteSpace(group.Uom) ? "G" : group.Uom,
                     Desc = "Imported from " + (req.SourceName ?? "spreadsheet"),
-                    SheetCost = groupSheetCost
+                    SheetCost = groupSheetCost,
+                    // The sheet's own declared cost for this item is authoritative — trust it
+                    // over summing this item's own BOM lines. Some items (e.g. "RM Wasabi
+                    // Sachet 1.5g") have orphaned/misfiled component rows in the source sheet
+                    // that don't actually belong to them (unrelated meal-kit items under the
+                    // wrong parent code) while every reference to the item elsewhere — including
+                    // its own header rows — consistently quotes the same real cost. Without
+                    // this, those bogus child rows get summed into a nonsense derived cost.
+                    OwnCost = groupSheetCost
                 };
                 store.Recipes.Add(existing);
                 result.RecipesCreated++;
@@ -218,7 +248,7 @@ public sealed class ImportService(InMemoryStore store) : IImportService
                 existing.RecipeType = recipeType;
                 existing.Code = string.IsNullOrWhiteSpace(existing.Code) ? group.Code : existing.Code;
                 if (!string.IsNullOrWhiteSpace(group.Uom)) existing.Uom = group.Uom;
-                if (groupSheetCost > 0) existing.SheetCost = groupSheetCost;
+                if (groupSheetCost > 0) { existing.SheetCost = groupSheetCost; existing.OwnCost = groupSheetCost; }
             }
             parentToRecipeId[parentKey] = existing.Id;
         }
@@ -305,7 +335,13 @@ public sealed class ImportService(InMemoryStore store) : IImportService
                     && parentToRecipeId.TryGetValue(itemParentKey, out var subId)
                     && subId != recId)
                 {
-                    lines.Add(new RecipeLine { SubRecipeId = subId, Qty = item.QtyKg, Uom = "KG", ScrapPct = NormalizeScrapPct(item.ScrapPct) });
+                    // Use this row's own Item UOM when the sheet supplied one, otherwise fall
+                    // back to the referenced sub-recipe's own UOM rather than hardcoding "KG" —
+                    // forcing KG onto an EACH/M-based sub-recipe reference (e.g. a sushi piece
+                    // cut from a roll) corrupts its cost by orders of magnitude.
+                    var subRecForUom = store.Recipes.FirstOrDefault(r => r.Id == subId);
+                    var subLineUom = !string.IsNullOrWhiteSpace(item.CostUom) ? NormUom(item.CostUom) : LineUom(subRecForUom?.Uom);
+                    lines.Add(new RecipeLine { SubRecipeId = subId, Qty = item.QtyKg, Uom = subLineUom, ScrapPct = NormalizeScrapPct(item.ScrapPct) });
                     continue;
                 }
 
@@ -538,12 +574,18 @@ public sealed class ImportService(InMemoryStore store) : IImportService
             }
             else
             {
+                // Convert to the referenced sub-recipe's own UOM (KG/EACH/M/etc.), not a
+                // hardcoded "KG" — forcing KG here silently corrupts any line pointing at an
+                // EACH- or M-based sub-recipe (e.g. sushi pieces cut from a roll), deflating
+                // its cost by orders of magnitude.
+                var subRec = store.Recipes.FirstOrDefault(r => r.Id == line.SubRecipeId);
+                var subUom = LineUom(subRec?.Uom);
                 result.Add(new RecipeLine
                 {
                     IngredientId = line.IngredientId,
                     SubRecipeId = line.SubRecipeId,
-                    Qty = GramsToUom(line.Qty, "KG"),
-                    Uom = "KG",
+                    Qty = GramsToUom(line.Qty, subUom),
+                    Uom = subUom,
                     FvnOverride = line.FvnOverride,
                     ScrapPct = line.ScrapPct
                 });
@@ -558,6 +600,7 @@ public sealed class ImportService(InMemoryStore store) : IImportService
         public string Code { get; set; } = "";
         public string Uom { get; set; } = "G";
         public decimal ParentCost { get; set; }
+        public decimal ParentNoofPortions { get; set; }
         public List<ItemData> Items { get; } = [];
     }
 

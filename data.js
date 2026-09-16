@@ -229,7 +229,8 @@ window.NutriCalcData = (function () {
     { key: "costuom", label: "Item UOM (map to the column with KG, L, EACH, etc. — any column works)", required: false },
     { key: "supplier", label: "Supplier / Vendor", required: false },
     { key: "scrap", label: "Scrap % (waste from prep — this row's own value, applies to every ingredient line)", required: false },
-    { key: "parentcost", label: "Recipe/Finished Product Cost (parent's own total cost from sheet — for comparison only)", required: false }
+    { key: "parentcost", label: "Recipe/Finished Product Cost (parent's own total cost from sheet — for comparison only)", required: false },
+    { key: "parentnoofportions", label: "Parent batch size (ParentNoofPortions — divides Parent Cost down to a true per-unit cost)", required: false }
   ];
 
   /** Detect if a value looks like an ingredient code: 6 digits or starts with P0 */
@@ -273,6 +274,7 @@ window.NutriCalcData = (function () {
       salt: ["salt", "salts", "saltg", "nacl", "saltequivalent", "sodium", "sodiumg", "sodiummg"],
       sodium: ["sodium", "na", "sodiumg", "sodiummg", "sodiummgper100g"],
       scrap: ["scrap", "scrappct", "scrappercent", "wastepct", "waste", "yieldloss", "losspct"],
+      parentnoofportions: ["parentnoofportions", "noofportions", "parentportions", "batchsize", "parentbatchsize"],
       parentcost: ["parentcost", "recipecost", "finishedcost", "finishedproductcost", "producttotalcost", "recipetotalcost", "mparentcost"],
       cost: ["cost", "costperkg", "costkg", "costperuom", "costperunit", "price", "priceperkg", "unitcost", "costkgpound", "costp", "standardcost", "standardcostperkg"],
       parentdescription: ["parentdescription", "parentdesc", "recipe", "recipename", "product", "productname", "parentname"],

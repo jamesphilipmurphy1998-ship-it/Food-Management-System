@@ -21,6 +21,7 @@ public sealed class IngredientEntity
     public decimal Cost { get; set; }
     public string CostUom { get; set; } = "";
     public decimal Density { get; set; } = 1;
+    public decimal UnitWeightG { get; set; }
     public string Supplier { get; set; } = "";
     public List<string> Allergens { get; set; } = [];
     public bool Fvn { get; set; }
@@ -61,6 +62,7 @@ public sealed class RecipeEntity
     public decimal YieldPct { get; set; } = 100;
     public decimal OwnCost { get; set; } = 0;
     public decimal SheetCost { get; set; } = 0;
+    public decimal UnitWeightG { get; set; }
 
     public List<RecipeLineEntity> Lines { get; set; } = [];
 }

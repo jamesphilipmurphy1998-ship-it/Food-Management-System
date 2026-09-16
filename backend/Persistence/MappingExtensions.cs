@@ -23,6 +23,7 @@ public static class MappingExtensions
         Cost = entity.Cost,
         CostUOM = entity.CostUom ?? "",
         Density = entity.Density,
+        UnitWeightG = entity.UnitWeightG,
         Supplier = entity.Supplier,
         Allergens = entity.Allergens.ToList(),
         Fvn = entity.Fvn,
@@ -52,6 +53,7 @@ public static class MappingExtensions
         Cost = model.Cost,
         CostUom = model.CostUOM ?? "",
         Density = model.Density,
+        UnitWeightG = model.UnitWeightG,
         Supplier = model.Supplier,
         Allergens = model.Allergens.ToList(),
         Fvn = model.Fvn,
@@ -79,7 +81,8 @@ public static class MappingExtensions
         VersionHistory = entity.VersionHistory.ToList(),
         YieldPct = entity.YieldPct,
         OwnCost = entity.OwnCost,
-        SheetCost = entity.SheetCost
+        SheetCost = entity.SheetCost,
+        UnitWeightG = entity.UnitWeightG
     };
 
     public static RecipeEntity ToEntity(this Recipe model) => new()
@@ -99,6 +102,7 @@ public static class MappingExtensions
         YieldPct = model.YieldPct,
         OwnCost = model.OwnCost,
         SheetCost = model.SheetCost,
+        UnitWeightG = model.UnitWeightG,
         Lines = model.Ingredients.Select(l => l.ToEntity(model.Id)).ToList()
     };
 

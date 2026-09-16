@@ -150,7 +150,7 @@
       // "ParentNoofPortions" and "ParentDescription" all contain "Parent", so fuzzy text/data
       // matching grabs the wrong one. These columns are pinned to fixed letters instead,
       // always winning over any fuzzy match. Still overridable via the dropdown.
-      var PINNED_COLUMNS = { code: 3, supplier: 13, parentdescription: 2, parentuom: 11, parent: 0, name: 4 };
+      var PINNED_COLUMNS = { code: 3, supplier: 13, parentdescription: 2, parentuom: 11, parent: 0, name: 4, parentnoofportions: 10 };
       if (Object.prototype.hasOwnProperty.call(PINNED_COLUMNS, f.key) && excelHeaders.length > PINNED_COLUMNS[f.key]) {
         autoMatch = PINNED_COLUMNS[f.key];
       }
@@ -725,7 +725,8 @@
           costPerKg: parseNum("cost"),
           costUom: rawCostUom,
           scrapPct: mappings.scrap !== undefined ? parseNum("scrap") : -1,
-          parentCost: parseNum("parentcost")
+          parentCost: parseNum("parentcost"),
+          parentNoofPortions: parseNum("parentnoofportions")
         };
         reqRows.push(parsed);
       });

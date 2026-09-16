@@ -37,6 +37,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             e.Property(x => x.Cost).HasColumnName("cost");
             e.Property(x => x.CostUom).HasColumnName("cost_uom");
             e.Property(x => x.Density).HasColumnName("density");
+            e.Property(x => x.UnitWeightG).HasColumnName("unit_weight_g").HasDefaultValue(0m);
             e.Property(x => x.Supplier).HasColumnName("supplier");
             e.Property(x => x.Allergens).HasColumnName("allergens");
             e.Property(x => x.Fvn).HasColumnName("fvn");
@@ -77,6 +78,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             e.Property(x => x.YieldPct).HasColumnName("yield_pct").HasDefaultValue(100m);
             e.Property(x => x.OwnCost).HasColumnName("own_cost").HasDefaultValue(0m);
             e.Property(x => x.SheetCost).HasColumnName("sheet_cost").HasDefaultValue(0m);
+            e.Property(x => x.UnitWeightG).HasColumnName("unit_weight_g").HasDefaultValue(0m);
             e.HasMany(x => x.Lines)
                 .WithOne(x => x.Recipe)
                 .HasForeignKey(x => x.RecipeId)
