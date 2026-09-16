@@ -1,0 +1,11 @@
+backend/bin/
+backend/obj/
+backend/publish-pi/
+*.user
+.vs/
+node_modules/
+
+# Contains live DB credentials — never commit
+backend/appsettings.Development.json
+backend/appsettings.*.json
+!backend/appsettings.json

@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "NutriCost.Api": {
+      "commandName": "Project",
+      "applicationUrl": "http://localhost:5001"
+    }
+  }
+}

@@ -1,0 +1,1490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wasabi Recipe Management System</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect fill='%235d8c3e' width='32' height='32' rx='4'/><text x='16' y='22' font-size='18' font-weight='bold' fill='white' text-anchor='middle' font-family='system-ui,sans-serif'>W</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <div class="topbar-logo">
+    <img src="wasabi-logo.png" alt="Wasabi" class="topbar-logo-img" />
+    <span>FMS</span>
+  </div>
+  <nav class="topbar-nav">
+    <button class="active" onclick="switchView('dashboard')">Dashboard</button>
+    <button onclick="switchView('projects')">Projects</button>
+    <button onclick="openWasabiAppsHome()">Wasabi Apps Homepage</button>
+    <button type="button" class="topbar-nav-loading-test" onclick="testSushiLoading()">Loading test</button>
+    <a href="#" onclick="window.location.href=window.location.origin+'/api/auth/logout';return false;" class="topbar-nav-signout">Sign out</a>
+  </nav>
+  <div class="topbar-right" style="position:relative">
+    <button class="btn btn-icon topbar-board-menu-btn" id="topbar-settings-btn" onclick="toggleSettingsDropdown(event)" title="Board options"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M3 8a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0zm5 0a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0zm5 0a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0z"/></svg></button>
+    <div class="nc-settings-dropdown" id="topbar-settings-dropdown">
+      <div class="nc-bmd-section-title">Board options</div>
+      <div class="nc-bmd-section">
+        <div class="nc-bmd-item" onclick="closeSettingsDropdown(); showToast('Duplicate board')">
+          <span class="nc-bmd-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M4 2a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H6a2 2 0 00-2 2v2a2 2 0 01-2-2V2zm2 2h8a2 2 0 012 2v2H6a2 2 0 01-2-2V4z"/></svg></span>
+          <span>Duplicate board</span>
+        </div>
+        <div class="nc-bmd-item" onclick="closeSettingsDropdown(); showToast('Save as template')">
+          <span class="nc-bmd-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M2 1h12a1 1 0 011 1v12a1 1 0 01-1 1H2a1 1 0 01-1-1V2a1 1 0 011-1zm1 3v2h8V4H3zm0 4v1h5V8H3zm0 3v1h8v-1H3z"/></svg></span>
+          <span>Save as template</span>
+        </div>
+        <div class="nc-bmd-item" onclick="closeSettingsDropdown(); showToast('Export board')">
+          <span class="nc-bmd-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1l4 4h-3v5H7V5H4l4-4zM2 12h12v2H2v-2z"/></svg></span>
+          <span>Export board</span>
+        </div>
+      </div>
+      <div class="nc-bmd-sep"></div>
+      <div class="nc-bmd-section">
+        <div class="nc-bmd-item" onclick="closeSettingsDropdown(); showToast('Activity log')">
+          <span class="nc-bmd-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M2 1h12a1 1 0 011 1v12a1 1 0 01-1 1H2a1 1 0 01-1-1V2a1 1 0 011-1zm1 2v2h8V3H3zm0 4v2h8V7H3zm0 4v2h5v-2H3z"/></svg></span>
+          <span>Activity log</span>
+        </div>
+        <div class="nc-bmd-item" onclick="closeSettingsDropdown(); showToast('Discussion')">
+          <span class="nc-bmd-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1c4.4 0 8 3.2 8 7s-3.6 7-8 7c-.7 0-1.4-.1-2-.3L1 15l1.3-5C1.5 8.9 1 7.5 1 6c0-3.9 3.6-7 8-7z"/></svg></span>
+          <span>Discussion</span>
+        </div>
+      </div>
+      <div class="nc-bmd-sep"></div>
+      <div class="nc-bmd-section">
+        <div class="nc-bmd-item" onclick="closeSettingsDropdown(); showToast('Notifications')">
+          <span class="nc-bmd-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a5 5 0 015 5v2.8l1.4 1.4a1 1 0 01-1.4 1.4L8 9.4l-5 1.8a1 1 0 11-.7-1.9L8 8.2V6a5 5 0 015-5zm0 12.5a2 2 0 100 4 2 2 0 000-4z"/></svg></span>
+          <span>Notifications</span>
+        </div>
+        <div class="nc-bmd-item" onclick="closeSettingsDropdown(); showToast('Settings')">
+          <span class="nc-bmd-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M6.5 1h3l.5 2H14v3l-2 .5v3L14 10v3H10l-.5 2h-3L6 13H2v-3l2-.5v-3L2 6V3h4l.5-2zM8 6a2 2 0 100 4 2 2 0 000-4z"/></svg></span>
+          <span>Settings</span>
+        </div>
+      </div>
+      <div class="nc-bmd-sep"></div>
+      <div class="nc-bmd-section">
+        <div class="nc-bmd-item" onclick="closeSettingsDropdown(); showToast('Archive board')">
+          <span class="nc-bmd-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M1 2a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H2a1 1 0 01-1-1V2zm0 4v8a1 1 0 001 1h12a1 1 0 001-1V6H1zm4 3h6v1H5V9z"/></svg></span>
+          <span>Archive board</span>
+        </div>
+        <div class="nc-bmd-item nc-bmd-item-danger" onclick="closeSettingsDropdown(); showToast('Delete board')">
+          <span class="nc-bmd-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M5 2a1 1 0 00-1 1v1H2a1 1 0 000 2h1v9a2 2 0 002 2h8a2 2 0 002-2V6h1a1 1 0 100-2h-1V3a1 1 0 00-1-1H5zm3 3a1 1 0 011 1v5a1 1 0 11-2 0V6a1 1 0 011-1zm3 0a1 1 0 011 1v5a1 1 0 11-2 0V6a1 1 0 011-1z"/></svg></span>
+          <span>Delete board</span>
+        </div>
+      </div>
+      <div class="nc-bmd-sep"></div>
+      <div class="nc-bmd-section">
+        <div class="nc-bmd-item" onclick="closeSettingsDropdown(); showToast('Give feedback')">
+          <span class="nc-bmd-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 14A6 6 0 108 2a6 6 0 000 12zM7 5h2v2H7V5zm0 4h2v3H7V9z"/></svg></span>
+          <span>Give feedback</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- LAYOUT -->
+<div class="app-layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">Navigation</div>
+      <button class="sidebar-item active" onclick="switchView('dashboard')" data-view="dashboard">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M1 1h6v6H1V1zm8 0h6v6H9V1zM1 9h6v6H1V9zm8 0h6v6H9V9z" opacity=".8"/></svg>
+        Dashboard
+      </button>
+      <button class="sidebar-item" onclick="switchView('ingredients')" data-view="ingredients">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1l7 3v1H1V4l7-3zM2 6h12v2H2V6zm1 3h10v6H3V9z" opacity=".8"/></svg>
+        Ingredient Centre
+        <span class="count" id="ing-count">0</span>
+      </button>
+      <button class="sidebar-item" onclick="switchView('recipes')" data-view="recipes">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M3 1h10a1 1 0 011 1v12a1 1 0 01-1 1H3a1 1 0 01-1-1V2a1 1 0 011-1zm1 3v2h8V4H4zm0 4v1h5V8H4zm0 3v1h8v-1H4z" opacity=".8"/></svg>
+        Recipe Centre
+        <span class="count" id="rec-count">0</span>
+      </button>
+      <button class="sidebar-item" onclick="switchView('reports')" data-view="reports">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M2 1h12a1 1 0 011 1v12a1 1 0 01-1 1H2a1 1 0 01-1-1V2a1 1 0 011-1zm1 2v3h4V3H3zm6 0v3h4V3H9zM3 8v2h10V8H3zm0 4v1h10v-1H3z" opacity=".8"/></svg>
+        Reports &amp; Labels
+      </button>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">Quick Actions</div>
+      <button class="sidebar-item" onclick="openNewIngredientModal()">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2a1 1 0 011 1v4h4a1 1 0 110 2H9v4a1 1 0 11-2 0V9H3a1 1 0 010-2h4V3a1 1 0 011-1z"/></svg>
+        New Ingredient
+      </button>
+      <button class="sidebar-item" onclick="openNewRecipeModal()">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2a1 1 0 011 1v4h4a1 1 0 110 2H9v4a1 1 0 11-2 0V9H3a1 1 0 010-2h4V3a1 1 0 011-1z"/></svg>
+        New Recipe
+      </button>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">Data</div>
+      <button class="sidebar-item" onclick="switchView('export-templates')" data-view="export-templates">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M2 1h12a1 1 0 011 1v12a1 1 0 01-1 1H2a1 1 0 01-1-1V2a1 1 0 011-1zm1 3v2h8V4H3zm0 4v1h5V8H3zm0 3v1h8v-1H3z" opacity=".8"/></svg>
+        Export Templates
+      </button>
+      <button class="sidebar-item" onclick="exportAllData()">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1l4 4h-3v5H7V5H4l4-4zM2 12h12v2H2v-2z" opacity=".8"/></svg>
+        Export All (JSON)
+      </button>
+      <button class="sidebar-item" onclick="openExcelImport()" style="color:var(--nc-green)">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M2 2h5l1 1H14a1 1 0 011 1v9a1 1 0 01-1 1H2a1 1 0 01-1-1V3a1 1 0 011-1zm3.5 4L3 9.5h2V12h1V9.5h2L5.5 6zm5 0L8 9.5h2V12h1V9.5h2L10.5 6z" opacity="0.9"/></svg>
+        Import Excel / CSV
+      </button>
+      <label for="importFile" class="sidebar-item" style="cursor:pointer;display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:none;background:transparent;font:inherit;color:inherit">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 10L4 6h3V1h2v5h3l-4 4zM2 12h12v2H2v-2z" opacity=".8"/></svg>
+        Import Data (JSON)
+      </label>
+      <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+      <button class="sidebar-item" onclick="openConfigureIngredients()" title="Manage ingredient library settings and duplicates">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M6.5 1h3l.5 2H14v3l-2 .5v3L14 10v3H10l-.5 2h-3L6 13H2v-3l2-.5v-3L2 6V3h4l.5-2zM8 6a2 2 0 100 4 2 2 0 000-4z" opacity=".85"/></svg>
+        Configure Ingredients
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main-area">
+
+    <!-- ═══════ DASHBOARD ═══════ -->
+    <div class="view active" id="view-dashboard">
+      <div class="page-header">
+        <h1>Dashboard</h1>
+        <div class="actions">
+          <button class="btn btn-primary" onclick="openNewRecipeModal()">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2a1 1 0 011 1v4h4a1 1 0 110 2H9v4a1 1 0 11-2 0V9H3a1 1 0 010-2h4V3a1 1 0 011-1z"/></svg>
+            New Recipe
+          </button>
+        </div>
+      </div>
+      <div class="grid-3" style="margin-bottom:20px">
+        <div class="stat-card">
+          <div class="stat-label">Total Ingredients</div>
+          <div class="stat-value" id="dash-ing-count">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total Recipes</div>
+          <div class="stat-value" id="dash-rec-count">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">HFSS Flagged</div>
+          <div class="stat-value" id="dash-hfss-count">0</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:20px; border-color:var(--nc-accent); background:var(--nc-accent-light);">
+        <div class="card-header">
+          <h2 style="font-size:15px;">Try the app with sample data</h2>
+        </div>
+        <p style="color:var(--nc-gray-700);font-size:14px;margin-bottom:12px;">Load sample ingredients (55 items, incl. baking) and a Victoria Sponge Cake recipe. Then open <strong>Ingredient Centre</strong> and <strong>Recipe Centre</strong> in the menu to see them.</p>
+        <button class="btn btn-primary" onclick="loadSampleData()">Load sample ingredients + recipe</button>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2>Recent Recipes</h2>
+        </div>
+        <div id="dash-recent-recipes">
+          <div class="empty-state">
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="currentColor"><path d="M10 6h28a2 2 0 012 2v32a2 2 0 01-2 2H10a2 2 0 01-2-2V8a2 2 0 012-2zm2 6v4h24v-4H12zm0 8v2h16v-2H12zm0 6v2h24v-2H12z"/></svg>
+            <h3>No recipes yet</h3>
+            <p>Create your first recipe to see it here, or load sample data above.</p>
+            <button class="btn btn-primary" onclick="openNewRecipeModal()">Create Recipe</button>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:20px">
+        <button type="button" class="btn btn-primary" onclick="switchView('projects')">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M2 2h4v4H2V2zm8 0h4v4h-4V2zM2 10h4v4H2v-4zm8 0h4v4h-4v-4z" opacity=".8"/></svg>
+          Projects
+        </button>
+      </div>
+    </div>
+
+    <!-- ═══════ WASABI APPS ═══════ -->
+    <div class="view" id="view-wasabi-apps">
+      <div class="page-header">
+        <h1>Wasabi Apps</h1>
+        <div class="actions">
+          <!-- Add action buttons here if needed -->
+        </div>
+      </div>
+      <p style="color:var(--nc-gray-500);margin-bottom:16px">Links and tools for Wasabi apps.</p>
+      <div class="ingredient-search-row" style="display:flex;align-items:flex-start;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+        <div class="ingredient-search-wrap" style="flex:1;min-width:200px;">
+          <div class="search-bar" style="margin-bottom:0;">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M6.5 1a5.5 5.5 0 014.38 8.82l3.65 3.65a.75.75 0 01-1.06 1.06l-3.65-3.65A5.5 5.5 0 116.5 1zm0 1.5a4 4 0 100 8 4 4 0 000-8z"/></svg>
+            <input type="text" placeholder="Search apps..." id="wasabi-apps-search" oninput="filterWasabiApps()" onfocus="filterWasabiApps()">
+          </div>
+        </div>
+      </div>
+      <div class="card" id="wasabi-apps-card" style="padding:0;">
+        <div class="card-header" style="margin-bottom:0;">
+          <h2 style="font-size:15px;margin:0;">Apps &amp; links</h2>
+        </div>
+        <div style="padding:20px;">
+          <div class="projects-launch-row" id="wasabi-apps-grid">
+            <button type="button" class="project-launch-btn" onclick="switchView('dashboard')" data-app-name="NutriCost">
+              NutriCost — Recipes &amp; Costing
+            </button>
+            <button type="button" class="project-launch-btn" onclick="openTimelineApp()" data-app-name="Timeline">
+              Timeline — Critical Path
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════ EXPORT TEMPLATES ═══════ -->
+    <div class="view" id="view-export-templates">
+      <div class="page-header">
+        <h1>Export Templates</h1>
+        <div class="actions">
+          <!-- Add actions here if needed -->
+        </div>
+      </div>
+      <p style="font-size:13px;color:var(--nc-gray-500);margin-bottom:16px">Create and edit templates. They can be filled with recipe data when you export. You can also drag an Excel file here to open and edit it.</p>
+      <div class="card" id="export-excel-dropzone-card" style="margin-bottom:20px;border:2px dashed var(--nc-gray-300);background:var(--nc-gray-50);transition:border-color .15s, background .15s;cursor:pointer" onclick="document.getElementById('export-excel-file-input').click()" title="Click or drag an Excel file">
+        <div style="padding:24px;text-align:center;color:var(--nc-gray-600);font-size:14px" id="export-excel-dropzone-inner">
+          <svg width="40" height="40" viewBox="0 0 16 16" fill="currentColor" opacity="0.6" style="margin-bottom:8px;display:inline-block"><path d="M2 1h12a1 1 0 011 1v12a1 1 0 01-1 1H2a1 1 0 01-1-1V2a1 1 0 011-1zm1 3v2h8V4H3zm0 4v1h5V8H3zm0 3v1h8v-1H3z"/></svg>
+          <p style="margin:0 0 4px;font-weight:500">Drop Excel file here to open and edit</p>
+          <p style="margin:0;font-size:12px;color:var(--nc-gray-400)">.xlsx, .xls, .csv — edit in the window and save back</p>
+          <input type="file" id="export-excel-file-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleExportExcelFileSelect(event)">
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h2>Templates</h2></div>
+        <div style="padding:20px;">
+          <div class="photography-grid" id="export-templates-grid">
+            <div id="export-templates-list" class="photography-thumbnails">
+              <!-- Plus and all template cards (text + Excel) are rendered here by renderExportTemplates() -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════ PROJECTS ═══════ -->
+    <div class="view" id="view-projects">
+      <div class="page-header">
+        <h1>Projects</h1>
+        <div class="actions">
+          <!-- Add action buttons here if needed -->
+        </div>
+      </div>
+      <p style="color:var(--nc-gray-500);margin-bottom:16px">Click a project folder to see recipes tagged with that project. Tag recipes in Recipe Centre → open a recipe → Edit name &amp; code → Project folder.</p>
+      <div class="ingredient-search-row" style="display:flex;align-items:flex-start;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+        <div class="ingredient-search-wrap" style="flex:1;min-width:200px;">
+          <div class="search-bar" style="margin-bottom:0;">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M6.5 1a5.5 5.5 0 014.38 8.82l3.65 3.65a.75.75 0 01-1.06 1.06l-3.65-3.65A5.5 5.5 0 116.5 1zm0 1.5a4 4 0 100 8 4 4 0 000-8z"/></svg>
+            <input type="text" placeholder="Search projects..." id="projects-search" oninput="filterProjects()" onfocus="filterProjects()">
+          </div>
+        </div>
+      </div>
+      <div class="card" id="projects-card" style="padding:0;">
+        <div class="card-header" style="margin-bottom:0;">
+          <h2 style="font-size:15px;margin:0;">Project folders</h2>
+        </div>
+        <div style="padding:20px;">
+          <div class="projects-launch-row" id="projects-folders-row">
+            <!-- Populated by renderProjectFolders() -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════ PROJECT RECIPES (Recipe Centre layout for one project) ═══════ -->
+    <div class="view" id="view-project-recipes">
+      <div class="page-header">
+        <h1 id="project-recipes-title">Recipes</h1>
+        <div class="actions">
+          <button type="button" class="btn" onclick="goBack()">← Back</button>
+          <button type="button" class="btn" onclick="openNewIngredientModal()">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2a1 1 0 011 1v4h4a1 1 0 110 2H9v4a1 1 0 11-2 0V9H3a1 1 0 010-2h4V3a1 1 0 011-1z"/></svg>
+            New Ingredient
+          </button>
+          <button type="button" class="btn btn-primary" onclick="openNewRecipeModalForProject()">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2a1 1 0 011 1v4h4a1 1 0 110 2H9v4a1 1 0 11-2 0V9H3a1 1 0 010-2h4V3a1 1 0 011-1z"/></svg>
+            New Recipe
+          </button>
+        </div>
+      </div>
+      <p style="color:var(--nc-gray-500);margin-bottom:16px" id="project-recipes-subtitle">Recipes in this project. Create new recipes here (they are auto-tagged) or tag existing recipes in Recipe Centre → Edit name &amp; code → Project folder.</p>
+      <div class="ingredient-search-row" style="display:flex;align-items:flex-start;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+        <div class="recipe-search-wrap" style="flex:1;min-width:200px;position:relative;display:flex;gap:8px;align-items:stretch">
+          <div class="search-bar" style="margin-bottom:0;flex:1;">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M6.5 1a5.5 5.5 0 014.38 8.82l3.65 3.65a.75.75 0 01-1.06 1.06l-3.65-3.65A5.5 5.5 0 116.5 1zm0 1.5a4 4 0 100 8 4 4 0 000-8z"/></svg>
+            <input type="text" placeholder="Search recipes in this project..." id="project-recipes-search" oninput="filterProjectRecipes()" onfocus="filterProjectRecipes()" onkeydown="if(event.key==='Enter'){event.preventDefault();filterProjectRecipes();}">
+          </div>
+          <button type="button" class="btn" onclick="filterProjectRecipes()" title="Filter recipe list">Search</button>
+        </div>
+        <select class="form-select" id="project-recipe-filter" onchange="setProjectRecipeFilter(this.value)" style="width:auto;min-width:160px" title="Filter by status">
+          <option value="all">All</option>
+          <option value="approved">Approved only</option>
+          <option value="development">Development only</option>
+        </select>
+        <select class="form-select" id="project-recipe-type-filter" onchange="setProjectRecipeFilter()" style="width:auto;min-width:160px" title="Filter by recipe kind">
+          <option value="all">All kinds</option>
+          <option value="finishedProduct">Finished product</option>
+          <option value="subRecipe">Sub recipe</option>
+          <option value="ingredients">Ingredients</option>
+          <option value="packaging">Packaging</option>
+        </select>
+        <label class="form-label" style="display:flex;align-items:center;gap:6px;margin:0;cursor:pointer;font-size:13px;white-space:nowrap">
+          <input type="checkbox" id="project-recipe-include-delisted" onchange="setProjectRecipeFilter()">
+          Include delisted
+        </label>
+      </div>
+
+      <div class="card" id="project-recipes-card" style="padding:0;">
+        <div class="card-header" style="margin-bottom:0;">
+          <h2 style="font-size:15px;">Recipes in this project</h2>
+          <span style="font-size:12px;color:var(--nc-gray-400)" id="project-recipes-count-label">0 recipes</span>
+        </div>
+        <div class="recipes-table-scroll" id="project-recipes-table-scroll" style="overflow:auto;-webkit-overflow-scrolling:touch;max-height:min(65vh, 600px);">
+          <table class="data-table recipe-centre-table">
+            <thead>
+              <tr>
+                <th>Recipe Name</th>
+                <th>Code</th>
+                <th class="recipe-centre-col-ing-count"># Ing</th>
+                <th>Energy (kJ)</th>
+                <th>Protein (g)</th>
+                <th>Fat (g)</th>
+                <th>Carbs (g)</th>
+                <th>Fibre (g)</th>
+                <th>Salt (g)</th>
+                <th>HFSS</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="project-recipes-body">
+            </tbody>
+          </table>
+        </div>
+        <div id="project-recipes-empty" class="empty-state" style="padding:40px; display:none;">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="currentColor"><path d="M10 6h28a2 2 0 012 2v32a2 2 0 01-2 2H10a2 2 0 01-2-2V8a2 2 0 012-2zm2 6v4h24v-4H12zm0 8v2h16v-2H12zm0 6v2h24v-2H12z"/></svg>
+          <h3>No recipes in this project</h3>
+          <p>Create a recipe or ingredient with the buttons above. New recipes are auto-tagged with this project. Or tag existing recipes in Recipe Centre → Edit name &amp; code → Project folder.</p>
+          <button class="btn" onclick="openNewIngredientModal()">Create Ingredient</button>
+          <button class="btn btn-primary" onclick="openNewRecipeModalForProject()" style="margin-left:8px">Create Recipe</button>
+          <button class="btn" onclick="goBack()" style="margin-left:8px">Back</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════ INGREDIENT CENTRE ═══════ -->
+    <div class="view" id="view-ingredients">
+      <div class="page-header">
+        <h1>Ingredient Centre</h1>
+        <div class="actions">
+          <button class="btn" onclick="openExcelImport()" style="color:var(--nc-green);border-color:var(--nc-green)">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M2 2h5l1 1H14a1 1 0 011 1v9a1 1 0 01-1 1H2a1 1 0 01-1-1V3a1 1 0 011-1zm4 4l-3 3h2v3h2v-3h2l-3-3z"/></svg>
+            Import Excel / CSV
+          </button>
+          <button class="btn" onclick="loadSampleIngredients()">Load Sample DB</button>
+          <button class="btn btn-primary" onclick="openNewIngredientModal()">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2a1 1 0 011 1v4h4a1 1 0 110 2H9v4a1 1 0 11-2 0V9H3a1 1 0 010-2h4V3a1 1 0 011-1z"/></svg>
+            New Ingredient
+          </button>
+        </div>
+      </div>
+      <div class="ingredient-search-row" style="display:flex;align-items:flex-start;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+        <div class="ingredient-search-wrap" style="flex:1;min-width:200px;">
+          <div class="search-bar" style="margin-bottom:0;">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M6.5 1a5.5 5.5 0 014.38 8.82l3.65 3.65a.75.75 0 01-1.06 1.06l-3.65-3.65A5.5 5.5 0 116.5 1zm0 1.5a4 4 0 100 8 4 4 0 000-8z"/></svg>
+            <input type="text" placeholder="Search ingredients by name or category..." id="ingredient-search" oninput="searchIngredientLibrary()" onfocus="searchIngredientLibrary()" onkeydown="handleIngredientSearchKeydown(event)">
+          </div>
+          <div class="ingredient-dropdown" id="ingredient-library-dropdown"></div>
+        </div>
+        <select class="form-select" id="ingredient-filter" onchange="setIngredientFilter(this.value)" style="width:auto;min-width:160px" title="Filter by status">
+          <option value="all">All ingredients</option>
+          <option value="approved">Approved only</option>
+          <option value="development">Development only</option>
+        </select>
+        <select class="form-select" id="ingredient-type-filter" onchange="setIngredientFilter()" style="width:auto;min-width:160px" title="Filter by type">
+          <option value="all">All kinds</option>
+          <option value="ingredients">Ingredients only</option>
+          <option value="packaging">Packaging only</option>
+          <option value="other">Other</option>
+        </select>
+        <label class="form-label" style="display:flex;align-items:center;gap:6px;margin:0;cursor:pointer;font-size:13px;white-space:nowrap">
+          <input type="checkbox" id="ingredient-include-delisted" onchange="setIngredientFilter()">
+          Include delisted
+        </label>
+        <label class="form-label" style="display:flex;align-items:center;gap:6px;margin:0;cursor:pointer;font-size:13px;white-space:nowrap">
+          <input type="checkbox" id="ingredient-include-unlinked" onchange="setIngredientFilter()">
+          Include unlinked
+        </label>
+      </div>
+
+      <div class="card" id="ingredients-card" style="padding:0;">
+        <div class="card-header" style="margin-bottom:0;">
+          <span style="font-size:12px;color:var(--nc-gray-400)" id="ingredients-count-label">0 ingredients</span>
+        </div>
+        <div class="ingredients-table-scroll" style="overflow:auto; -webkit-overflow-scrolling:touch; max-height:min(65vh, 600px);">
+          <table class="data-table ingredient-centre-table">
+            <thead>
+              <tr>
+                <th id="ingredient-sort-header-name" onclick="toggleIngredientSort('name')" style="cursor:pointer;user-select:none" title="Click to sort by name">Ingredient Name <span id="ingredient-sort-arrow-name"></span></th>
+                <th>Code</th>
+                <th>Category</th>
+                <th>Energy (kJ)</th>
+                <th>Protein (g)</th>
+                <th>Fat (g)</th>
+                <th>Carbs (g)</th>
+                <th>Fibre (g)</th>
+                <th>Salt (g)</th>
+                <th>Cost</th>
+                <th>UOM</th>
+                <th id="ingredient-sort-header-supplier" onclick="toggleIngredientSort('supplier')" style="cursor:pointer;user-select:none" title="Click to sort by supplier">Supplier <span id="ingredient-sort-arrow-supplier"></span></th>
+                <th>Allergens</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="ingredients-body">
+            </tbody>
+          </table>
+        </div>
+        <div id="ingredients-empty" class="empty-state" style="padding:24px; display:none;">
+          <h3>No ingredients yet</h3>
+          <p>Click <strong>Load Sample DB</strong> above, or use the Dashboard &quot;Load sample ingredients + recipe&quot; button.</p>
+          <button class="btn btn-primary" onclick="loadSampleData()">Load sample ingredients + recipe</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════ RECIPE CENTRE ═══════ -->
+    <div class="view" id="view-recipes">
+      <div class="page-header">
+        <h1>Recipe Centre</h1>
+        <div class="actions">
+          <button class="btn" onclick="loadSampleRecipes()">Load sample recipe (Victoria Sponge)</button>
+          <button class="btn btn-primary" onclick="openNewRecipeModal()">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2a1 1 0 011 1v4h4a1 1 0 110 2H9v4a1 1 0 11-2 0V9H3a1 1 0 010-2h4V3a1 1 0 011-1z"/></svg>
+            New Recipe
+          </button>
+        </div>
+      </div>
+      <div class="ingredient-search-row" style="display:flex;align-items:flex-start;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+        <div class="recipe-search-wrap" style="flex:1;min-width:200px;position:relative;display:flex;gap:8px;align-items:stretch">
+          <div class="search-bar" style="margin-bottom:0;flex:1;">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M6.5 1a5.5 5.5 0 014.38 8.82l3.65 3.65a.75.75 0 01-1.06 1.06l-3.65-3.65A5.5 5.5 0 116.5 1zm0 1.5a4 4 0 100 8 4 4 0 000-8z"/></svg>
+            <input type="text" placeholder="Search recipes by name or code..." id="recipe-search" oninput="searchRecipeLibrary()" onfocus="searchRecipeLibrary()" onkeydown="if(event.key==='Enter'){event.preventDefault();applyRecipeSearch();}">
+          </div>
+          <button type="button" class="btn" onclick="applyRecipeSearch()" title="Search and filter recipe library">Search</button>
+          <div class="ingredient-dropdown" id="recipe-library-dropdown"></div>
+        </div>
+        <select class="form-select" id="recipe-filter" onchange="setRecipeFilter(this.value)" style="width:auto;min-width:160px" title="Filter by status">
+          <option value="all">All recipes</option>
+          <option value="approved">Approved only</option>
+          <option value="development">Development only</option>
+        </select>
+        <select class="form-select" id="recipe-type-filter" onchange="setRecipeFilter()" style="width:auto;min-width:160px" title="Filter by recipe kind">
+          <option value="all">All kinds</option>
+          <option value="finishedProduct">Finished product</option>
+          <option value="subRecipe">Sub recipe</option>
+        </select>
+        <label class="form-label" style="display:flex;align-items:center;gap:6px;margin:0;cursor:pointer;font-size:13px;white-space:nowrap">
+          <input type="checkbox" id="recipe-include-delisted" onchange="setRecipeFilter()">
+          Include delisted
+        </label>
+      </div>
+
+      <div class="card" id="recipes-card" style="padding:0;">
+        <div class="card-header" style="margin-bottom:0;">
+          <h2 style="font-size:15px;">Recipe library</h2>
+          <span style="font-size:12px;color:var(--nc-gray-400)" id="recipes-count-label">0 recipes</span>
+        </div>
+        <div class="recipes-table-scroll" style="overflow:auto;-webkit-overflow-scrolling:touch;max-height:min(65vh, 600px);">
+          <table class="data-table recipe-centre-table">
+            <thead>
+              <tr>
+                <th>Recipe Name</th>
+                <th>Code</th>
+                <th class="recipe-centre-col-ing-count"># Ing</th>
+                <th>Energy (kJ)</th>
+                <th>Protein (g)</th>
+                <th>Fat (g)</th>
+                <th>Carbs (g)</th>
+                <th>Fibre (g)</th>
+                <th>Salt (g)</th>
+                <th>HFSS</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="recipes-body">
+            </tbody>
+          </table>
+        </div>
+        <div id="recipes-empty" class="empty-state" style="padding:40px; display:none;">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="currentColor"><path d="M10 6h28a2 2 0 012 2v32a2 2 0 01-2 2H10a2 2 0 01-2-2V8a2 2 0 012-2zm2 6v4h24v-4H12zm0 8v2h16v-2H12zm0 6v2h24v-2H12z"/></svg>
+          <h3>No recipes yet</h3>
+          <p>Load sample data first (Dashboard or <strong>Load sample recipe</strong> above), then you&apos;ll see the Victoria Sponge here.</p>
+          <button class="btn btn-primary" onclick="loadSampleData()">Load sample ingredients + recipe</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════ RECIPE DETAIL ═══════ -->
+    <div class="view" id="view-recipe-detail">
+      <div class="page-header">
+        <h1 id="recipe-detail-title" oncontextmenu="return handleRecipeTitleContextMenu(event)" style="cursor:context-menu">Recipe</h1>
+        <div class="actions">
+          <span class="badge badge-status" id="recipe-detail-status-badge">In development</span>
+          <span class="badge" id="recipe-detail-kind-badge">Finished product</span>
+          <button class="btn btn-sm btn-primary" id="recipe-detail-edit-btn" onclick="openEditRecipeNameModal()">Edit</button>
+          <!-- Nested dropdown: trigger row opens submenu (onmouseenter); other rows close submenu (onmouseenter); submenu closes on leave (onmouseleave). See app.js "Nested dropdown pattern". -->
+          <div class="dropdown-wrap" style="position:relative;display:inline-block">
+            <button class="btn btn-sm" id="recipe-detail-export-btn" onclick="toggleExportDropdown(event)">Export</button>
+            <div class="dropdown-panel" id="recipe-export-dropdown" style="display:none">
+              <button type="button" class="dropdown-item" id="export-all-data-btn" onmouseenter="openAllDataSubmenu(event)">All Data <span style="float:right;">&#8594;</span></button>
+              <button type="button" class="dropdown-item" id="export-option1-btn" onmouseenter="openOption1Submenu(event)">BC Form <span style="float:right;">&#8594;</span></button>
+              <button type="button" class="dropdown-item" id="export-option2-btn" onmouseenter="openOption2Submenu(event)">Option 2 <span style="float:right;">&#8594;</span></button>
+            </div>
+            <div class="dropdown-panel" id="recipe-export-all-data-submenu" style="display:none;position:absolute;min-width:140px;" onmouseleave="closeAllDataSubmenu()">
+              <button type="button" class="dropdown-item" onclick="closeExportDropdown()">Excel</button>
+              <button type="button" class="dropdown-item" onclick="closeExportDropdown()">PDF</button>
+            </div>
+            <div class="dropdown-panel" id="recipe-export-option1-submenu" style="display:none;position:absolute;min-width:140px;" onmouseleave="closeOption1Submenu()">
+              <button type="button" class="dropdown-item" onclick="exportRecipeToBCFormExcel(); closeExportDropdown();">Excel</button>
+              <button type="button" class="dropdown-item" onclick="closeExportDropdown()">PDF</button>
+            </div>
+            <div class="dropdown-panel" id="recipe-export-option2-submenu" style="display:none;position:absolute;min-width:140px;" onmouseleave="closeOption2Submenu()">
+              <button type="button" class="dropdown-item" onclick="closeExportDropdown()">Excel</button>
+              <button type="button" class="dropdown-item" onclick="closeExportDropdown()">PDF</button>
+            </div>
+          </div>
+          <button class="btn btn-sm" id="recipe-detail-toggle-approved" onclick="toggleRecipeApproved()">Mark as approved</button>
+          <button class="btn" onclick="duplicateCurrentRecipe()">Duplicate</button>
+          <button class="btn btn-danger" onclick="deleteCurrentRecipe()">Delete</button>
+          <button class="btn" onclick="switchView(window.recipeDetailBackView || 'recipes')">← Back</button>
+        </div>
+      </div>
+      <div id="recipe-detail-meta" style="margin-top:8px;">
+        <span id="recipe-detail-code" style="font-size:13px;color:var(--nc-gray-500);font-family:var(--nc-mono);"></span>
+      </div>
+      <div id="recipe-detail-tags" style="font-size:12px;color:var(--nc-gray-500);margin-top:6px;"></div>
+      <div id="recipe-detail-desc" style="color:var(--nc-gray-500);margin-top:8px;margin-bottom:20px;font-size:13px;"></div>
+
+      <!-- Recipe Tabs -->
+      <div class="tabs" id="recipe-tabs">
+        <button class="tab-btn active" onclick="switchRecipeTab('ingredients')">Ingredients</button>
+        <button class="tab-btn" onclick="switchRecipeTab('method')">All Data</button>
+        <button class="tab-btn" onclick="switchRecipeTab('nutrition')">Nutrition</button>
+        <button class="tab-btn" onclick="switchRecipeTab('label')">Label</button>
+        <button class="tab-btn" onclick="switchRecipeTab('hfss')">HFSS Score</button>
+        <button class="tab-btn" onclick="switchRecipeTab('allergens')">Allergens</button>
+        <button class="tab-btn" onclick="switchRecipeTab('costing')">Costing</button>
+        <button class="tab-btn" onclick="switchRecipeTab('photography')">Photography</button>
+      </div>
+
+      <!-- Tab: Ingredients -->
+      <div class="tab-pane active" id="tab-ingredients">
+        <div class="card">
+          <div class="card-header">
+            <h2>Recipe Ingredients</h2>
+            <span style="font-size:12px;color:var(--nc-gray-400)"><span id="total-weight-label">Total weight: </span><strong id="total-weight">0g</strong></span>
+          </div>
+          <div class="ingredient-search-wrap" style="margin-bottom:12px">
+            <input class="form-input" type="text" placeholder="Type to search & add ingredient..." id="recipe-ing-search" oninput="searchIngredientForRecipe()" onfocus="searchIngredientForRecipe()">
+            <div class="ingredient-dropdown" id="recipe-ing-dropdown"></div>
+          </div>
+          <table class="data-table" id="recipe-ingredients-table">
+            <thead>
+              <tr>
+                <th style="width:90px">Code</th>
+                <th>Ingredient</th>
+                <th style="width:120px">Qty</th>
+                <th style="width:90px">QTY per BUOM</th>
+                <th style="width:80px">% Recipe</th>
+                <th style="width:70px" title="% of input weight lost in prep (e.g. chopping/trimming) for single-ingredient sub-recipes. Affects cost only.">Scrap %</th>
+                <th style="width:90px">Cost per UOM (£)</th>
+                <th style="width:80px">Line Cost</th>
+                <th style="width:70px">FVN</th>
+                <th style="width:50px"></th>
+              </tr>
+            </thead>
+            <tbody id="recipe-ingredients-body">
+            </tbody>
+          </table>
+          <div id="recipe-ing-empty" style="text-align:center;padding:20px;color:var(--nc-gray-400);font-size:13px;">
+            Search and add ingredients above
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Method -->
+      <div class="tab-pane" id="tab-method">
+        <div class="card">
+          <div class="card-header"><h2>How it is made</h2></div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+            <button type="button" class="btn btn-sm method-source-btn active" id="method-source-kitchen" onclick="switchMethodSource('kitchen')">Kitchen Made</button>
+            <span style="color:var(--nc-gray-400);font-weight:400">|</span>
+            <button type="button" class="btn btn-sm method-source-btn" id="method-source-factory" onclick="switchMethodSource('factory')">Factory Made</button>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Method / Instructions</label>
+            <div id="method-kitchen-wrap" style="display:block">
+              <textarea class="form-textarea" id="recipe-method-kitchen-text" placeholder="Describe how the recipe is made in the kitchen..." rows="6" oninput="saveRecipeMethodField()"></textarea>
+            </div>
+            <div id="method-factory-wrap" style="display:none">
+              <textarea class="form-textarea" id="recipe-method-factory-text" placeholder="Describe how the recipe is made in the factory..." rows="6" oninput="saveRecipeMethodField()"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Nutrition -->
+      <div class="tab-pane" id="tab-nutrition">
+        <div class="grid-3" style="margin-bottom:16px">
+          <div class="stat-card">
+            <div class="stat-label">Energy</div>
+            <div class="stat-value" id="nut-energy">0 <span class="stat-unit">kJ</span></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Energy</div>
+            <div class="stat-value" id="nut-kcal">0 <span class="stat-unit">kcal</span></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Protein</div>
+            <div class="stat-value" id="nut-protein">0 <span class="stat-unit">g</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <h2>Full Nutrition Profile — per 100g</h2>
+          </div>
+          <table class="data-table">
+            <thead>
+              <tr><th>Nutrient</th><th>Per 100g</th><th>Per Serving</th><th>%RI*</th></tr>
+            </thead>
+            <tbody id="nutrition-table-body"></tbody>
+          </table>
+          <p style="font-size:11px;color:var(--nc-gray-400);margin-top:8px;">*Reference Intakes based on an average adult (8400kJ / 2000kcal)</p>
+        </div>
+        <div class="card">
+          <div class="card-header"><h2>Front of Pack — Traffic Lights</h2></div>
+          <div class="traffic-lights" id="traffic-lights"></div>
+          <p style="font-size:11px;color:var(--nc-gray-400);margin-top:4px">UK Front of Pack colour coding per 100g (food thresholds)</p>
+        </div>
+      </div>
+
+      <!-- Tab: Label -->
+      <div class="tab-pane" id="tab-label">
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header"><h2>Nutrition Declaration — UK/EU</h2>
+              <button class="btn btn-sm" onclick="printLabel()">Print / PDF</button>
+            </div>
+            <div id="label-container"></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><h2>Ingredient Declaration</h2></div>
+            <div id="ingredient-declaration" style="font-size:13px;line-height:1.7"></div>
+            <div style="margin-top:12px">
+              <div class="card-header" style="margin-bottom:8px"><h2>Label Settings</h2></div>
+              <div class="form-group">
+                <label class="form-label">Serving Size (g)</label>
+                <input class="form-input" type="number" id="serving-size-input" value="100" min="1" oninput="recalcCurrentRecipe()">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Label Format</label>
+                <select class="form-select" id="label-format" onchange="recalcCurrentRecipe()">
+                  <option value="uk">UK / EU</option>
+                  <option value="us">USA (Nutrition Facts)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: HFSS -->
+      <div class="tab-pane" id="tab-hfss">
+        <div class="card">
+          <div class="card-header">
+            <h2>UK Nutrient Profile / HFSS Score</h2>
+            <span class="badge" id="hfss-badge">—</span>
+          </div>
+          <p style="font-size:12px;color:var(--nc-gray-500);margin-bottom:16px">
+            Foods scoring 4+ points are classified as HFSS (High Fat, Sugar &amp; Salt). Drinks scoring 1+ are HFSS.
+          </p>
+          <div class="hfss-score-display" id="hfss-display"></div>
+          <div class="card" style="background:var(--nc-gray-50);border:1px dashed var(--nc-gray-300)">
+            <h3 style="font-size:13px;font-weight:600;margin-bottom:8px">Reformulation Tips</h3>
+            <div id="hfss-tips" style="font-size:13px;color:var(--nc-gray-600)"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h2>Nutri-Score (EU)</h2></div>
+          <div id="nutri-score-display" style="display:flex;gap:4px;margin-bottom:8px"></div>
+          <p style="font-size:12px;color:var(--nc-gray-500)" id="nutri-score-info"></p>
+        </div>
+      </div>
+
+      <!-- Tab: Allergens -->
+      <div class="tab-pane" id="tab-allergens">
+        <div class="card">
+          <div class="card-header"><h2>Allergen Summary — 14 EU/UK Allergens</h2></div>
+          <div class="allergen-tags" id="allergen-tags"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h2>Allergen Matrix by Ingredient</h2></div>
+          <div style="overflow-x:auto">
+            <table class="data-table" id="allergen-matrix"></table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Costing -->
+      <div class="tab-pane" id="tab-costing">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:16px">
+          <div class="stat-card">
+            <div class="stat-label">Total Recipe Cost</div>
+            <div class="stat-value" id="cost-total">£0.00</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Cost per Serving</div>
+            <div class="stat-value" id="cost-per-serving">£0.00</div>
+            <div style="font-size:11px;color:var(--nc-gray-400);margin-top:2px" id="cost-serving-note"></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Cost per 100g</div>
+            <div class="stat-value" id="cost-per100">£0.00</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Cost per kg</div>
+            <div class="stat-value" id="cost-per-kg">£0.00</div>
+          </div>
+        </div>
+
+        <!-- Margin / Pricing Calculator -->
+        <div class="card">
+          <div class="card-header"><h2>Pricing &amp; Margin Calculator</h2></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">
+            <div class="form-group">
+              <label class="form-label">Target Sell Price (£)</label>
+              <input class="form-input" type="number" id="cost-sell-price" step="any" min="0" value="" placeholder="e.g. 3.50" oninput="recalcMargins()">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Target Margin (%)</label>
+              <input class="form-input" type="number" id="cost-target-margin" step="any" min="0" max="100" value="" placeholder="e.g. 65" oninput="recalcMarginFromPct()">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Yield / Servings per Batch</label>
+              <input class="form-input" type="number" id="cost-yield" step="any" min="1" value="1" oninput="recalcMargins()">
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px" id="margin-results">
+            <div class="stat-card" style="border-color:var(--nc-green);background:var(--nc-green-light)">
+              <div class="stat-label" style="color:#059669">Gross Profit / Unit</div>
+              <div class="stat-value" style="font-size:20px;color:#065F46" id="margin-profit">—</div>
+            </div>
+            <div class="stat-card" style="border-color:var(--nc-green);background:var(--nc-green-light)">
+              <div class="stat-label" style="color:#059669">Gross Margin %</div>
+              <div class="stat-value" style="font-size:20px;color:#065F46" id="margin-pct">—</div>
+            </div>
+            <div class="stat-card" style="border-color:var(--nc-accent);background:var(--nc-accent-light)">
+              <div class="stat-label" style="color:#0284C7">Markup %</div>
+              <div class="stat-value" style="font-size:20px;color:#0284C7" id="margin-markup">—</div>
+            </div>
+            <div class="stat-card" style="border-color:var(--nc-amber);background:var(--nc-amber-light)">
+              <div class="stat-label" style="color:#92400E">Min Sell Price for Target Margin</div>
+              <div class="stat-value" style="font-size:20px;color:#92400E" id="margin-min-price">—</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cost Breakdown Table -->
+        <div class="card">
+          <div class="card-header">
+            <h2>Cost Breakdown by Ingredient</h2>
+            <span style="font-size:12px;color:var(--nc-gray-400)" id="cost-missing-note"></span>
+          </div>
+          <table class="data-table">
+            <thead><tr><th>Ingredient</th><th>Qty</th><th style="width:100px">Cost per UOM (£)</th><th>Line Cost</th><th>% of Total</th></tr></thead>
+            <tbody id="costing-table-body"></tbody>
+            <tfoot id="costing-table-foot"></tfoot>
+          </table>
+        </div>
+
+        <!-- Cost Comparison -->
+        <div class="card">
+          <div class="card-header"><h2>Cost Summary</h2></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+            <div>
+              <table class="data-table" style="font-size:13px">
+                <tbody>
+                  <tr><td class="bold">Total recipe weight</td><td class="num" id="cost-sum-weight">—</td></tr>
+                  <tr><td class="bold">Total recipe cost</td><td class="num" id="cost-sum-total">—</td></tr>
+                  <tr><td class="bold">Cost per 100g</td><td class="num" id="cost-sum-100g">—</td></tr>
+                  <tr><td class="bold">Cost per kg</td><td class="num" id="cost-sum-kg">—</td></tr>
+                  <tr><td class="bold">Cost per serving</td><td class="num" id="cost-sum-serving">—</td></tr>
+                  <tr><td class="bold">Cost per kcal</td><td class="num" id="cost-sum-kcal">—</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div>
+              <div style="background:var(--nc-gray-50);border-radius:var(--nc-radius);padding:12px">
+                <p style="font-size:12px;font-weight:600;color:var(--nc-gray-500);margin-bottom:8px">MOST EXPENSIVE INGREDIENTS</p>
+                <div id="cost-top-ingredients"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Photography -->
+      <div class="tab-pane" id="tab-photography">
+        <div class="card">
+          <div class="card-header"><h2>Photos &amp; Screenshots</h2></div>
+          <p style="font-size:13px;color:var(--nc-gray-500);margin-bottom:16px">Upload photos and screenshots of your products for this recipe.</p>
+          <div class="photography-grid" id="photography-grid">
+            <div id="photography-thumbnails" class="photography-thumbnails"></div>
+            <button type="button" class="photography-add-box" id="photography-add-btn" onclick="triggerRecipePhotoUpload()" title="Upload photo or screenshot">
+              <svg width="32" height="32" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2a.75.75 0 01.75.75v4.5h4.5a.75.75 0 010 1.5h-4.5v4.5a.75.75 0 01-1.5 0v-4.5h-4.5a.75.75 0 010-1.5h4.5v-4.5A.75.75 0 018 2z"/></svg>
+              <span>Add photo</span>
+            </button>
+          </div>
+          <input type="file" id="recipe-photo-input" accept="image/*" multiple style="display:none" onchange="handleRecipePhotoUpload(event)">
+        </div>
+      </div>
+    </div>
+  </div>
+
+    <!-- ═══════ REPORTS ═══════ -->
+    <div class="view" id="view-reports">
+      <div class="page-header">
+        <h1>Reports &amp; Labels</h1>
+      </div>
+      <p style="color:var(--nc-gray-500);margin-bottom:20px">Select a recipe to generate reports. All reports are calculated per 100g and per serving.</p>
+      <div class="card">
+        <div class="card-header"><h2>Generate Report</h2></div>
+        <div class="form-group">
+          <label class="form-label">Select Recipe</label>
+          <select class="form-select" id="report-recipe-select" onchange="previewReport()">
+            <option value="">— Choose a recipe —</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Report Type</label>
+          <select class="form-select" id="report-type-select" onchange="previewReport()">
+            <option value="nutrition">Nutrition Declaration (UK/EU)</option>
+            <option value="ingredients">Ingredient Declaration</option>
+            <option value="allergens">Allergen Report</option>
+            <option value="hfss">HFSS / Nutrient Profile Report</option>
+            <option value="costing">Recipe Costing Report</option>
+            <option value="full">Full Combined Report</option>
+          </select>
+        </div>
+        <div id="report-preview" style="margin-top:16px"></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ═══════ MODALS ═══════ -->
+
+<!-- New / Edit Ingredient Modal -->
+<div class="modal-overlay" id="modal-ingredient">
+  <div class="modal" style="width:600px">
+    <div class="modal-title" id="modal-ingredient-title-text">New Ingredient</div>
+    <div id="ingredient-version-readonly-banner" style="display:none;background:var(--nc-amber-light,#fff7e6);border:1px solid var(--nc-amber,#e0a800);border-radius:6px;padding:8px 12px;font-size:12px;margin-bottom:12px">
+      Viewing a past version — read-only. <a href="#" onclick="selectIngredientVersion('latest');return false">Switch to latest</a> to edit.
+    </div>
+    <div class="form-row">
+      <div class="form-group" style="flex:2">
+        <label class="form-label">Ingredient Name</label>
+        <input class="form-input" type="text" id="new-ing-name" placeholder="e.g. Whole Wheat Flour">
+      </div>
+      <div class="form-group" style="flex:0 0 90px">
+        <label class="form-label">Version</label>
+        <select class="form-select" id="ingredient-version-select" onchange="onIngredientVersionSelectChange()" style="display:none;font-size:12px;padding:4px 6px;width:100%"></select>
+      </div>
+      <div class="form-group" style="flex:1">
+        <label class="form-label">Category</label>
+        <select class="form-select" id="new-ing-cat">
+          <option>Raw Material</option>
+          <option>Cereals & Grains</option>
+          <option>Dairy</option>
+          <option>Eggs</option>
+          <option>Fats & Oils</option>
+          <option>Fish & Seafood</option>
+          <option>Fruits</option>
+          <option>Meat & Poultry</option>
+          <option>Nuts & Seeds</option>
+          <option>Sugars & Syrups</option>
+          <option>Vegetables</option>
+          <option>Herbs & Spices</option>
+          <option>Beverages</option>
+          <option>Packaging</option>
+          <option>Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Description tags</label>
+      <input class="form-input" type="text" id="new-ing-description-tags" placeholder="e.g. vegan, gluten-free, organic (comma-separated, searchable)">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Code</label>
+        <input class="form-input" type="text" id="new-ing-code" placeholder="e.g. SKU or product code (from costs)">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Secondary code</label>
+        <input class="form-input" type="text" id="new-ing-secondary-code" placeholder="e.g. alternate codes (comma-separated)">
+      </div>
+    </div>
+    <p style="font-size:11px;color:var(--nc-gray-400);margin-bottom:8px;font-weight:600">NUTRITION VALUES PER 100g</p>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Energy (kJ)</label><input class="form-input" type="number" id="new-ing-kj" step="any"></div>
+      <div class="form-group"><label class="form-label">Energy (kcal)</label><input class="form-input" type="number" id="new-ing-kcal" step="any"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Fat (g)</label><input class="form-input" type="number" id="new-ing-fat" step="any"></div>
+      <div class="form-group"><label class="form-label">Saturates (g)</label><input class="form-input" type="number" id="new-ing-sat" step="any"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Carbohydrate (g)</label><input class="form-input" type="number" id="new-ing-carb" step="any"></div>
+      <div class="form-group"><label class="form-label">Sugars (g)</label><input class="form-input" type="number" id="new-ing-sugar" step="any"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Fibre (g)</label><input class="form-input" type="number" id="new-ing-fibre" step="any"></div>
+      <div class="form-group"><label class="form-label">Protein (g)</label><input class="form-input" type="number" id="new-ing-protein" step="any"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Salt (g)</label><input class="form-input" type="number" id="new-ing-salt" step="any"></div>
+    </div>
+    <p style="font-size:11px;color:var(--nc-gray-400);margin:8px 0 4px;font-weight:600">COST &amp; SUPPLIER</p>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Cost</label>
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <select class="form-select" id="new-ing-currency" style="width:56px;padding:6px 8px;font-size:13px">
+            <option value="£">£</option>
+            <option value="$">$</option>
+          </select>
+          <input class="form-input" type="number" id="new-ing-cost" step="any" placeholder="e.g. 2.50" style="flex:1;min-width:80px">
+          <span style="font-size:12px;color:var(--nc-gray-500)">per</span>
+          <select class="form-select" id="new-ing-cost-uom" style="width:70px;padding:6px 8px;font-size:13px" onchange="syncIngredientDensityField()">
+            <option value="">—</option>
+            <option value="G">G</option>
+            <option value="KG">KG</option>
+            <option value="L">L</option>
+            <option value="ML">ML</option>
+            <option value="M">M</option>
+            <option value="EACH">EACH</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Density (kg/L)</label>
+        <input class="form-input" type="number" id="new-ing-density" step="any" min="0.001" placeholder="1" title="Used to convert between KG and L in recipes. N/A for EACH or M.">
+        <p style="font-size:11px;color:var(--nc-gray-400);margin:2px 0 0" id="new-ing-density-hint">Optional. Default 1. Used when switching ingredient between KG and L in a recipe.</p>
+      </div>
+      <div class="form-group"><label class="form-label">Supplier</label><input class="form-input" type="text" id="new-ing-supplier" placeholder="e.g. Supplier name"></div>
+    </div>
+    <p style="font-size:11px;color:var(--nc-gray-400);margin:8px 0 4px;font-weight:600">ALLERGENS (select all that apply)</p>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px" id="new-ing-allergens"></div>
+    <div class="form-group">
+      <label class="form-label" style="display:flex;align-items:center;gap:6px">
+        <input type="checkbox" id="new-ing-fvn"> Fruit, Vegetable or Nut (FVN eligible for HFSS)
+      </label>
+    </div>
+    <div class="form-group">
+      <label class="form-label" style="display:flex;align-items:center;gap:8px;font-weight:600">
+        <input type="checkbox" id="new-ing-approved"> Approved (production use)
+      </label>
+      <p style="font-size:11px;color:var(--nc-gray-400);margin-top:2px">Unchecked = development ingredient (kept separate from approved list)</p>
+    </div>
+    <div class="form-group ingredient-detail-sections" style="border-top:1px solid var(--nc-gray-200);margin-top:12px;padding-top:12px">
+      <details id="ingredient-where-used-details" style="cursor:pointer">
+        <summary style="font-size:13px;font-weight:600;color:var(--nc-gray-700)" id="ingredient-where-used-summary">Where used</summary>
+        <p style="font-size:12px;color:var(--nc-gray-500);margin:8px 0 6px">Recipes that use this ingredient.</p>
+        <div id="ingredient-where-used-list" style="max-height:200px;overflow:auto;margin-top:6px"></div>
+      </details>
+    </div>
+    <div class="form-group ingredient-detail-sections" style="border-top:1px solid var(--nc-gray-200);margin-top:12px;padding-top:12px">
+      <details id="ingredient-version-history-details" style="cursor:pointer">
+        <summary style="font-size:13px;font-weight:600;color:var(--nc-gray-700)" id="ingredient-version-history-summary">Version History</summary>
+        <p style="font-size:12px;color:var(--nc-gray-500);margin:8px 0 6px">Each time this ingredient was edited and saved.</p>
+        <div id="ingredient-version-history-list" style="max-height:150px;overflow:auto;margin-top:6px;font-size:13px;color:var(--nc-gray-600)"></div>
+      </details>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" id="modal-ingredient-cancel-btn" onclick="closeModal('modal-ingredient')">Cancel</button>
+      <button class="btn" id="modal-ingredient-close-btn" onclick="closeModal('modal-ingredient')" style="display:none">Close</button>
+      <button class="btn btn-primary" id="modal-ingredient-save-btn" onclick="saveIngredient()">Save Ingredient</button>
+    </div>
+  </div>
+</div>
+
+<!-- New / Edit Project Modal -->
+<div class="modal-overlay" id="modal-project">
+  <div class="modal" style="width:420px">
+    <div class="modal-title" id="modal-project-title">New project</div>
+    <div class="form-group">
+      <label class="form-label">Project name</label>
+      <input class="form-input" type="text" id="project-name" placeholder="e.g. Q1 NPD">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Your name</label>
+      <input class="form-input" type="text" id="project-owner" placeholder="e.g. Jane Smith">
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn" onclick="closeModal('modal-project')">Cancel</button>
+      <button type="button" class="btn btn-primary" onclick="saveProject()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- New / Edit Export Template Modal -->
+<div class="modal-overlay" id="modal-export-template">
+  <div class="modal" style="width:520px;max-width:95vw">
+    <div class="modal-title" id="modal-export-template-title">New template</div>
+    <input type="hidden" id="export-template-id" value="">
+    <div class="form-group">
+      <label class="form-label">Template name</label>
+      <input class="form-input" type="text" id="export-template-name" placeholder="e.g. Nutrition label">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Content (placeholders like {{recipe.name}} can be used when exporting with recipe data)</label>
+      <textarea class="form-textarea" id="export-template-content" rows="10" placeholder="Enter template content..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn" onclick="closeModal('modal-export-template')">Cancel</button>
+      <button type="button" class="btn btn-danger" id="export-template-delete-btn" onclick="deleteExportTemplateFromModal()" style="display:none">Delete</button>
+      <button type="button" class="btn btn-primary" onclick="saveExportTemplate()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Excel editor: open dropped/selected file, edit in grid, save into templates (no download) -->
+<div class="modal-overlay" id="modal-excel-editor" onclick="if(event.target===this)closeModal('modal-excel-editor')">
+  <div class="modal" style="width:90vw;max-width:1200px;height:85vh;display:flex;flex-direction:column">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:12px">
+      <div style="display:flex;align-items:center;gap:12px;flex:1;min-width:0;flex-wrap:wrap">
+        <h2 class="modal-title" id="excel-editor-title" style="margin:0;flex:0 0 auto">Excel</h2>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--nc-gray-600)">Sheet <select class="form-select" id="excel-editor-sheet-select" style="width:auto;max-width:200px" onchange="excelEditorSwitchSheet()"></select></label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--nc-gray-600)">Column <select class="form-select" id="excel-editor-column-select" style="width:auto;max-width:160px" onchange="excelEditorSelectColumn()"></select></label>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button type="button" class="btn" onclick="closeModal('modal-excel-editor')">Close</button>
+        <button type="button" class="btn btn-primary" onclick="saveExcelFromEditor()">Save</button>
+      </div>
+    </div>
+    <div class="excel-editor-scroll" style="flex:1;min-height:0;overflow:auto;border:1px solid var(--nc-gray-300);border-radius:var(--nc-radius);background:var(--nc-gray-100);position:relative">
+      <div id="excel-editor-loading" style="display:none;position:absolute;inset:0;background:rgba(255,255,255,0.9);align-items:center;justify-content:center;z-index:10;flex-direction:column">
+        <div id="excel-editor-loading-text" style="text-align:center;color:var(--nc-gray-600);font-size:14px">Loading spreadsheet…</div>
+      </div>
+      <table class="excel-editor-grid" id="excel-editor-table">
+        <thead id="excel-editor-thead"><tr id="excel-editor-header-row"></tr></thead>
+        <tbody id="excel-editor-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- New Recipe Modal -->
+<div class="modal-overlay" id="modal-recipe">
+  <div class="modal">
+    <div class="modal-title">New Recipe</div>
+    <div class="form-row">
+      <div class="form-group" style="flex:1">
+        <label class="form-label">Recipe Name</label>
+        <input class="form-input" type="text" id="new-rec-name" placeholder="e.g. Beef & Tomato Pie">
+      </div>
+      <div class="form-group" style="width:140px">
+        <label class="form-label">Code</label>
+        <input class="form-input" type="text" id="new-rec-code" placeholder="e.g. RCP-001">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Description / Notes</label>
+      <textarea class="form-textarea" id="new-rec-desc" placeholder="Cooking instructions, development notes..."></textarea>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Recipe Kind</label>
+        <select class="form-select" id="new-rec-recipe-type">
+          <option value="finishedProduct">Finished product</option>
+          <option value="subRecipe">Sub recipe</option>
+        </select>
+        <p style="font-size:11px;color:var(--nc-gray-400);margin-top:2px">Finished product = end product incl. packaging. Sub recipe = e.g. sauce, used as ingredient in finished products.</p>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Product Type</label>
+        <select class="form-select" id="new-rec-type">
+          <option value="food">Food</option>
+          <option value="drink">Drink</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Serving Size (g)</label>
+        <input class="form-input" type="number" id="new-rec-serving" value="100" min="1">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label" style="display:flex;align-items:center;gap:8px;font-weight:600">
+        <input type="checkbox" id="new-rec-approved"> Approved (production use)
+      </label>
+      <p style="font-size:11px;color:var(--nc-gray-400);margin-top:2px">Unchecked = in development</p>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Project folder</label>
+      <select class="form-select" id="new-rec-project" style="max-width:280px">
+        <option value="">— None —</option>
+      </select>
+      <p style="font-size:11px;color:var(--nc-gray-400);margin-top:2px">Tag this recipe to appear in the project's recipe list.</p>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('modal-recipe')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveRecipe()">Create Recipe</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Recipe Name & Code Modal (from recipe detail) -->
+<div class="modal-overlay" id="modal-recipe-edit-name">
+  <div class="modal" style="width:420px">
+    <div class="modal-title">Edit name &amp; code</div>
+    <div class="form-group">
+      <label class="form-label">Recipe Name</label>
+      <input class="form-input" type="text" id="edit-rec-name" placeholder="Recipe name">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Code</label>
+      <input class="form-input" type="text" id="edit-rec-code" placeholder="e.g. RCP-001">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Description tags</label>
+      <input class="form-input" type="text" id="edit-rec-description-tags" placeholder="e.g. seasonal, vegan (comma-separated, searchable)">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Recipe Kind</label>
+      <select class="form-select" id="edit-rec-recipe-type" style="width:180px">
+        <option value="finishedProduct">Finished product</option>
+        <option value="subRecipe">Sub recipe</option>
+      </select>
+    </div>
+    <p style="font-size:11px;color:var(--nc-gray-400);margin:8px 0 4px;font-weight:600">COST &amp; UOM</p>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Total cost</label>
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <span id="edit-rec-total-cost" style="font-size:15px;font-weight:600;font-family:var(--nc-mono)">—</span>
+          <span style="font-size:12px;color:var(--nc-gray-500)" id="edit-rec-total-cost-per">(from ingredients)</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Unit of measure</label>
+        <select class="form-select" id="edit-rec-cost-uom" style="width:100px;padding:6px 8px;font-size:13px">
+          <option value="G">G</option>
+          <option value="KG">KG</option>
+          <option value="L">L</option>
+          <option value="ML">ML</option>
+          <option value="M">M</option>
+          <option value="EACH">EACH</option>
+        </select>
+        <p style="font-size:11px;color:var(--nc-gray-400);margin:2px 0 0">Reference UOM for this recipe (e.g. per 100g, per EACH).</p>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Project folder</label>
+      <select class="form-select" id="edit-rec-project" style="width:220px">
+        <option value="">— None —</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('modal-recipe-edit-name')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEditRecipeName()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Configure Ingredients Modal -->
+<div class="modal-overlay" id="modal-config-ingredients">
+  <div class="modal" style="width:760px">
+    <div class="modal-title">Configure Ingredients</div>
+    <p style="font-size:13px;color:var(--nc-gray-500);margin:-6px 0 12px">Review duplicates and clean up the ingredient library.</p>
+
+    <div class="form-group" style="margin-bottom:16px">
+      <label class="form-label">Decimal places in ingredient list</label>
+      <p style="font-size:12px;color:var(--nc-gray-500);margin:-2px 0 6px">Numbers in the ingredient centre table and search results. Full values always show when editing.</p>
+      <select class="form-select" id="config-ingredient-decimals" style="width:140px" onchange="saveIngredientDisplayDecimals(); renderIngredientsTable();">
+        <option value="full">Full (no rounding)</option>
+        <option value="0">0 decimals</option>
+        <option value="1">1 decimal</option>
+        <option value="2">2 decimals</option>
+        <option value="3">3 decimals</option>
+      </select>
+    </div>
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+      <button class="btn" onclick="showDuplicates()">Show duplicates</button>
+      <button class="btn btn-danger" onclick="removeAllDuplicatesFromModal()" title="Automatically merges/removes duplicates by name">Remove all duplicates</button>
+      <button class="btn btn-danger" onclick="clearAllIngredientsFromModal()" title="Delete all ingredients from the library">Clear all ingredients</button>
+      <button class="btn" onclick="closeModal('modal-config-ingredients')">Close</button>
+    </div>
+
+    <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--nc-gray-200)">
+      <h3 style="font-size:13px;font-weight:600;margin:0 0 8px">Recipe ingredients</h3>
+      <p style="font-size:12px;color:var(--nc-gray-500);margin:-2px 0 8px">Merge duplicate ingredient lines in recipes (e.g. same ingredient listed multiple times). Fixes recipes with too many ingredients from import errors.</p>
+      <button class="btn" style="color:var(--nc-green);border-color:var(--nc-green)" onclick="mergeDuplicateIngredientsInAllRecipes(); closeModal('modal-config-ingredients')" title="Merge duplicate ingredient/sub-recipe lines in all recipes">Merge duplicate ingredients in recipes</button>
+    </div>
+    <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--nc-gray-200)">
+      <h3 style="font-size:13px;font-weight:600;margin:0 0 8px">Recipe hierarchy</h3>
+      <p style="font-size:12px;color:var(--nc-gray-500);margin:-2px 0 8px">Convert duplicate single-ingredient items (e.g. CPU RM White Pepper) into linked recipes that reference their base ingredient. Fixes &quot;not used anywhere&quot; for base ingredients.</p>
+      <button class="btn" style="color:var(--nc-green);border-color:var(--nc-green)" onclick="repairRecipeHierarchyFromModal()" title="Create single-ingredient recipes linking CPU/duplicate items to base ingredients">Repair recipe hierarchy</button>
+    </div>
+    <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--nc-gray-200)">
+      <h3 style="font-size:13px;font-weight:600;margin:0 0 8px">Recipes</h3>
+      <p style="font-size:12px;color:var(--nc-gray-500);margin:-2px 0 8px">Remove all recipes from the library. Ingredients are not affected.</p>
+      <button class="btn btn-danger" onclick="clearAllRecipesFromModal()" title="Delete all recipes">Clear all recipes</button>
+    </div>
+
+    <div id="duplicates-panel" style="display:none">
+      <div class="card" style="background:var(--nc-gray-50);border:1px dashed var(--nc-gray-300)">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <h3 style="font-size:13px;font-weight:700;margin:0">Duplicates</h3>
+          <span style="font-size:12px;color:var(--nc-gray-500)" id="duplicates-summary"></span>
+        </div>
+        <div id="duplicates-list" style="margin-top:10px"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Single-ingredient recipe details Modal -->
+<div class="modal-overlay" id="modal-single-ingredient-recipe">
+  <div class="modal" style="width:520px">
+    <div class="modal-title" id="single-ing-recipe-modal-title">Details</div>
+    <div id="single-ing-recipe-content" style="margin-bottom:16px"></div>
+    <details id="single-ing-recipe-where-used-details" style="cursor:pointer;margin-bottom:16px;border-top:1px solid var(--nc-gray-200);padding-top:12px">
+      <summary style="font-size:13px;font-weight:600;color:var(--nc-gray-700)" id="single-ing-recipe-where-used-summary">Where used</summary>
+      <p style="font-size:12px;color:var(--nc-gray-500);margin:8px 0 6px">Recipes that use this item as a sub-recipe.</p>
+      <div id="single-ing-recipe-where-used-list" style="max-height:200px;overflow:auto;margin-top:6px"></div>
+    </details>
+    <details id="single-ing-recipe-version-history-details" style="cursor:pointer;margin-bottom:16px;border-top:1px solid var(--nc-gray-200);padding-top:12px">
+      <summary style="font-size:13px;font-weight:600;color:var(--nc-gray-700)" id="single-ing-recipe-version-history-summary">Version History</summary>
+      <p style="font-size:12px;color:var(--nc-gray-500);margin:8px 0 6px">Each time this item was edited and saved.</p>
+      <div id="single-ing-recipe-version-history-list" style="max-height:150px;overflow:auto;margin-top:6px;font-size:13px;color:var(--nc-gray-600)"></div>
+    </details>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('modal-single-ingredient-recipe')">Close</button>
+      <button class="btn btn-primary" id="single-ing-recipe-open-btn" onclick="">Open full recipe</button>
+    </div>
+  </div>
+</div>
+
+<!-- Ingredient: Where used Modal -->
+<div class="modal-overlay" id="modal-ingredient-where-used">
+  <div class="modal" style="width:720px">
+    <div class="modal-title">Where used</div>
+    <div id="where-used-subtitle" style="font-size:13px;color:var(--nc-gray-500);margin:-6px 0 12px"></div>
+    <div id="where-used-list"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('modal-ingredient-where-used')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Recipe: Version History Modal -->
+<div class="modal-overlay" id="modal-recipe-version-history">
+  <div class="modal" style="width:480px">
+    <div class="modal-title">Version History</div>
+    <p style="font-size:13px;color:var(--nc-gray-500);margin:-6px 0 12px">Each time this recipe was edited and saved.</p>
+    <div id="recipe-version-history-modal-list" style="max-height:320px;overflow:auto;font-size:13px;color:var(--nc-gray-600)"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('modal-recipe-version-history')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Recipe photo lightbox -->
+<div class="modal-overlay" id="modal-recipe-photo" onclick="if(event.target===this)closeModal('modal-recipe-photo')">
+  <div class="modal modal--photo" style="max-width:90vw;max-height:90vh;padding:12px">
+    <img id="modal-recipe-photo-img" src="" alt="Photo" style="max-width:100%;max-height:80vh;display:block;border-radius:var(--nc-radius)">
+    <div class="modal-actions" style="margin-top:12px">
+      <button class="btn" onclick="closeModal('modal-recipe-photo')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Ingredient actions menu (right click / double click) -->
+<div id="ingredient-actions-menu" class="context-menu" style="display:none"></div>
+
+<!-- Recipe actions menu (right click) -->
+<div id="recipe-actions-menu" class="context-menu" style="display:none"></div>
+
+<!-- Recipe title context menu (right click on recipe name in detail view) -->
+<div id="recipe-title-actions-menu" class="context-menu" style="display:none"></div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- Global sushi-wheel loading overlay (use showSushiLoading() / hideSushiLoading()) -->
+<div class="sushi-loading-overlay" id="sushi-loading-overlay" aria-hidden="true">
+  <div class="sushi-loading-orbit" aria-label="Loading">
+    <img src="sushi-loading.png" alt="" class="sushi-loading-character" id="sushi-loading-img">
+  </div>
+  <div class="sushi-loading-label" id="sushi-loading-label">Loading…</div>
+</div>
+
+<!-- Excel Import Modal -->
+<div class="modal-overlay" id="modal-excel-import">
+  <div class="modal modal--excel-import" style="width:820px;max-width:95vw">
+    <div class="modal-excel-import-scroll">
+    <div class="modal-title">Import from Excel / CSV</div>
+    <p style="font-size:13px;color:var(--nc-gray-500);margin-bottom:16px">
+      Upload a spreadsheet containing ingredients and/or recipes. Map your columns to NutriCalc fields below.
+    </p>
+
+    <!-- Step 1: File upload -->
+    <div id="excel-step-1">
+      <label for="excelFileInput" id="excel-dropzone" style="display:block;border:2px dashed var(--nc-gray-300);border-radius:var(--nc-radius-lg);padding:40px;text-align:center;cursor:pointer;transition:all .15s;background:var(--nc-gray-50)"
+           ondragover="event.preventDefault();this.style.borderColor='var(--nc-primary)';this.style.background='var(--nc-primary-light)'"
+           ondragleave="this.style.borderColor='var(--nc-gray-300)';this.style.background='var(--nc-gray-50)'"
+           ondrop="event.preventDefault();this.style.borderColor='var(--nc-gray-300)';this.style.background='var(--nc-gray-50)';var f=event.dataTransfer&&event.dataTransfer.files&&event.dataTransfer.files[0];if(f)handleExcelFile(f);">
+        <svg width="40" height="40" viewBox="0 0 40 40" fill="none" style="margin-bottom:8px">
+          <rect width="40" height="40" rx="8" fill="#D1FAE5"/>
+          <path d="M13 28V12h8l6 6v10a2 2 0 01-2 2H15a2 2 0 01-2-2z" stroke="#059669" stroke-width="1.5" fill="none"/>
+          <path d="M21 12v6h6" stroke="#059669" stroke-width="1.5" fill="none"/>
+          <path d="M17 22h6m-3-3v6" stroke="#059669" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <p style="font-weight:600;color:var(--nc-gray-700);margin-bottom:4px">Drop your Excel or CSV file here, or click to choose</p>
+        <p style="font-size:12px;color:var(--nc-gray-400)">Supports .xlsx, .xls, .csv, .tsv</p>
+      </label>
+      <input type="file" id="excelFileInput" accept=".xlsx,.xls,.csv,.tsv" style="display:none" onchange="handleExcelFile(this.files[0])">
+    </div>
+
+    <!-- Step 2: Sheet selector + preview + mapping -->
+    <div id="excel-step-2" style="display:none">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+        <div class="form-group" style="margin:0;flex:1">
+          <label class="form-label">Sheet</label>
+          <select class="form-select" id="excel-sheet-select" onchange="selectExcelSheet()"></select>
+        </div>
+        <div class="form-group" style="margin:0;flex:1">
+          <label class="form-label">Import Mode</label>
+          <select class="form-select" id="excel-import-mode">
+            <option value="recipe-structure">Recipe library — costings sheet (ingredients + recipes from parent column)</option>
+            <option value="ingredients">Ingredients only — simple list, no recipes</option>
+            <option value="nutritionals">Nutritionals only — merge into existing, approve unmatched</option>
+            <option value="recipe">One recipe — create a single recipe from ingredient list</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin:0;flex:1">
+          <label class="form-label">Header Row</label>
+          <select class="form-select" id="excel-header-row" onchange="selectExcelSheet()">
+            <option value="0">Row 1</option>
+            <option value="1">Row 2</option>
+            <option value="2">Row 3</option>
+            <option value="3">Row 4</option>
+            <option value="4">Row 5</option>
+          </select>
+        </div>
+      </div>
+      <div id="excel-recipe-name-wrap" style="display:none;margin-bottom:12px">
+        <div class="form-group" style="margin:0">
+          <label class="form-label">Recipe Name</label>
+          <input class="form-input" type="text" id="excel-recipe-name" placeholder="Enter recipe name...">
+        </div>
+      </div>
+
+      <!-- Column Mapping -->
+      <div style="margin-bottom:12px">
+        <p style="font-size:12px;font-weight:600;color:var(--nc-gray-400);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">Column Mapping</p>
+        <p style="font-size:12px;color:var(--nc-gray-500);margin-bottom:8px">Map your spreadsheet columns to NutriCalc fields. Only "Ingredient Name" is required — unmapped nutritional fields default to 0. <strong>Map "Item UOM"</strong> to the column that has KG, L, EACH (or eaches, litre, etc.) so each ingredient gets the correct cost unit.</p>
+        <p style="font-size:11px;color:var(--nc-gray-500);margin-bottom:8px;background:var(--nc-gray-100);padding:8px 10px;border-radius:4px"><strong>Recipe library mode:</strong> <strong>Recipe column</strong> = which recipe/product each row belongs to (e.g. BCP Chives Prepared). <strong>Ingredient column</strong> = the component/input (e.g. RM Chives). So a row with Recipe=BCP Chives Prepared, Ingredient=RM Chives creates the link: BCP Chives Prepared is made from RM Chives. Rows with blank Recipe add the item to the library only (no recipe link).</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px" id="excel-column-mapping"></div>
+      </div>
+
+      <!-- Data Preview -->
+      <div style="margin-bottom:12px">
+        <p style="font-size:12px;font-weight:600;color:var(--nc-gray-400);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">Preview (first 5 rows)</p>
+        <div style="overflow-x:auto;max-height:220px;border:1px solid var(--nc-gray-200);border-radius:var(--nc-radius)">
+          <table class="data-table" id="excel-preview-table" style="font-size:12px"></table>
+        </div>
+      </div>
+
+      <!-- Import summary -->
+      <div id="excel-import-summary" style="background:var(--nc-accent-light);border-radius:var(--nc-radius);padding:10px 14px;font-size:13px;color:#0284C7;margin-bottom:12px"></div>
+    </div>
+
+    <!-- Step 3: Results -->
+    <div id="excel-step-3" style="display:none">
+      <div style="background:var(--nc-green-light);border-radius:var(--nc-radius);padding:16px;text-align:center">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="#059669" style="margin-bottom:8px"><path d="M16 2C8.268 2 2 8.268 2 16s6.268 14 14 14 14-6.268 14-14S23.732 2 16 2zm-2 20l-5-5 1.41-1.41L14 19.17l7.59-7.59L23 13l-9 9z"/></svg>
+        <p id="excel-result-msg" style="font-weight:600;font-size:15px;color:#065F46"></p>
+        <p id="excel-result-detail" style="font-size:13px;color:#059669;margin-top:4px"></p>
+      </div>
+    </div>
+
+    <!-- Duplicate choice modal (shown when matches detected) -->
+    <div class="modal-overlay" id="modal-excel-duplicate-choice" style="z-index:1001">
+      <div class="modal" style="width:480px">
+        <div class="modal-title">Duplicate ingredients detected</div>
+        <p id="excel-duplicate-msg" style="font-size:14px;color:var(--nc-gray-600);margin:0 0 16px;line-height:1.5"></p>
+        <p style="font-size:13px;color:var(--nc-gray-500);margin-bottom:16px">How would you like to proceed?</p>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <button class="btn" style="justify-content:flex-start;text-align:left" onclick="executeExcelImportWithChoice('add_new'); closeModal('modal-excel-duplicate-choice')">
+            <strong>Add as new</strong> — Keep both. Imported rows become new ingredients (duplicates).
+          </button>
+          <button class="btn btn-primary" style="justify-content:flex-start;text-align:left" onclick="executeExcelImportWithChoice('update_existing'); closeModal('modal-excel-duplicate-choice')">
+            <strong>Update existing</strong> — Match by code (or Code 2). Merge data into existing; any that don’t match you can approve to add as new.
+          </button>
+        </div>
+        <div style="margin-top:16px">
+          <button class="btn" onclick="closeModal('modal-excel-duplicate-choice')">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Unmatched ingredients (nutritionals sheet) – approve which to add as new -->
+    <div class="modal-overlay" id="modal-excel-approve-unmatched" style="z-index:1002">
+      <div class="modal" style="width:560px;max-height:85vh;display:flex;flex-direction:column">
+        <div class="modal-title">Ingredients not found in library</div>
+        <p id="excel-unmatched-msg" style="font-size:13px;color:var(--nc-gray-600);margin:0 0 12px;line-height:1.5"></p>
+        <div style="overflow:auto;flex:1;min-height:0;border:1px solid var(--nc-gray-200);border-radius:var(--nc-radius);padding:8px;background:var(--nc-gray-50);margin-bottom:12px">
+          <div id="excel-unmatched-list"></div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-primary" onclick="confirmExcelUnmatchedAdd()">Add selected</button>
+          <button class="btn" onclick="skipExcelUnmatched()">Skip all</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="btn" onclick="closeExcelImport()">Cancel</button>
+      <button type="button" class="btn" id="excel-back-btn" style="display:none" onclick="excelBack()">← Back</button>
+      <button type="button" class="btn btn-primary" id="excel-import-btn" style="display:none" onclick="executeExcelImport()">
+        Import Data
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="data.js?v=20260916-scrap-automap"></script>
+<script src="storage.js"></script>
+<script src="ingredients.js"></script>
+<script src="recipes.js"></script>
+<script src="hfss.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="app.js?v=20260916-single-recipe-dedup"></script>
+<script src="excel-import.js?v=20260916-name-col-e-pinned"></script>
+<script src="reports.js"></script>
+</body>
+</html>
