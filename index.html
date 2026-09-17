@@ -7,7 +7,7 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect fill='%235d8c3e' width='32' height='32' rx='4'/><text x='16' y='22' font-size='18' font-weight='bold' fill='white' text-anchor='middle' font-family='system-ui,sans-serif'>W</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="styles.css?v=20260917-recipe-search-columns-v2">
 </head>
 <body>
 
@@ -596,9 +596,16 @@
               <span id="total-weight-secondary-wrap" style="display:none"><br><span style="font-size:11px">Total weight: </span><strong id="total-weight-secondary" style="font-size:11px">0g</strong></span>
             </span>
           </div>
-          <div class="ingredient-search-wrap" style="margin-bottom:12px">
-            <input class="form-input" type="text" placeholder="Type to search & add ingredient..." id="recipe-ing-search" oninput="searchIngredientForRecipe()" onfocus="searchIngredientForRecipe()">
-            <div class="ingredient-dropdown" id="recipe-ing-dropdown"></div>
+          <div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:12px">
+            <div class="ingredient-search-wrap" style="flex:1">
+              <input class="form-input" type="text" placeholder="Type to search & add ingredient..." id="recipe-ing-search" oninput="searchIngredientForRecipe()" onfocus="searchIngredientForRecipe()">
+              <div class="ingredient-dropdown" id="recipe-ing-dropdown"></div>
+            </div>
+            <select class="form-input" id="recipe-ing-status-filter" style="width:170px;flex:none" onchange="searchIngredientForRecipe()">
+              <option value="all">All statuses</option>
+              <option value="approved">Approved only</option>
+              <option value="development">In development only</option>
+            </select>
           </div>
           <table class="data-table" id="recipe-ingredients-table">
             <thead>
@@ -1492,11 +1499,11 @@
 <script src="data.js?v=20260916-parentnoofportions"></script>
 <script src="storage.js"></script>
 <script src="ingredients.js"></script>
-<script src="recipes.js"></script>
+<script src="recipes.js?v=20260917-nutrition-weight-fix"></script>
 <script src="hfss.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="app.js?v=20260916-line-weight-faded"></script>
+<script src="app.js?v=20260917-recipe-search-columns-v2"></script>
 <script src="excel-import.js?v=20260916-parentnoofportions-col-k"></script>
 <script src="reports.js"></script>
 </body>

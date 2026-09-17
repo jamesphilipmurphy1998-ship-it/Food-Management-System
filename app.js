@@ -1762,10 +1762,13 @@
     var filtered = ingredients;
     if (filterVal === "approved") filtered = ingredients.filter(function (i) { return !!i.approved; });
     if (filterVal === "development") filtered = ingredients.filter(function (i) { return !i.approved; });
-    if (typeFilterVal === "ingredients") filtered = filtered.filter(function (i) {
-      var c = (i.cat || "").trim();
-      return c && c !== "Other" && !isPackagingItem(i);
-    });
+    // "Ingredients only" = not packaging, full stop. It used to also require a populated,
+    // non-"Other" category — but the real dataset's cat field is only ever "Other" or
+    // "Packaging" (no finer taxonomy has actually been entered), so that extra condition never
+    // matched a single RM item and made this filter return nothing. "Other" is kept as a
+    // forward-compatible bucket for once real categories exist, but today it's a strict subset
+    // of "Ingredients only" it doesn't need to duplicate the packaging check for.
+    if (typeFilterVal === "ingredients") filtered = filtered.filter(function (i) { return !isPackagingItem(i); });
     if (typeFilterVal === "packaging") filtered = filtered.filter(isPackagingItem);
     if (typeFilterVal === "other") filtered = filtered.filter(function (i) { return (i.cat || "").trim() === "Other" && !isPackagingItem(i); });
     if (!includeDelistedIngredients()) filtered = filtered.filter(function (i) { return !isDelisted(i.name); });
@@ -1774,8 +1777,7 @@
     if (filterVal === "development") singleIngRecipes = singleIngRecipes.filter(function (r) { return !r.approved; });
     if (typeFilterVal === "ingredients") singleIngRecipes = singleIngRecipes.filter(function (r) {
       var baseIng = ingredients.find(function (i) { return i.id === (r.ingredients || [])[0].ingredientId; });
-      var c = baseIng ? (baseIng.cat || "").trim() : "";
-      return c && c !== "Other" && !isPackagingItem(baseIng);
+      return !baseIng || !isPackagingItem(baseIng);
     });
     if (typeFilterVal === "packaging") singleIngRecipes = singleIngRecipes.filter(function (r) {
       var baseIng = ingredients.find(function (i) { return i.id === (r.ingredients || [])[0].ingredientId; });
@@ -1929,14 +1931,19 @@
     var content = "<p style=\"margin:0 0 12px;font-size:13px;color:var(--nc-gray-600)\">" + (r.code ? "Code: <span style=\"font-family:var(--nc-mono)\">" + r.code + "</span>" : "") + "</p>";
     var yieldPct = (r.yieldPct != null && r.yieldPct > 0 && r.yieldPct <= 100) ? r.yieldPct : 100;
     var scrapPct = 100 - yieldPct;
+    var locked = !!r.approved;
     content += "<p style=\"margin:0 0 12px;font-size:13px;display:flex;align-items:center;gap:8px;flex-wrap:wrap\"><strong>Contains:</strong> " + (baseIng ? baseIng.name : "—") +
       "<span style=\"display:inline-flex;align-items:center;gap:6px;margin-left:8px\">" +
       "<label for=\"single-ing-recipe-scrap\" style=\"color:var(--nc-gray-500);font-weight:400\">Scrap:</label>" +
-      "<input type=\"number\" id=\"single-ing-recipe-scrap\" class=\"form-input\" min=\"0\" max=\"99\" step=\"any\" value=\"" + scrapPct + "\" style=\"width:60px;padding:4px 6px\" onchange=\"updateSubRecipeScrapPct('" + recipeId.replace(/'/g, "\\'") + "', this.value); openSingleIngredientRecipeView('" + recipeId.replace(/'/g, "\\'") + "');\" title=\"% of input weight lost in prep (e.g. chopping/trimming). Affects cost only, not nutrition.\">%" +
+      (locked
+        ? "<span style=\"font-family:var(--nc-mono)\">" + scrapPct + "%</span>"
+        : "<input type=\"number\" id=\"single-ing-recipe-scrap\" class=\"form-input\" min=\"0\" max=\"99\" step=\"any\" value=\"" + scrapPct + "\" style=\"width:60px;padding:4px 6px\" onchange=\"updateSubRecipeScrapPct('" + recipeId.replace(/'/g, "\\'") + "', this.value); openSingleIngredientRecipeView('" + recipeId.replace(/'/g, "\\'") + "');\" title=\"% of input weight lost in prep (e.g. chopping/trimming). Affects cost only, not nutrition.\">%") +
       "</span>" +
       "<span style=\"display:inline-flex;align-items:center;gap:6px;margin-left:8px\">" +
       "<label for=\"single-ing-recipe-owncost\" style=\"color:var(--nc-gray-500);font-weight:400\">Cost (£/kg):</label>" +
-      "<input type=\"number\" id=\"single-ing-recipe-owncost\" class=\"form-input\" min=\"0\" step=\"any\" value=\"" + (r.ownCost || 0) + "\" style=\"width:70px;padding:4px 6px\" onchange=\"updateSubRecipeOwnCost('" + recipeId.replace(/'/g, "\\'") + "', this.value); openSingleIngredientRecipeView('" + recipeId.replace(/'/g, "\\'") + "');\" title=\"Own cost from the sheet/API. Leave 0 to derive from the base ingredient instead.\">" +
+      (locked
+        ? "<span style=\"font-family:var(--nc-mono)\">£" + (r.ownCost || 0) + "</span>"
+        : "<input type=\"number\" id=\"single-ing-recipe-owncost\" class=\"form-input\" min=\"0\" step=\"any\" value=\"" + (r.ownCost || 0) + "\" style=\"width:70px;padding:4px 6px\" onchange=\"updateSubRecipeOwnCost('" + recipeId.replace(/'/g, "\\'") + "', this.value); openSingleIngredientRecipeView('" + recipeId.replace(/'/g, "\\'") + "');\" title=\"Own cost from the sheet/API. Leave 0 to derive from the base ingredient instead.\">") +
       "</span></p>";
     if (scrapPct > 0) {
       content += "<p style=\"margin:0 0 12px;font-size:12px;color:var(--nc-amber)\">" + scrapPct + "% scrap from prep — cost is scaled up accordingly; nutrition per 100g is unchanged.</p>";
@@ -2231,10 +2238,7 @@
     var filteredIng = ingredients;
     if (filterVal === "approved") filteredIng = ingredients.filter(function (i) { return !!i.approved; });
     if (filterVal === "development") filteredIng = ingredients.filter(function (i) { return !i.approved; });
-    if (typeFilterVal === "ingredients") filteredIng = filteredIng.filter(function (i) {
-      var c = (i.cat || "").trim();
-      return c && c !== "Other" && !isPackagingItem(i);
-    });
+    if (typeFilterVal === "ingredients") filteredIng = filteredIng.filter(function (i) { return !isPackagingItem(i); });
     if (typeFilterVal === "packaging") filteredIng = filteredIng.filter(isPackagingItem);
     if (typeFilterVal === "other") filteredIng = filteredIng.filter(function (i) { return (i.cat || "").trim() === "Other" && !isPackagingItem(i); });
     if (!includeDelistedIngredients()) filteredIng = filteredIng.filter(function (i) { return !isDelisted(i.name); });
@@ -2243,8 +2247,7 @@
     if (filterVal === "development") singleIngRecipes = singleIngRecipes.filter(function (r) { return !r.approved; });
     if (typeFilterVal === "ingredients") singleIngRecipes = singleIngRecipes.filter(function (r) {
       var baseIng = ingredients.find(function (i) { return i.id === (r.ingredients || [])[0].ingredientId; });
-      var c = baseIng ? (baseIng.cat || "").trim() : "";
-      return c && c !== "Other" && !isPackagingItem(baseIng);
+      return !baseIng || !isPackagingItem(baseIng);
     });
     if (typeFilterVal === "packaging") singleIngRecipes = singleIngRecipes.filter(function (r) {
       var baseIng = ingredients.find(function (i) { return i.id === (r.ingredients || [])[0].ingredientId; });
@@ -2941,9 +2944,15 @@
     var recipes = Recipes.getRecipes();
     var r = recipes.find(function (rec) { return rec.id === currentRecipeId; });
     if (!r) return;
+    // Approved recipes are locked for editing (see renderRecipeIngredients). Moving one back
+    // to "in development" reopens it to editing, so confirm first rather than silently
+    // unlocking an approved recipe from a stray click.
+    if (r.approved) {
+      if (!confirm("This recipe is approved and currently locked. Mark it as in development so it can be edited again?")) return;
+    }
     r.approved = !r.approved;
     Recipes.saveRecipe(r);
-    showToast(r.approved ? "Recipe marked as approved" : "Recipe marked as in development");
+    showToast(r.approved ? "Recipe marked as approved" : "Recipe marked as in development — now editable");
     openRecipe(currentRecipeId);
     renderAll();
   }
@@ -3689,15 +3698,22 @@
     var q = (document.getElementById("recipe-ing-search").value || "").toLowerCase().trim();
     var dd = document.getElementById("recipe-ing-dropdown");
     if (!q) { dd.classList.remove("open"); return; }
+    var statusFilterEl = document.getElementById("recipe-ing-status-filter");
+    var statusFilter = statusFilterEl ? statusFilterEl.value : "all";
     var ingredients = Ingredients.getIngredients();
     var recipes = Recipes.getRecipes();
     var r = recipes.find(function (rec) { return rec.id === currentRecipeId; });
+    function statusMatches(item) {
+      if (statusFilter === "approved") return !!item.approved;
+      if (statusFilter === "development") return !item.approved;
+      return true;
+    }
     function ingScore(i) {
       var arr = [searchWordsMatch(i.name, q), searchWordsMatch(i.code, q), searchWordsMatch((i.descriptionTags || []).join(" "), q), searchWordsMatch(i.cat, q), searchWordsMatch(i.supplier, q)];
       (i.altCodes || []).forEach(function (c) { arr.push(searchWordsMatch(c, q)); });
       return arr.reduce(function (a, b) { return a.score >= b.score ? a : b; }, { match: false, score: 0 });
     }
-    var ingMatches = ingredients.filter(function (i) { return ingScore(i).match; }).sort(function (a, b) { return ingScore(b).score - ingScore(a).score; }).slice(0, 6);
+    var ingMatches = ingredients.filter(function (i) { return !isDelisted(i.name) && statusMatches(i) && ingScore(i).match; }).sort(function (a, b) { return ingScore(b).score - ingScore(a).score; }).slice(0, 6);
     var subMatches = [];
     if (r) {
       // Sub-recipes must be addable to ANY recipe, not just "finished products" — nesting a
@@ -3712,26 +3728,48 @@
         return nameR.score >= codeR.score ? nameR : codeR;
       }
       subMatches = recipes.filter(function (rec) {
-        if ((rec.recipeType || "finishedProduct") !== "subRecipe" || rec.id === currentRecipeId) return false;
+        if ((rec.recipeType || "finishedProduct") !== "subRecipe" || rec.id === currentRecipeId || isDelisted(rec.name) || !statusMatches(rec)) return false;
         return subScore(rec).match;
       }).sort(function (a, b) { return subScore(b).score - subScore(a).score; }).slice(0, 4);
     }
     var allMatches = ingMatches.length + subMatches.length;
     if (allMatches === 0) { dd.innerHTML = "<div style=\"padding:10px;color:var(--nc-gray-400);font-size:13px\">No matches</div>"; dd.classList.add("open"); return; }
+    function statusBadgeFor(item) {
+      return item.approved
+        ? "<span class=\"badge badge-approved\" style=\"font-size:9px\" title=\"Approved\">Approved</span>"
+        : "<span class=\"badge badge-development\" style=\"font-size:9px\" title=\"In development\">In dev</span>";
+    }
     var html = subMatches.map(function (rec) {
-      var codePart = (rec.code && rec.code.trim()) ? "<span style=\"font-size:11px;color:var(--nc-gray-500);font-family:var(--nc-mono);margin-right:8px\">" + rec.code + "</span>" : "";
+      var codePart = (rec.code && rec.code.trim()) ? rec.code : "";
+      var recUom = (rec.costUOM || rec.uom || rec.serving_uom || "G").toString().toUpperCase();
+      var costPerUom = getSubRecipeCostPerUom(rec, ingredients, recUom);
+      var costPart = costPerUom > 0 ? "£" + costPerUom.toFixed(3) + "/" + recUom : "—";
+      var typeBadge = "<span class=\"badge badge-subrecipe\" style=\"font-size:9px\">Sub</span>";
       var onclick = "addSubRecipeToRecipe('" + rec.id.replace(/'/g, "\\'") + "')";
-      return "<div class=\"ingredient-dropdown-item\" onclick=\"" + onclick + "\">" + codePart + "<span>" + rec.name + "</span><span class=\"badge badge-subrecipe\" style=\"margin-left:6px\">Sub recipe</span></div>";
+      return "<div class=\"ingredient-dropdown-item\" onclick=\"" + onclick + "\">" +
+        "<span class=\"idi-code\">" + codePart + "</span>" +
+        "<span class=\"idi-name\">" + rec.name + "</span>" +
+        "<span class=\"idi-cost\">" + costPart + "</span>" +
+        "<span class=\"idi-status\">" + statusBadgeFor(rec) + "</span>" +
+        "<span class=\"idi-type\">" + typeBadge + "</span>" +
+        "</div>";
     }).join("");
     html += ingMatches.map(function (i) {
-      var codePart = (i.code && i.code.trim()) ? "<span style=\"font-size:11px;color:var(--nc-gray-500);font-family:var(--nc-mono);margin-right:8px\">" + i.code + "</span>" : "";
-      var noNutBadge = (hasNoNutrition(i) && !isPackagingItem(i)) ? "<span title=\"No nutritional values\" style=\"margin-left:4px;color:var(--nc-amber);font-size:11px;cursor:help\">⚠</span>" : "";
-      var tagsPart = (i.descriptionTags || []).length ? "<span style=\"font-size:11px;color:var(--nc-gray-500);margin-left:6px\">" + (i.descriptionTags || []).join(", ") + "</span>" : "";
-      var statusBadge = i.approved
-        ? "<span class=\"badge badge-approved\" style=\"font-size:9px;margin-left:6px\">Approved</span>"
-        : "<span class=\"badge badge-development\" style=\"font-size:9px;margin-left:6px\">In development</span>";
+      var codePart = (i.code && i.code.trim()) ? i.code : "";
+      var costUom = (i.costUOM || i.costUom || "KG").toString().toUpperCase();
+      var costPart = i.cost > 0 ? "£" + Number(i.cost).toFixed(3) + "/" + costUom : "—";
+      var noNutBadge = (hasNoNutrition(i) && !isPackagingItem(i)) ? "<span title=\"No nutritional values\" style=\"color:var(--nc-amber);font-size:11px;cursor:help\">⚠</span>" : "";
+      var typeBadge = isPackagingItem(i)
+        ? "<span class=\"badge badge-pkg\" style=\"font-size:9px\">PKG</span>"
+        : "<span class=\"badge badge-rm\" style=\"font-size:9px\">RM</span>";
       var onclick = "addIngredientToRecipe('" + i.id.replace(/'/g, "\\'") + "')";
-      return "<div class=\"ingredient-dropdown-item\" onclick=\"" + onclick + "\">" + codePart + "<span>" + i.name + "</span>" + noNutBadge + tagsPart + "<span class=\"cat\">" + (i.cat || "") + "</span>" + statusBadge + "</div>";
+      return "<div class=\"ingredient-dropdown-item\" onclick=\"" + onclick + "\">" +
+        "<span class=\"idi-code\">" + codePart + "</span>" +
+        "<span class=\"idi-name\">" + i.name + " " + noNutBadge + "</span>" +
+        "<span class=\"idi-cost\">" + costPart + "</span>" +
+        "<span class=\"idi-status\">" + statusBadgeFor(i) + "</span>" +
+        "<span class=\"idi-type\">" + typeBadge + "</span>" +
+        "</div>";
     }).join("");
     dd.innerHTML = html;
     dd.classList.add("open");
@@ -3894,7 +3932,20 @@
     var ingredients = Ingredients.getIngredients();
     var r = recipes.find(function (rec) { return rec.id === currentRecipeId; });
     if (!r) return;
-    // Use each ingredient's assigned cost UOM for the recipe line (not auto "G"/"KG")
+    // Fix a line's UOM only when it's genuinely INCOMPATIBLE with the referenced item's own
+    // cost UOM (e.g. a line stuck on "EACH" while the ingredient is costed in KG — a real
+    // mismatch, usually from a bad import). A line using a different but freely-convertible
+    // unit within the same family (G vs KG, L vs ML — and, for plain ingredients, weight vs
+    // volume via density) is a deliberate, valid user choice for how they enter the quantity —
+    // it must NOT be silently snapped back on every render, which previously made switching a
+    // line's UOM appear to do nothing at all.
+    function uomFamily(u) {
+      u = (u || "G").toString().toUpperCase();
+      if (u === "L" || u === "ML") return "volume";
+      if (u === "EACH") return "each";
+      if (u === "M") return "m";
+      return "weight"; // G, KG, and unrecognised values
+    }
     var needsSave = false;
     (r.ingredients || []).forEach(function (ri) {
       if (ri.ingredientId) {
@@ -3903,7 +3954,10 @@
         var ingUom = (ing.costUOM || ing.costUom || ing.CostUom || ing.CostUOM || ing.cost_uom || "").toString().trim().toUpperCase();
         if (!ingUom) return;
         var current = (ri.uom || "G").toUpperCase();
-        if (current !== ingUom) {
+        var currentFam = uomFamily(current), ingFam = uomFamily(ingUom);
+        // Ingredients support weight<->volume conversion too (via density in updateIngredientUom).
+        var compatible = currentFam === ingFam || (currentFam !== "each" && currentFam !== "m" && ingFam !== "each" && ingFam !== "m");
+        if (current !== ingUom && !compatible) {
           var qtyG = Data.qtyToGrams ? Data.qtyToGrams(ri.qty, current) : ri.qty;
           ri.qty = Data.gramsToUom ? Data.gramsToUom(qtyG, ingUom) : ri.qty;
           ri.uom = ingUom;
@@ -3917,7 +3971,9 @@
         var subRecUom = (subRec.costUOM || subRec.uom || subRec.serving_uom || "G").toString().trim().toUpperCase();
         if (!subRecUom || (Data.UOM_OPTIONS || ["G", "KG", "L", "ML", "M", "EACH"]).indexOf(subRecUom) < 0) subRecUom = "G";
         var current = (ri.uom || "G").toUpperCase();
-        if (current !== subRecUom) {
+        // updateSubRecipeUom has no density-based weight<->volume conversion, so only the
+        // exact same family (weight-only or volume-only) counts as compatible here.
+        if (current !== subRecUom && uomFamily(current) !== uomFamily(subRecUom)) {
           // Convert the quantity along with the unit — relabeling alone (e.g. "0.06244 KG" ->
           // "0.06244 G") silently shrinks the line 1000x instead of just renaming its unit.
           var subQtyG = Data.qtyToGrams ? Data.qtyToGrams(ri.qty, current) : ri.qty;
@@ -3951,6 +4007,15 @@
         secondaryWrap.style.display = "none";
       }
     }
+    // Approved recipes are locked: qty/UOM/scrap/remove controls and the add-ingredient search
+    // become read-only until someone explicitly marks the recipe back as "in development"
+    // (with a confirmation prompt, since that reopens an approved recipe to editing).
+    var locked = !!r.approved;
+    var searchBox = document.getElementById("recipe-ing-search");
+    var searchWrap = searchBox ? searchBox.closest(".ingredient-search-wrap") || searchBox.parentElement : null;
+    var searchRow = searchWrap ? searchWrap.parentElement : null;
+    if (searchRow) searchRow.style.display = locked ? "none" : "";
+    if (searchBox) searchBox.disabled = locked;
     if (r.ingredients.length === 0) { body.innerHTML = ""; empty.style.display = ""; return; }
     empty.style.display = "none";
     var totalCost = 0;
@@ -3995,16 +4060,19 @@
         var subBadge = getRecipeLineBadge(ri, ingredients, recipes);
         return "<tr class=\"row-clickable\" style=\"cursor:pointer\" onclick=\"if(!event.target.closest('input,select,button')){" + rowClick + "}\" oncontextmenu=\"" + rowCtx + "\">" +
           "<td oncontextmenu=\"" + rowCtx + "\" style=\"font-size:12px;color:var(--nc-gray-600);font-family:var(--nc-mono)\">" + codePart + "</td><td oncontextmenu=\"" + rowCtx + "\" class=\"bold\">" + subBadge + subRec.name + "</td>" +
-          "<td onclick=\"event.stopPropagation()\" oncontextmenu=\"" + rowCtx + "\"><div style=\"display:flex;gap:4px;align-items:center\"><input class=\"form-input\" type=\"number\" value=\"" + ri.qty + "\" min=\"0\" step=\"any\" style=\"width:70px;padding:4px 8px\" onchange=\"updateSubRecipeQty('" + ri.subRecipeId.replace(/'/g, "\\'") + "', this.value)\" oncontextmenu=\"" + rowCtx + "\"><select class=\"form-select\" style=\"width:56px;padding:4px 4px;font-size:11px\" onchange=\"updateSubRecipeUom('" + ri.subRecipeId.replace(/'/g, "\\'") + "', this.value)\" oncontextmenu=\"" + rowCtx + "\">" + uomSel + "</select></div></td>" +
+          "<td onclick=\"event.stopPropagation()\" oncontextmenu=\"" + rowCtx + "\">" + (locked
+            ? "<span style=\"font-family:var(--nc-mono);font-size:12px\">" + ri.qty + " " + lineUom + "</span>"
+            : "<div style=\"display:flex;gap:4px;align-items:center\"><input class=\"form-input\" type=\"number\" value=\"" + ri.qty + "\" min=\"0\" step=\"any\" style=\"width:70px;padding:4px 8px\" onchange=\"updateSubRecipeQty('" + ri.subRecipeId.replace(/'/g, "\\'") + "', this.value)\" oncontextmenu=\"" + rowCtx + "\"><select class=\"form-select\" style=\"width:56px;padding:4px 4px;font-size:11px\" onchange=\"updateSubRecipeUom('" + ri.subRecipeId.replace(/'/g, "\\'") + "', this.value)\" oncontextmenu=\"" + rowCtx + "\">" + uomSel + "</select></div>") + "</td>" +
           "<td oncontextmenu=\"" + rowCtx + "\" class=\"num\" style=\"font-family:var(--nc-mono);font-size:12px\">" + (qtyPerBuom > 0 ? qtyPerBuom.toFixed(3) + " " + subRecipeUom : "0") + (lineUom === "EACH" && qtyGForPct > 0 ? "<br><span style=\"color:var(--nc-gray-400);font-size:11px\">(" + Data.round(qtyGForPct) + "g)</span>" : "") + "</td>" +
           "<td oncontextmenu=\"" + rowCtx + "\" class=\"num\">" + pct + "%</td>" +
-          "<td onclick=\"event.stopPropagation()\" oncontextmenu=\"" + rowCtx + "\" class=\"num\">" +
-            "<input type=\"number\" class=\"form-input\" min=\"0\" max=\"99\" step=\"any\" value=\"" + lineScrapPct + "\" style=\"width:55px;padding:4px 6px\" onchange=\"updateRecipeLineScrapPct('sub:" + ri.subRecipeId.replace(/'/g, "\\'") + "', this.value)\" title=\"This input's own scrap when used in this recipe (e.g. oil lost to frying) — not this sub-recipe's own separate scrap.\" oncontextmenu=\"" + rowCtx + "\">%" +
+          "<td onclick=\"event.stopPropagation()\" oncontextmenu=\"" + rowCtx + "\" class=\"num\">" + (locked
+            ? "<span style=\"font-family:var(--nc-mono);font-size:12px\">" + lineScrapPct + "%</span>"
+            : "<input type=\"number\" class=\"form-input\" min=\"0\" max=\"99\" step=\"any\" value=\"" + lineScrapPct + "\" style=\"width:55px;padding:4px 6px\" onchange=\"updateRecipeLineScrapPct('sub:" + ri.subRecipeId.replace(/'/g, "\\'") + "', this.value)\" title=\"This input's own scrap when used in this recipe (e.g. oil lost to frying) — not this sub-recipe's own separate scrap.\" oncontextmenu=\"" + rowCtx + "\">%") +
           "</td>" +
           "<td onclick=\"event.stopPropagation()\" oncontextmenu=\"" + rowCtx + "\" class=\"num\" style=\"font-family:var(--nc-mono);font-size:12px\">" + costPerUomDisplay + "</td>" +
           "<td oncontextmenu=\"" + rowCtx + "\" class=\"num\" style=\"font-family:var(--nc-mono);font-size:12px\">" + costDisplay + "</td>" +
           "<td oncontextmenu=\"" + rowCtx + "\">—</td>" +
-          "<td onclick=\"event.stopPropagation()\" oncontextmenu=\"" + rowCtx + "\"><button class=\"btn btn-sm btn-danger\" onclick=\"removeSubRecipeFromRecipe('" + ri.subRecipeId.replace(/'/g, "\\'") + "')\">×</button></td></tr>";
+          "<td onclick=\"event.stopPropagation()\" oncontextmenu=\"" + rowCtx + "\">" + (locked ? "" : "<button class=\"btn btn-sm btn-danger\" onclick=\"removeSubRecipeFromRecipe('" + ri.subRecipeId.replace(/'/g, "\\'") + "')\">×</button>") + "</td></tr>";
       }
       var ing = ingredients.find(function (i) { return i.id === ri.ingredientId; });
       if (!ing) return "";
@@ -4023,14 +4091,18 @@
       var ingCtx = "openIngredientActionsMenu(event, '" + ri.ingredientId.replace(/'/g, "\\'") + "'); return false";
       return "<tr class=\"row-clickable\" style=\"cursor:pointer\" onclick=\"if(!event.target.closest('input,select,button')){openIngredientView('" + ri.ingredientId.replace(/'/g, "\\'") + "')}\" oncontextmenu=\"" + ingCtx + "\">" +
         "<td oncontextmenu=\"" + ingCtx + "\" style=\"font-size:12px;color:var(--nc-gray-600);font-family:var(--nc-mono)\">" + (ing.code && ing.code.trim() ? ing.code : "—") + "</td><td oncontextmenu=\"" + ingCtx + "\" class=\"bold\">" + ingBadge + ing.name + noNutBadge + "</td>" +
-        "<td onclick=\"event.stopPropagation()\" oncontextmenu=\"" + ingCtx + "\"><div style=\"display:flex;gap:4px;align-items:center\"><input class=\"form-input\" type=\"number\" value=\"" + ri.qty + "\" min=\"0\" step=\"any\" style=\"width:70px;padding:4px 8px\" onchange=\"updateIngredientQty('" + ri.ingredientId + "', this.value)\" oncontextmenu=\"" + ingCtx + "\"><select class=\"form-select\" style=\"width:56px;padding:4px 4px;font-size:11px\" onchange=\"updateIngredientUom('" + ri.ingredientId + "', this.value)\" oncontextmenu=\"" + ingCtx + "\">" + uomSel + "</select></div></td>" +
+        "<td onclick=\"event.stopPropagation()\" oncontextmenu=\"" + ingCtx + "\">" + (locked
+          ? "<span style=\"font-family:var(--nc-mono);font-size:12px\">" + ri.qty + " " + lineUom + "</span>"
+          : "<div style=\"display:flex;gap:4px;align-items:center\"><input class=\"form-input\" type=\"number\" value=\"" + ri.qty + "\" min=\"0\" step=\"any\" style=\"width:70px;padding:4px 8px\" onchange=\"updateIngredientQty('" + ri.ingredientId + "', this.value)\" oncontextmenu=\"" + ingCtx + "\"><select class=\"form-select\" style=\"width:56px;padding:4px 4px;font-size:11px\" onchange=\"updateIngredientUom('" + ri.ingredientId + "', this.value)\" oncontextmenu=\"" + ingCtx + "\">" + uomSel + "</select></div>") + "</td>" +
         "<td oncontextmenu=\"" + ingCtx + "\" class=\"num\" style=\"font-family:var(--nc-mono);font-size:12px\">" + (qtyPerBuom > 0 ? qtyPerBuom.toFixed(3) + " " + costUOM : "0") + (lineUom === "EACH" && qtyGForPct > 0 ? "<br><span style=\"color:var(--nc-gray-400);font-size:11px\">(" + Data.round(qtyGForPct) + "g)</span>" : "") + "</td>" +
         "<td oncontextmenu=\"" + ingCtx + "\" class=\"num\">" + pct + "%</td>" +
-        "<td onclick=\"event.stopPropagation()\" oncontextmenu=\"" + ingCtx + "\" class=\"num\"><input type=\"number\" class=\"form-input\" min=\"0\" max=\"99\" step=\"any\" value=\"" + lineScrapPct + "\" style=\"width:55px;padding:4px 6px\" onchange=\"updateRecipeLineScrapPct('ing:" + ri.ingredientId.replace(/'/g, "\\'") + "', this.value)\" title=\"This ingredient's own scrap when used in this recipe.\" oncontextmenu=\"" + ingCtx + "\">%</td>" +
+        "<td onclick=\"event.stopPropagation()\" oncontextmenu=\"" + ingCtx + "\" class=\"num\">" + (locked
+          ? "<span style=\"font-family:var(--nc-mono);font-size:12px\">" + lineScrapPct + "%</span>"
+          : "<input type=\"number\" class=\"form-input\" min=\"0\" max=\"99\" step=\"any\" value=\"" + lineScrapPct + "\" style=\"width:55px;padding:4px 6px\" onchange=\"updateRecipeLineScrapPct('ing:" + ri.ingredientId.replace(/'/g, "\\'") + "', this.value)\" title=\"This ingredient's own scrap when used in this recipe.\" oncontextmenu=\"" + ingCtx + "\">%") + "</td>" +
         "<td oncontextmenu=\"" + ingCtx + "\"><span style=\"font-size:12px;font-family:var(--nc-mono);color:var(--nc-gray-600)\" title=\"Edit this ingredient's cost in Ingredient Centre\">" + (ing.cost > 0 ? "£" + Number(ing.cost).toFixed(3) : "<span style=\"color:var(--nc-gray-300)\">—</span>") + "</span></td>" +
         "<td oncontextmenu=\"" + ingCtx + "\" class=\"num\" style=\"font-family:var(--nc-mono);font-size:12px\">" + costDisplay + "</td>" +
         "<td oncontextmenu=\"" + ingCtx + "\">" + (ing.fvn ? '<span class="badge badge-green" style="font-size:10px">FVN</span>' : "—") + "</td>" +
-        "<td onclick=\"event.stopPropagation()\" oncontextmenu=\"" + ingCtx + "\"><button class=\"btn btn-sm btn-danger\" onclick=\"removeIngredientFromRecipe('" + ri.ingredientId + "')\">×</button></td></tr>";
+        "<td onclick=\"event.stopPropagation()\" oncontextmenu=\"" + ingCtx + "\">" + (locked ? "" : "<button class=\"btn btn-sm btn-danger\" onclick=\"removeIngredientFromRecipe('" + ri.ingredientId + "')\">×</button>") + "</td></tr>";
     });
     // The comparison figure must be "cost per 1 unit of this recipe's own UOM" (matching
     // sheetCost's basis) — NOT the raw sum of line costs, which is "cost of the batch as

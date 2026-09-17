@@ -43,18 +43,84 @@ window.NutriCalcRecipes = (function () {
     saveData();
   }
 
+  // Mirrors app.js's isPackagingItem — recipes.js loads before app.js (see index.html script
+  // order) so it can't reference that function directly; duplicated here rather than reordering
+  // script loads. Keep in sync if the packaging-detection rule ever changes.
+  function isPackagingItem(ing) {
+    if (!ing) return false;
+    var c = (ing.cat || "").trim();
+    var nameStart = (ing.name || "").trim().toLowerCase();
+    return c === "Packaging" || (Data.isPackagingBySupplier && Data.isPackagingBySupplier(ing.supplier)) || nameStart.indexOf("nf ") === 0;
+  }
+
+  function isSingleIngredientRecipeLocal(rec) {
+    return !!(rec && rec.ingredients && rec.ingredients.length === 1 && rec.ingredients[0].ingredientId);
+  }
+
+  /** Weight (g) of 1 unit of this recipe's own UOM, for nutrition purposes — mirrors
+   * getRecipeUnitWeightG in app.js so an EACH-based line here uses the recipe's real per-unit
+   * weight instead of guessing. Manual override (rec.unitWeightG) wins; otherwise derived
+   * recursively from the recipe's own lines. */
+  function recipeUnitWeightGForNutrition(rec, ingredients, visited) {
+    visited = visited || {};
+    if (!rec) return 0;
+    if (rec.id && visited[rec.id]) return 0;
+    if (rec.id) visited[rec.id] = true;
+    if (rec.unitWeightG && rec.unitWeightG > 0) return rec.unitWeightG;
+    var recipes = getRecipes();
+    var total = 0;
+    (rec.ingredients || []).forEach(function (ri) { total += lineWeightGForNutrition(ri, ingredients, recipes, visited); });
+    return total;
+  }
+
+  /** Weight (g) a single recipe line contributes to the nutrition weight denominator.
+   * Packaging is excluded entirely (it isn't food and must not dilute kcal/100g), matching
+   * costWeightForLine/recipeLineWeightForTotal in app.js. EACH lines use the ingredient's real
+   * unitWeightG (or a sub-recipe's own derived unit weight) when known; otherwise excluded
+   * rather than guessed — the previous flat "1 EACH = 100g" assumption silently distorted
+   * per-100g nutrition for any EACH-counted line whose real weight differs from 100g. */
+  function lineWeightGForNutrition(ri, ingredients, recipes, visited) {
+    if (!ri) return 0;
+    var uom = (ri.uom || "G").toString().toUpperCase();
+    if (ri.ingredientId) {
+      var ing = ingredients.find(function (i) { return i.id === ri.ingredientId; });
+      if (isPackagingItem(ing)) return 0;
+      if (uom === "EACH") {
+        var unitG = ing ? Number(ing.unitWeightG || 0) : 0;
+        return unitG > 0 ? ri.qty * unitG : 0;
+      }
+      return Data.qtyToGrams ? Data.qtyToGrams(ri.qty, ri.uom) : ri.qty;
+    }
+    if (ri.subRecipeId) {
+      var subRec = recipes.find(function (r) { return r.id === ri.subRecipeId; });
+      if (!subRec) return 0;
+      if (isSingleIngredientRecipeLocal(subRec)) {
+        var baseLine = (subRec.ingredients || [])[0];
+        var baseIng = baseLine && baseLine.ingredientId ? ingredients.find(function (i) { return i.id === baseLine.ingredientId; }) : null;
+        if (isPackagingItem(baseIng)) return 0;
+      }
+      if (uom === "EACH") {
+        var subUnitG = recipeUnitWeightGForNutrition(subRec, ingredients, Object.assign({}, visited || {}));
+        return subUnitG > 0 ? ri.qty * subUnitG : 0;
+      }
+      return Data.qtyToGrams ? Data.qtyToGrams(ri.qty, ri.uom) : ri.qty;
+    }
+    return 0;
+  }
+
   function calcRecipeNutrition(recipe, ingredients, visited) {
     visited = visited || {};
     if (recipe.id && visited[recipe.id]) return { kj: 0, kcal: 0, fat: 0, sat: 0, carb: 0, sugar: 0, fibre: 0, protein: 0, salt: 0, totalWeight: 0 };
     if (recipe.id) visited[recipe.id] = true;
     var recipes = getRecipes();
     var totalWeight = (recipe.ingredients || []).reduce(function (s, ri) {
-      return s + (Data.qtyToGrams ? Data.qtyToGrams(ri.qty, ri.uom) : ri.qty);
+      return s + lineWeightGForNutrition(ri, ingredients, recipes, visited);
     }, 0);
     if (totalWeight === 0) return { kj: 0, kcal: 0, fat: 0, sat: 0, carb: 0, sugar: 0, fibre: 0, protein: 0, salt: 0, totalWeight: 0 };
     var kj = 0, kcal = 0, fat = 0, sat = 0, carb = 0, sugar = 0, fibre = 0, protein = 0, salt = 0;
     (recipe.ingredients || []).forEach(function (ri) {
-      var qtyG = Data.qtyToGrams ? Data.qtyToGrams(ri.qty, ri.uom) : ri.qty;
+      var qtyG = lineWeightGForNutrition(ri, ingredients, recipes, visited);
+      if (qtyG <= 0) return;
       var f = qtyG / 100;
       if (ri.subRecipeId) {
         var subRec = recipes.find(function (r) { return r.id === ri.subRecipeId; });

@@ -1114,6 +1114,42 @@ body.login-page-active .main-area #view-login .card {
   font-size: 11px;
   color: var(--nc-gray-400);
 }
+#recipe-ing-dropdown .ingredient-dropdown-item {
+  display: grid;
+  grid-template-columns: 42px minmax(70px, 1fr) 64px 78px 34px;
+  align-items: center;
+  gap: 6px;
+}
+#recipe-ing-dropdown .idi-status .badge,
+#recipe-ing-dropdown .idi-type .badge {
+  padding: 2px 5px;
+  white-space: nowrap;
+}
+#recipe-ing-dropdown .idi-code {
+  font-size: 11px;
+  color: var(--nc-gray-500);
+  font-family: var(--nc-mono);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#recipe-ing-dropdown .idi-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#recipe-ing-dropdown .idi-cost {
+  font-size: 12px;
+  font-family: var(--nc-mono);
+  color: var(--nc-gray-600);
+  text-align: right;
+  white-space: nowrap;
+}
+#recipe-ing-dropdown .idi-status,
+#recipe-ing-dropdown .idi-type {
+  text-align: right;
+  white-space: nowrap;
+}
 
 /* ── CONTEXT MENU (ingredient actions) ── */
 .context-menu {
