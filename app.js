@@ -17,6 +17,7 @@
 
   var PROJECT_FOLDERS_STORAGE_KEY = "nutricalc_project_folders";
   var EXPORT_TEMPLATES_STORAGE_KEY = "nutricalc_export_templates";
+  var COMPARISON_SAVES_STORAGE_KEY = "nutricalc_comparison_saves";
   var EXCEL_SAVES_STORAGE_KEY = "nutricalc_export_excel_saves";
   var EXCEL_SAVES_DB_NAME = "NutriCostExcelSaves";
   var EXCEL_SAVES_STORE_NAME = "saves";
@@ -378,7 +379,7 @@
     // Leaving the Comparisons/Compare-result pair for anywhere else resets the search and
     // selection, so coming back later starts fresh. Moving between comparisons and
     // comparison-result (Compare button, swap, Back) doesn't count as "leaving".
-    var COMPARISON_VIEWS = ["comparisons", "comparison-result"];
+    var COMPARISON_VIEWS = ["comparisons", "comparison-result", "comparison-saves"];
     if (COMPARISON_VIEWS.indexOf(currentName) !== -1 && COMPARISON_VIEWS.indexOf(name) === -1) {
       comparisonSelected = [];
       var compSearchInput = document.getElementById("comparison-search-input");
@@ -424,6 +425,7 @@
     if (name === "recipes") window.renderRecipesList();
     if (name === "project-recipes") window.renderProjectRecipesList();
     if (name === "comparisons") filterComparisonSearch();
+    if (name === "comparison-saves") renderComparisonSaves();
     persistLastView(name);
   }
 
@@ -448,6 +450,78 @@
     comparisonSelected = comparisonSelected.filter(function (s) { return !(s.kind === kind && s.id === id); });
     renderComparisonSelected();
     filterComparisonSearch();
+  }
+
+  // Named, reusable comparisons — {id, name, savedAt, items: [{kind,id,name,code}]} — kept
+  // client-side only (like Export Templates), since they're just a personal shortcut back to a
+  // particular set of items, not shared/authoritative data.
+  function getComparisonSaves() {
+    try {
+      var raw = localStorage.getItem(COMPARISON_SAVES_STORAGE_KEY);
+      if (raw) {
+        var arr = JSON.parse(raw);
+        return Array.isArray(arr) ? arr : [];
+      }
+    } catch (e) {}
+    return [];
+  }
+
+  function setComparisonSaves(saves) {
+    if (!Array.isArray(saves)) saves = [];
+    try {
+      localStorage.setItem(COMPARISON_SAVES_STORAGE_KEY, JSON.stringify(saves));
+    } catch (e) {}
+  }
+
+  /** "Save this comparison" button on the Comparison Result page — stores the current
+   * comparisonSelected set (whatever's currently being compared) under a name for later. */
+  function saveCurrentComparison() {
+    if (!comparisonSelected.length) return;
+    var defaultName = comparisonSelected.map(function (s) { return s.name; }).join(" vs ");
+    var name = prompt("Name this comparison:", defaultName);
+    if (!name) return;
+    var saves = getComparisonSaves();
+    saves.unshift({
+      id: Data.genId(),
+      name: name,
+      savedAt: new Date().toISOString(),
+      items: comparisonSelected.map(function (s) { return { kind: s.kind, id: s.id, name: s.name, code: s.code }; }),
+    });
+    setComparisonSaves(saves);
+    showToast("Comparison saved");
+  }
+
+  function renderComparisonSaves() {
+    var saves = getComparisonSaves();
+    var empty = document.getElementById("comparison-saves-empty");
+    var list = document.getElementById("comparison-saves-list");
+    if (!list) return;
+    if (empty) empty.style.display = saves.length ? "none" : "";
+    list.innerHTML = saves.map(function (save) {
+      var itemsLabel = save.items.map(function (it) { return it.name; }).join(", ");
+      var dateLabel = save.savedAt ? new Date(save.savedAt).toLocaleString() : "";
+      return "<div class=\"card\" style=\"padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap\">" +
+        "<div>" +
+        "<div style=\"font-weight:600\">" + save.name + "</div>" +
+        "<div style=\"font-size:12px;color:var(--nc-gray-500)\">" + itemsLabel + (dateLabel ? " · " + dateLabel : "") + "</div>" +
+        "</div>" +
+        "<div style=\"display:flex;gap:8px\">" +
+        "<button type=\"button\" class=\"btn btn-sm btn-primary\" onclick=\"openComparisonSave('" + save.id + "')\">Open</button>" +
+        "<button type=\"button\" class=\"btn btn-sm btn-danger\" onclick=\"deleteComparisonSave('" + save.id + "')\">Delete</button>" +
+        "</div></div>";
+    }).join("");
+  }
+
+  function openComparisonSave(id) {
+    var save = getComparisonSaves().find(function (s) { return s.id === id; });
+    if (!save) return;
+    comparisonSelected = save.items.slice();
+    renderComparisonTable();
+  }
+
+  function deleteComparisonSave(id) {
+    setComparisonSaves(getComparisonSaves().filter(function (s) { return s.id !== id; }));
+    renderComparisonSaves();
   }
 
   /** "Compare" button on the real Recipe Detail page — jumps to the Comparisons search page
@@ -6488,6 +6562,10 @@ desc: "Imported from " + (fname || "spreadsheet"),
   window.comparisonSelectedDrop = comparisonSelectedDrop;
   window.comparisonSelectedDragEnd = comparisonSelectedDragEnd;
   window.renderComparisonTable = renderComparisonTable;
+  window.saveCurrentComparison = saveCurrentComparison;
+  window.renderComparisonSaves = renderComparisonSaves;
+  window.openComparisonSave = openComparisonSave;
+  window.deleteComparisonSave = deleteComparisonSave;
   window.switchComparisonRecipeTab = switchComparisonRecipeTab;
   window.comparisonCardDragStart = comparisonCardDragStart;
   window.comparisonCardDragOver = comparisonCardDragOver;
