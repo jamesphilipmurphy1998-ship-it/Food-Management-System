@@ -10,9 +10,11 @@ using Microsoft.Extensions.FileProviders;
 using System.Text.Json;
 using NutriCost.Api.Persistence;
 
-// NutriCost must run on port 5001 only (5000 = homepage). Bind host is overridable via
-// ASPNETCORE_URLS (e.g. http://0.0.0.0:5001 on the Pi so LAN clients can connect);
-// defaults to localhost-only for local dev.
+// Pi prod always runs on port 5001 (5000 = homepage) — its systemd unit sets ASPNETCORE_URLS
+// explicitly. Local dev runs on 5055 instead (see backend/Properties/launchSettings.json,
+// which `dotnet run` applies automatically — no flags/env vars needed). This fallback only
+// kicks in for a truly bare invocation with no launch profile and no ASPNETCORE_URLS set
+// (e.g. running the published exe directly), in which case it mirrors prod's port/binding.
 var bindUrl = Environment.GetEnvironmentVariable("ASPNETCORE_URLS");
 if (string.IsNullOrEmpty(bindUrl))
 {

@@ -39,13 +39,30 @@ public sealed class ImportService(InMemoryStore store) : IImportService
         {
             var code = (row.Code ?? "").Trim();
             var code2 = (row.Code2 ?? "").Trim();
-            var itemName = (row.ItemDescription ?? "").Trim();
+            var rawItemName = (row.ItemDescription ?? "").Trim();
+            // Section-break detection must run on the RAW description, before the code-fallback
+            // below ever substitutes anything in — verified this caused a real, silent bug: an
+            // item with a blank description and a purely-numeric code (e.g. "107327", extremely
+            // common in this data) had its fallback name ("107327") wrongly parsed by
+            // int.TryParse as if it were a stray spreadsheet total row, so the ENTIRE row got
+            // skipped — silently dropping that item's own definition (its real cost, its link)
+            // from the import (confirmed: this is exactly what broke "P00040", which should be a
+            // proper single-component recipe linking to ingredient 107327 at £5.14, but instead
+            // got created as a bare, costless ingredient because its definition row was skipped
+            // outright). A genuine "1234"-style total row always HAS its own real (non-blank)
+            // text in that cell, so checking the raw value — never the substituted fallback —
+            // is both the correct fix and never loses real section-break detection. A genuinely
+            // blank description is the normal, expected case for these code-only items (that's
+            // the whole reason the fallback below exists) — LooksLikeSectionBreak itself treats
+            // blank as a match too, so it must only be checked when there's real text to judge.
+            if (!string.IsNullOrWhiteSpace(rawItemName) && LooksLikeSectionBreak(rawItemName)) continue;
+            var itemName = rawItemName;
             // Pull in rows that have a code but blank item description — use the code itself
             // as the name so it's identifiable and unique (a shared placeholder like "Null"
             // would make two different code-only items collide with each other).
             if (string.IsNullOrWhiteSpace(itemName) && (!string.IsNullOrWhiteSpace(code) || !string.IsNullOrWhiteSpace(code2)))
                 itemName = !string.IsNullOrWhiteSpace(code) ? code : code2;
-            if (string.IsNullOrWhiteSpace(itemName) || LooksLikeSectionBreak(itemName)) continue;
+            if (string.IsNullOrWhiteSpace(itemName)) continue;
 
             var parentVal = (row.ParentDescription ?? "").Trim();
             var parentCode = (row.ParentCode ?? "").Trim();
@@ -96,10 +113,16 @@ public sealed class ImportService(InMemoryStore store) : IImportService
                 Salt = salt
             };
 
+            // Codes are guaranteed unique (never reused between distinct items), while two
+            // genuinely different items can share an identical description (e.g. two Teriyaki
+            // sauce SKUs from different suppliers both literally named "CPU RM Sauce Teriyaki
+            // Kikkoman") — so code must win whenever present, with name only as a fallback for
+            // rows that genuinely have no code at all. Matching by name first previously merged
+            // such distinct items into one, silently discarding whichever wasn't matched first.
             var nameNorm = Norm(itemName);
-            var itemKey = (itemName == "Name not detected" || string.IsNullOrWhiteSpace(nameNorm))
-                ? (!string.IsNullOrWhiteSpace(Norm(code)) ? Norm(code) : Norm(code2))
-                : nameNorm;
+            var codeNorm = Norm(code);
+            var itemKey = !string.IsNullOrWhiteSpace(codeNorm) ? codeNorm
+                : (!string.IsNullOrWhiteSpace(Norm(code2)) ? Norm(code2) : nameNorm);
             if (!string.IsNullOrWhiteSpace(itemKey))
             {
                 if (!allItemDataByKey.TryGetValue(itemKey, out var existingItem))
@@ -114,9 +137,13 @@ public sealed class ImportService(InMemoryStore store) : IImportService
                 continue;
             }
 
-            var parentKey = (parentVal == "Name not detected" || string.IsNullOrWhiteSpace(Norm(parentVal)))
-                ? Norm(parentCode)
-                : Norm(parentVal);
+            // Group by CODE first (guaranteed unique — ParentItemNo), falling back to name only
+            // when a row genuinely has no code. Two distinct parent items can share an identical
+            // ParentDescription (verified: codes 105039 and 105041 both "CPU RM Sauce Teriyaki
+            // Kikkoman" at different costs) — grouping by name first merged them into one,
+            // silently dropping whichever one's rows were processed second.
+            var parentCodeNorm = Norm(parentCode);
+            var parentKey = !string.IsNullOrWhiteSpace(parentCodeNorm) ? parentCodeNorm : Norm(parentVal);
             if (string.IsNullOrWhiteSpace(parentKey)) { UpsertIngredient(item, result); continue; }
 
             parentValuesSet.Add(parentKey);
@@ -160,7 +187,11 @@ public sealed class ImportService(InMemoryStore store) : IImportService
         var parentCodesSet = new Dictionary<string, string>();
         foreach (var (parentKey, group) in recipeGroups)
         {
-            parentNamesSet[parentKey] = parentKey;
+            // parentKey is now code-primary (see above), so this must index by the group's
+            // actual NAME here — not parentKey itself, which would wrongly register a code as
+            // if it were a name and break every name-based fallback lookup below.
+            var nameKey = Norm(group.Name);
+            if (!string.IsNullOrWhiteSpace(nameKey)) parentNamesSet[nameKey] = parentKey;
             var code = Norm(group.Code);
             if (!string.IsNullOrWhiteSpace(code)) parentCodesSet[code] = parentKey;
         }
@@ -170,6 +201,7 @@ public sealed class ImportService(InMemoryStore store) : IImportService
         foreach (var (parentKey, group) in recipeGroups)
         {
             var parentCode = Norm(group.Code);
+            var parentName = Norm(group.Name);
             foreach (var (otherKey, otherGroup) in recipeGroups)
             {
                 if (otherKey == parentKey) continue;
@@ -177,7 +209,11 @@ public sealed class ImportService(InMemoryStore store) : IImportService
                 {
                     var itemNorm = Norm(item.ItemName);
                     var itemCodeNorm = Norm(!string.IsNullOrWhiteSpace(item.Code) ? item.Code : item.Code2);
-                    if (itemNorm == parentKey || (!string.IsNullOrWhiteSpace(parentCode) && itemCodeNorm == parentCode))
+                    // Code match is authoritative; name match is a fallback and only meaningful
+                    // when this parent's code wasn't what identified it in the first place (a
+                    // shared name no longer implies the same item now that codes take priority).
+                    if ((!string.IsNullOrWhiteSpace(parentCode) && itemCodeNorm == parentCode)
+                        || (!string.IsNullOrWhiteSpace(parentName) && itemNorm == parentName))
                         parentNamesAsItems.Add(parentKey);
                 }
             }
@@ -204,7 +240,20 @@ public sealed class ImportService(InMemoryStore store) : IImportService
         {
             if (singleComponentParents.Contains(parentKey)) continue;
             var recipeType = parentNamesAsItems.Contains(parentKey) ? "subRecipe" : "finishedProduct";
-            var existing = store.Recipes.FirstOrDefault(r => Norm(r.Name) == parentKey);
+            // parentKey is code-primary now — match the existing recipe by its own code first
+            // (guaranteed unique, so this correctly finds/updates the SAME recipe on a re-import
+            // even if its description gets edited), falling back to name ONLY when the group has
+            // no code AND the name-matched candidate has no code of its own either. Matching by
+            // name onto a recipe that already has a DIFFERENT valid code is exactly the
+            // duplicate-name collision this whole change exists to prevent — verified this
+            // caused real corruption: two distinct items both named "CPU RM Sauce Teriyaki
+            // Kikkoman" (codes 105039 and 105041) processed in the same run, the second one's
+            // content silently overwrote the first's existing, already-correct record via this
+            // exact fallback. A recipe that already owns a different code is never a valid name
+            // fallback target — its code makes it a distinct, already-identified item.
+            var groupCodeNorm = Norm(group.Code);
+            var existing = (!string.IsNullOrWhiteSpace(groupCodeNorm) ? store.Recipes.FirstOrDefault(r => Norm(r.Code) == groupCodeNorm) : null)
+                ?? store.Recipes.FirstOrDefault(r => Norm(r.Name) == Norm(group.Name) && string.IsNullOrWhiteSpace(Norm(r.Code)));
             // Sheet cost captured for every recipe (not just single-ingredient) purely for
             // display comparison against the tallied cost — never overrides the computed value.
             allItemDataByKey.TryGetValue(parentKey, out var ownGroupRow);
@@ -274,8 +323,16 @@ public sealed class ImportService(InMemoryStore store) : IImportService
             // re-upload refreshes this recipe's scrap/qty/UOM in place instead of creating a
             // duplicate with a new Id — otherwise anything already referencing the old Id (as
             // a subRecipeId elsewhere) would keep pointing at stale, unrefreshed data.
-            var existingSingle = store.Recipes.FirstOrDefault(r => Norm(r.Name) == parentKey)
-                ?? (!string.IsNullOrWhiteSpace(Norm(group.Code)) ? store.Recipes.FirstOrDefault(r => Norm(r.Code) == Norm(group.Code)) : null);
+            // Code first (guaranteed unique — see the multi-component path above for why), name
+            // only as a fallback when BOTH this group has no code AND the name-matched candidate
+            // has no code of its own — a name match onto a recipe that already has a different
+            // valid code is a duplicate-name collision, not the same item (verified: this exact
+            // gap let 105041's import content silently overwrite 105039's existing, already-
+            // correct single-ingredient recipe, since 105041 had no code match of its own and
+            // fell back to matching the shared name "CPU RM Sauce Teriyaki Kikkoman").
+            var singleGroupCodeNorm = Norm(group.Code);
+            var existingSingle = (!string.IsNullOrWhiteSpace(singleGroupCodeNorm) ? store.Recipes.FirstOrDefault(r => Norm(r.Code) == singleGroupCodeNorm) : null)
+                ?? store.Recipes.FirstOrDefault(r => Norm(r.Name) == Norm(group.Name) && string.IsNullOrWhiteSpace(Norm(r.Code)));
             Recipe rec;
             if (existingSingle is not null)
             {
@@ -320,8 +377,15 @@ public sealed class ImportService(InMemoryStore store) : IImportService
             {
                 var itemNorm = Norm(item.ItemName);
                 var itemCodeNorm = Norm(!string.IsNullOrWhiteSpace(item.Code) ? item.Code : item.Code2);
-                var itemParentKey = parentNamesSet.ContainsKey(itemNorm) ? itemNorm
-                    : (!string.IsNullOrWhiteSpace(itemCodeNorm) && parentCodesSet.TryGetValue(itemCodeNorm, out var pk) ? pk : "");
+                // Code first (guaranteed unique), name only as a fallback for a row with no code
+                // at all — matching by name first previously resolved a component reference to
+                // whichever of two same-named-but-different-coded parents happened to be
+                // registered first (see codes 105039/105041, both "CPU RM Sauce Teriyaki
+                // Kikkoman" at different costs), silently pointing every recipe that should use
+                // one at the other instead. parentNamesSet/parentCodesSet both map to the
+                // group's real (code-primary) parentKey now, not a raw name.
+                var itemParentKey = (!string.IsNullOrWhiteSpace(itemCodeNorm) && parentCodesSet.TryGetValue(itemCodeNorm, out var pkByCode)) ? pkByCode
+                    : (parentNamesSet.TryGetValue(itemNorm, out var pkByName) ? pkByName : "");
                 var isPackagingItem = string.Equals(item.Cat, "Packaging", StringComparison.OrdinalIgnoreCase)
                     || item.ItemName.StartsWith("NF ", StringComparison.OrdinalIgnoreCase);
                 var isExplicitItem = string.Equals(item.ComponentType, "Item", StringComparison.OrdinalIgnoreCase);
@@ -438,10 +502,25 @@ public sealed class ImportService(InMemoryStore store) : IImportService
         var codeN = Norm(code);
         var code2N = Norm(code2);
         var nameN = Norm(name);
-        return store.Ingredients.FirstOrDefault(i =>
-            (!string.IsNullOrWhiteSpace(codeN) && (Norm(i.Code) == codeN || i.AltCodes.Any(c => Norm(c) == codeN)))
-            || (!string.IsNullOrWhiteSpace(code2N) && (Norm(i.Code) == code2N || i.AltCodes.Any(c => Norm(c) == code2N)))
-            || (!string.IsNullOrWhiteSpace(nameN) && Norm(i.Name) == nameN));
+        // Code match tried FIRST, exclusively — not OR'd together with the name check in one
+        // query. Codes are guaranteed unique, while two distinct ingredients can share an
+        // identical name, so a single combined OR query risks returning a same-named-but-wrong
+        // ingredient (whichever comes first in the list) even when an exact code match exists
+        // elsewhere. Name is only consulted as a fallback when no code was supplied at all.
+        if (!string.IsNullOrWhiteSpace(codeN) || !string.IsNullOrWhiteSpace(code2N))
+        {
+            var byCode = store.Ingredients.FirstOrDefault(i =>
+                (!string.IsNullOrWhiteSpace(codeN) && (Norm(i.Code) == codeN || i.AltCodes.Any(c => Norm(c) == codeN)))
+                || (!string.IsNullOrWhiteSpace(code2N) && (Norm(i.Code) == code2N || i.AltCodes.Any(c => Norm(c) == code2N))));
+            if (byCode is not null) return byCode;
+        }
+        // Name fallback only matches an ingredient that has NO code of its own — matching onto
+        // one that already has a different valid code is a duplicate-name collision, not the
+        // same item (verified this exact gap corrupted an existing recipe elsewhere in this
+        // file; same fix applied here for consistency).
+        return !string.IsNullOrWhiteSpace(nameN)
+            ? store.Ingredients.FirstOrDefault(i => Norm(i.Name) == nameN && string.IsNullOrWhiteSpace(Norm(i.Code)))
+            : null;
     }
 
     private static Ingredient CreateIngredient(ItemData item)

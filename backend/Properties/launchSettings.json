@@ -2,7 +2,10 @@
   "profiles": {
     "NutriCost.Api": {
       "commandName": "Project",
-      "applicationUrl": "http://localhost:5001"
+      "applicationUrl": "http://localhost:5055",
+      "environmentVariables": {
+        "NUTRICOST_AUTH_MODE": "disabled"
+      }
     }
   }
 }

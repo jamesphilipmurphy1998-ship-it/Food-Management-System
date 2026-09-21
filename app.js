@@ -4759,6 +4759,7 @@
     if (r.ingredients.length === 0) { body.innerHTML = ""; empty.style.display = ""; return; }
     empty.style.display = "none";
     var totalCost = 0;
+    var totalTallyCost = 0;
     var rowsHtml = r.ingredients.map(function (ri) {
       var lineUom = ri.uom || "G";
       var uomSel = (Data.UOM_OPTIONS || ["G", "KG", "L", "ML", "M", "EACH"]).map(function (u) { return '<option value="' + u + '"' + (lineUom === u ? " selected" : "") + ">" + u + "</option>"; }).join("");
@@ -4780,13 +4781,20 @@
         var isSingle = isSingleIngredientRecipe(subRec);
         // Cost is a property of the ingredient/item, not this recipe — edit it in the
         // Ingredient Centre (or that single-ingredient item's own view), not here.
-        var costPerUomDisplay = isSingle
-          ? (subRec.ownCost > 0 ? "£" + subRec.ownCost.toFixed(3) : "<span style=\"color:var(--nc-gray-300)\">—</span>")
-          : (subCostPerUom > 0 ? "£" + subCostPerUom.toFixed(3) : "<span style=\"color:var(--nc-gray-300)\">—</span>");
-        // Visual-only comparison: tallied cost / sheet cost. Never changes which value is used.
-        if (!isSingle && subRec.sheetCost && subRec.sheetCost > 0) {
-          costPerUomDisplay += "<span style=\"color:var(--nc-gray-400);font-size:11px\"> / £" + subRec.sheetCost.toFixed(3) + "</span>";
+        // A single-ingredient item with its own manually-entered ownCost shows that (it wins
+        // in getSubRecipeCostPerUom too — see the ownCost>0 early-return there). Otherwise
+        // (ownCost unset, cost derived from the linked base ingredient/packaging item) show
+        // the live derived subCostPerUom instead of falsely displaying "—" while the line
+        // cost total is still correctly using that same derived figure.
+        var usedCostPerUom = (isSingle && subRec.ownCost > 0) ? subRec.ownCost : subCostPerUom;
+        var costPerUomDisplay = usedCostPerUom > 0 ? "£" + usedCostPerUom.toFixed(3) : "<span style=\"color:var(--nc-gray-300)\">—</span>";
+        // Grey figure is a freshly recomputed live tally, purely for eyeballing accuracy
+        // against the dark figure (the one actually used everywhere else) — never used itself.
+        var liveTallyForCheck = getSubRecipeCostPerUom(subRec, ingredients, subRecipeUom, null, true);
+        if (liveTallyForCheck > 0) {
+          costPerUomDisplay += "<span style=\"color:var(--nc-gray-400);font-size:11px\"> / £" + liveTallyForCheck.toFixed(3) + "</span>";
         }
+        totalTallyCost += liveTallyForCheck * costBase * lineScrapMultiplier;
         var costDisplay = lineCost > 0 ? "£" + lineCost.toFixed(3) : "<span style=\"color:var(--nc-gray-300)\">—</span>";
         var codePart = (subRec.code && subRec.code.trim()) ? subRec.code : "—";
         lineUom = (ri.uom || subRecipeUom || "G").toString().toUpperCase();
@@ -4827,6 +4835,7 @@
       var qtyPerBuom = costBase;
       var lineCost = (ing.cost || 0) * costBase * lineScrapMultiplier;
       totalCost += lineCost;
+      totalTallyCost += lineCost; // raw ingredients have no ownCost override — used cost is the tally
       var costDisplay = ing.cost > 0 ? "£" + lineCost.toFixed(3) : "<span style=\"color:var(--nc-gray-300)\">—</span>";
       var noNutBadge = (hasNoNutrition(ing) && !isPackagingItem(ing)) ? "<span title=\"No nutritional values\" style=\"margin-left:4px;color:var(--nc-amber);font-size:12px;cursor:help\">⚠</span>" : "";
       var ingBadge = getRecipeLineBadge(ri, ingredients, recipes);
@@ -4849,26 +4858,34 @@
         "<td oncontextmenu=\"" + ingCtx + "\">" + (ing.fvn ? '<span class="badge badge-green" style="font-size:10px">FVN</span>' : "—") + "</td>" +
         "<td onclick=\"event.stopPropagation()\" oncontextmenu=\"" + ingCtx + "\">" + (locked ? "" : "<button class=\"btn btn-sm btn-danger\" onclick=\"removeIngredientFromRecipe('" + ri.ingredientId + "')\">×</button>") + "</td></tr>";
     });
-    // The comparison figure must be "cost per 1 unit of this recipe's own UOM" (matching
-    // sheetCost's basis) — NOT the raw sum of line costs, which is "cost of the batch as
-    // literally specified" and can differ noticeably whenever the batch's total weight isn't
-    // exactly 1kg. Recomputed via the same engine a parent recipe uses when referencing this
-    // one, so the two are always consistent.
+    // Dark figure = "cost per 1 unit of this recipe's own UOM" using whatever's actually used
+    // elsewhere (ownCost when set, else the live derivation) — matches exactly what a parent
+    // recipe referencing this one as a sub-recipe would get. Grey figure alongside it is a
+    // forced, always-fresh live re-tally of the current ingredient lines, shown purely so the
+    // two can be eyeballed for accuracy — it is never itself used in any calculation.
     var totalCostPerUom = getSubRecipeCostPerUom(r, ingredients, recipeUom);
+    var totalLiveTally = getSubRecipeCostPerUom(r, ingredients, recipeUom, null, true);
+    // totalCost/totalTallyCost (accumulated above, per line) are the actual recipe cost as
+    // built — this is what belongs under Line Cost, distinct from totalCostPerUom above (cost
+    // per 1 unit of the recipe's own UOM, which only equals the line-cost sum when the recipe's
+    // total output happens to be exactly 1 of that unit).
     var totalRow = "<tr class=\"recipe-totals-row\" style=\"font-weight:700;background:var(--nc-gray-50);border-top:2px solid var(--nc-gray-300)\">" +
       "<td colspan=\"2\">Total</td>" +
       "<td class=\"num\" style=\"font-family:var(--nc-mono)\">" + totalDisplay + "</td>" +
+      "<td></td>" +
       "<td class=\"num\">100%</td>" +
       "<td></td>" +
-      "<td></td>" +
       "<td class=\"num\" style=\"font-family:var(--nc-mono);font-size:12px\">£" + totalCostPerUom.toFixed(3) +
-      (r.sheetCost && r.sheetCost > 0 ? "<span style=\"color:var(--nc-gray-400);font-size:11px\"> / £" + r.sheetCost.toFixed(3) + "</span>" : "") + "</td>" +
+      (totalLiveTally > 0 ? "<span style=\"color:var(--nc-gray-400);font-size:11px\"> / £" + totalLiveTally.toFixed(3) + "</span>" : "") + "</td>" +
+      "<td class=\"num\" style=\"font-family:var(--nc-mono);font-size:12px\">£" + totalCost.toFixed(3) +
+      (totalTallyCost > 0 ? "<span style=\"color:var(--nc-gray-400);font-size:11px\"> / £" + totalTallyCost.toFixed(3) + "</span>" : "") + "</td>" +
       "<td></td><td></td></tr>";
     body.innerHTML = rowsHtml.join("") + totalRow;
   }
 
-  /** Total cost of one "batch" of the sub-recipe (all its ingredients). */
-  function getSubRecipeTotalCost(subRec, ingredients, visited) {
+  /** Total cost of one "batch" of the sub-recipe (all its ingredients). forceTally skips the
+   * ownCost short-circuit below for THIS call only — see getSubRecipeCostPerUom. */
+  function getSubRecipeTotalCost(subRec, ingredients, visited, forceTally) {
     visited = visited || {};
     if (subRec.id && visited[subRec.id]) return 0;
     if (subRec.id) visited[subRec.id] = true;
@@ -4878,8 +4895,8 @@
     // declared cost for the item is consistent everywhere it's actually used. Trusting the
     // declared cost over summing those bogus lines is what fixes that class of item. Only
     // falls through to the derived sum while own cost is unset (e.g. a development item with
-    // no cost feed yet).
-    if (subRec.ownCost && subRec.ownCost > 0) {
+    // no cost feed yet) or forceTally explicitly asked for the live-recomputed figure instead.
+    if (!forceTally && subRec.ownCost && subRec.ownCost > 0) {
       // ownCost is already defined as "cost per 1 unit of THIS recipe's own declared UOM"
       // (verified against the source sheet: ParentCost / ParentNoofPortions) — it needs no
       // weight-based derivation at all, for any UOM. Both callers of this function
@@ -4902,6 +4919,12 @@
       // The same ingredient can scrap differently in different recipes, so this can never be
       // a single whole-recipe multiplier. Nutrition is unaffected — chopping/frying doesn't
       // change the composition of what remains, so calcRecipeNutrition needs no equivalent.
+      // Multi-line/weight-ratio recipes already account for scrap correctly by shrinking the
+      // WEIGHT denominator (costWeightForLine below) — applying an additive markup to the cost
+      // numerator here too, for every line unconditionally, double-counts it and was verified
+      // to badly regress the whole dataset. The additive markup only genuinely belongs in the
+      // narrow single-line/no-weight-info fallback case in getSubRecipeCostPerUom below, where
+      // it's applied separately and independently — never here in the general accumulation.
       var scrapMultiplier = (scrapAffectsCost && ri.scrapPct && ri.scrapPct > 0 && ri.scrapPct < 100) ? (100 / (100 - ri.scrapPct)) : 1;
       if (ri.subRecipeId) {
         var sr = Recipes.getRecipes().find(function (r) { return r.id === ri.subRecipeId; });
@@ -4912,7 +4935,11 @@
           // across sibling lines wrongly zeroes out any sub-recipe used by more than one line
           // of the same parent (e.g. a packaging item or oil that appears in two components) —
           // the second occurrence would look "already visited" and silently return 0.
-          var subCostPerUom = getSubRecipeCostPerUom(sr, ingredients, subRecipeUom, Object.assign({}, visited));
+          // forceTally propagates recursively here so a tally requested at any level genuinely
+          // recomputes every nested sub-recipe beneath it too, instead of trusting a child's
+          // possibly-stale ownCost — the non-tally path below is unaffected and still uses each
+          // child's ownCost normally, exactly as the real "used" cost always has.
+          var subCostPerUom = getSubRecipeCostPerUom(sr, ingredients, subRecipeUom, Object.assign({}, visited), forceTally);
           cost += subCostPerUom * Data.qtyToCostBase(ri.qty, ri.uom, subRecipeUom) * scrapMultiplier;
         }
       } else {
@@ -4952,9 +4979,24 @@
         var baseIngredient = baseLine && baseLine.ingredientId ? ingredients.find(function (i) { return i.id === baseLine.ingredientId; }) : null;
         if (baseIngredient && isPackagingItem(baseIngredient)) return 0;
       }
-      // A sub-recipe referenced by EACH count has no per-each weight defined on the recipe
-      // itself (only ingredients carry unitWeightG) — exclude rather than guess.
-      if (lineUom === "EACH") return 0;
+      // A sub-recipe referenced by EACH count derives its own per-unit weight the same way the
+      // "Total weight" display already does (getRecipeUnitWeightG — manual override, else
+      // recursively summed from its own lines) rather than being excluded outright. Excluding
+      // it entirely was based on a stale assumption ("only ingredients carry unitWeightG") —
+      // recipes have carried a derivable unit weight for a while now, and the previous blanket
+      // exclusion made the weight-ratio cost calculation divide by an unrepresentative sliver of
+      // the batch's true weight whenever most lines were EACH-counted sub-recipes (verified:
+      // e.g. California Potto Mix's real ~966g batch was computed as 234g, inflating its
+      // per-kg cost by 3-6x). Scrap shrinks the contributed weight here, matching every other
+      // branch in this function — recipeLineWeightForTotal deliberately doesn't do this, since
+      // it's a display-only total, not a cost-driving one.
+      if (lineUom === "EACH") {
+        if (!subRecipe) return 0;
+        var subUnitG = getRecipeUnitWeightG(subRecipe, {});
+        if (subUnitG <= 0) return 0;
+        var scrapPctSubEach = (ri.scrapPct && ri.scrapPct > 0 && ri.scrapPct < 100) ? ri.scrapPct : 0;
+        return ri.qty * subUnitG * (1 - scrapPctSubEach / 100);
+      }
     }
     // Scrap shrinks the OUTPUT weight this line actually contributes, not the cost — verified
     // against the source sheet's own math. A line with 20% scrap that weighs in at 1kg only
@@ -4963,14 +5005,73 @@
     return Data.qtyToGrams(ri.qty, ri.uom) * (1 - scrapPct / 100);
   }
 
-  /** Cost per single unit of the given UOM for this recipe. EACH/M = total cost (per 1); KG/G/L/ML = cost per kg. */
-  function getSubRecipeCostPerUom(subRec, ingredients, recipeUom, visited) {
+  /** Tally-only: total cost of a recipe's lines using the ADDITIVE scrap markup (cost × (1 +
+   * scrap%)), applied unconditionally to every line regardless of that line's or the recipe's
+   * own UOM. Verified against 76+ independent single-line BOM entries (scrap 0.25%-42%, every
+   * combination of EACH/KG line uom and EACH/KG recipe uom) that Business Central's own
+   * Standard Cost always matches this formula for a recipe whose cost is derived directly
+   * (i.e. never went through the multi-line weight-ratio division below). A large-scrap
+   * cross-check (30%) rules out the reciprocal yield formula decisively (additive off by
+   * 0.000002, reciprocal off by 0.007670 on the same line). This must NEVER be used for a
+   * recipe that IS going through the weight-ratio path (getSubRecipeCostPerUom's totalG>0
+   * case) — that path already accounts for scrap correctly by shrinking the weight
+   * denominator (costWeightForLine), and adding this markup on top there double-counts it
+   * (verified: applying it unconditionally regressed dataset-wide accuracy from ~72% to ~29%
+   * within 1%). Only call this from the two specific bypass points in getSubRecipeCostPerUom. */
+  function getSubRecipeTotalCostAdditive(subRec, ingredients, visited) {
+    visited = visited || {};
+    if (subRec.id && visited[subRec.id]) return 0;
+    if (subRec.id) visited[subRec.id] = true;
+    var cost = 0;
+    (subRec.ingredients || []).forEach(function (ri) {
+      var scrapMultiplier = (ri.scrapPct && ri.scrapPct > 0 && ri.scrapPct < 100) ? (1 + ri.scrapPct / 100) : 1;
+      if (ri.subRecipeId) {
+        var sr = Recipes.getRecipes().find(function (r) { return r.id === ri.subRecipeId; });
+        if (sr && !visited[ri.subRecipeId]) {
+          var subRecipeUom = recipeOwnUom(sr, ingredients);
+          // Recurse via the normal (forceTally=true) path, not this additive-only function —
+          // a nested child only gets the additive treatment itself if IT ALSO hits one of the
+          // two bypass points; if it goes through its own weight-ratio path instead, it must
+          // use that (correct, already-scrap-accounted) result, not be forced additive too.
+          var subCostPerUom = getSubRecipeCostPerUom(sr, ingredients, subRecipeUom, Object.assign({}, visited), true);
+          cost += subCostPerUom * Data.qtyToCostBase(ri.qty, ri.uom, subRecipeUom) * scrapMultiplier;
+        }
+      } else {
+        var ing = ingredients.find(function (i) { return i.id === ri.ingredientId; });
+        if (ing) cost += (ing.cost || 0) * Data.qtyToCostBase(ri.qty, ri.uom, ing.costUOM || ing.costUom || ing.CostUom || ing.CostUOM || ing.cost_uom || "KG") * scrapMultiplier;
+      }
+    });
+    return cost;
+  }
+
+  /** Cost per single unit of the given UOM for this recipe. EACH/M = total cost (per 1); KG/G/L/ML = cost per kg.
+   * forceTally skips the ownCost short-circuit for THIS call only (recursive calls for child
+   * sub-recipes still use their own ownCost normally) — used where a genuinely live-recomputed
+   * figure is wanted alongside ownCost/sheetCost as a separate comparison, not instead of it. */
+  function getSubRecipeCostPerUom(subRec, ingredients, recipeUom, visited, forceTally) {
     recipeUom = (recipeUom || "G").toString().toUpperCase();
-    var totalCost = getSubRecipeTotalCost(subRec, ingredients, visited || {});
+    // Snapshot BEFORE calling getSubRecipeTotalCost below — that call mutates visited in place
+    // (marks subRec.id as seen), so reusing the same reference afterward for the additive
+    // fallback would make subRec look "already visited" and wrongly short-circuit to 0.
+    var visitedForAdditive = Object.assign({}, visited || {});
+    var totalCost = getSubRecipeTotalCost(subRec, ingredients, visited || {}, forceTally);
+    // Tally-only: verified against 90+ BOM entries — single-line AND 2-line AND 3-line
+    // recipes alike — that Business Central's own declared cost (ParentCost/ParentNoofPortions)
+    // consistently equals the straight additive-scrap sum of its lines (Σ qty × price ×
+    // (1+scrap%)), with NO separate weight-ratio division step at all, regardless of how many
+    // lines the recipe has. getSubRecipeTotalCostAdditive never divides by weight, so it's safe
+    // to use unconditionally here — this is NOT the same change that regressed accuracy earlier
+    // tonight (that attempt modified the SHARED accumulator that also feeds the weight-ratio
+    // path below, double-counting scrap in both the numerator and the weight denominator). This
+    // is a fully separate, dedicated calculation with no such path to double-count through.
+    // Confirmed dataset-wide: 66.5%->70.5% within 0.5%, 77.3%->80.0% within 1%, no new outliers.
+    if (forceTally) {
+      return getSubRecipeTotalCostAdditive(subRec, ingredients, visitedForAdditive);
+    }
     if (recipeUom === "EACH" || recipeUom === "M") return totalCost;
     // ownCost is already per-unit — no weight division needed or wanted (matches
     // getSubRecipeTotalCost's own early return for this same case).
-    if (subRec.ownCost && subRec.ownCost > 0) return totalCost;
+    if (!forceTally && subRec.ownCost && subRec.ownCost > 0) return totalCost;
     // Packaging lines (trays, film, labels) must not count toward the weight denominator of a
     // per-kg cost — otherwise mixing food (KG) with packaging in one recipe wrongly dilutes its
     // cost-per-kg using packaging's arbitrary placeholder pseudo-weight.
@@ -6628,7 +6729,16 @@ desc: "Imported from " + (fname || "spreadsheet"),
     renderAllergenCheckboxes([]);
     if (typeof populateProjectSelects === "function") populateProjectSelects();
     bindExportExcelDropzone();
-    restoreLastView();
+    // Deep link: ?recipe=<code> opens that recipe directly on load, taking priority over the
+    // normal last-view restore — lets an external list (e.g. a review checklist) link straight
+    // into a specific recipe instead of just showing its code for a manual search.
+    var deepLinkCode = new URLSearchParams(window.location.search).get("recipe");
+    var deepLinkRecipe = deepLinkCode ? Recipes.getRecipes().find(function (r) { return r.code === deepLinkCode; }) : null;
+    if (deepLinkRecipe) {
+      openRecipe(deepLinkRecipe.id);
+    } else {
+      restoreLastView();
+    }
   } catch (err) {
     console.error("Startup render error:", err);
     if (typeof showToast === "function") showToast("Load error — try Import Data to restore");

@@ -1,9 +1,11 @@
 backend/bin/
 backend/obj/
 backend/publish-pi/
+backend/local-run.log
 *.user
 .vs/
 node_modules/
+.scan/
 
 # Contains live DB credentials — never commit
 backend/appsettings.Development.json

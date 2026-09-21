@@ -11,13 +11,22 @@ scripts never touch this.
 |---|---|---|
 | **Raspberry Pi** (`192.168.0.50`) | NutriCost API + static frontend, backed by Postgres | **http://192.168.0.50:5001** |
 | **Pi, same Postgres server** | `nutricost` database, owned by `nutricost_app` user | `localhost:5432` (Pi-local only) |
-| Local dev machine (optional) | Same backend, run locally for editing/testing | `http://localhost:5001` |
+| Local dev machine (optional) | Same backend, run locally for editing/testing | `http://localhost:5055` |
 
 Auth is **disabled** on the Pi deployment (`NUTRICOST_AUTH_MODE=disabled`) — there's no
 Wasabi Apps homepage service running on the Pi for NutriCost to redirect to, so the login
 check is skipped entirely there. Locally (no env var set) auth still behaves as coded
 (redirects to `http://localhost:5000`), which only matters if the homepage is also
 running locally.
+
+**Local dev is 5055, not 5001 — never confuse the two.** `5001` in this file always means
+Pi prod (`192.168.0.50:5001`), a different physical machine. Local dev's `5055` is
+`localhost`-only on this machine and talks to a completely separate database (Supabase, see
+below) — same port *number* as something else is not the same server. Don't run a local
+backend instance against the same database another instance (yours or a previous session's)
+is already using — two processes writing to one live database at once causes exactly the
+kind of silent overwrite that's bitten this project before. Check for an existing instance
+before starting a new one.
 
 ## Isolation from Timeline (by design — do not merge these)
 
@@ -42,10 +51,12 @@ cd C:\Dev\NutriCost\backend
 dotnet run
 ```
 
-Opens on **http://localhost:5001**. It talks to whatever's in
-`backend/appsettings.Development.json` (`ConnectionStrings:Default`) — currently the
-**same Pi database** (`192.168.0.50`), so local runs and the Pi deployment can share
-live data. Migrations (`db.Database.Migrate()`) run automatically on startup.
+Opens on **http://localhost:5055** — that's set in `backend/Properties/launchSettings.json`
+(which `dotnet run` applies automatically; no flags or env vars needed). It talks to
+whatever's in `backend/appsettings.Development.json` (`ConnectionStrings:Default`) —
+currently a **Supabase-hosted dev database**, entirely separate from the Pi's own
+Postgres. Local runs and the Pi deployment do **not** share data. Migrations
+(`db.Database.Migrate()`) run automatically on startup.
 
 If you only want to preview the static UI with no backend/data, there's a zero-dependency
 option: `powershell -File static-server.ps1` serves the same frontend files on port 5005
