@@ -1085,6 +1085,11 @@ body.login-page-active .main-area #view-login .card {
   color: var(--nc-gray-400);
 }
 
+/* ── RECIPE LINE NAVIGATION (code/name cells only — qty/uom/etc. must stay clickable-to-edit) ── */
+.recipe-line-nav { cursor: pointer; }
+.recipe-line-nav:hover { text-decoration: underline; }
+.recipe-line-nav:hover .badge { text-decoration: none; }
+
 /* ── INGREDIENT SEARCH DROPDOWN ── */
 .ingredient-search-wrap { position: relative; }
 .ingredient-dropdown {

@@ -250,12 +250,35 @@ app.MapPut("/api/ingredients", async (AppDbContext db, List<Ingredient> ingredie
         await db.SaveChangesAsync();
     }
 
-    db.Ingredients.RemoveRange(db.Ingredients);
-    await db.SaveChangesAsync();
-
-    db.Ingredients.AddRange(ingredients.Select(i => i.ToEntity()));
+    // Upsert by id — never deletes a row the caller didn't send. A full replace here meant any
+    // client holding a stale in-memory snapshot would silently wipe out records other clients
+    // added since that snapshot was taken (this caused real data loss more than once). Deletion
+    // now only happens via the dedicated DELETE endpoint below.
+    var idsToUpsert = ingredients.Select(i => i.Id).Where(id => !string.IsNullOrWhiteSpace(id)).ToHashSet();
+    var trackedExisting = await db.Ingredients.Where(x => idsToUpsert.Contains(x.Id)).ToDictionaryAsync(x => x.Id);
+    foreach (var ing in ingredients)
+    {
+        if (string.IsNullOrWhiteSpace(ing.Id)) continue;
+        if (trackedExisting.TryGetValue(ing.Id, out var entity))
+        {
+            db.Entry(entity).CurrentValues.SetValues(ing.ToEntity());
+        }
+        else
+        {
+            db.Ingredients.Add(ing.ToEntity());
+        }
+    }
     await db.SaveChangesAsync();
     return Results.Ok(new { count = ingredients.Count });
+});
+
+app.MapDelete("/api/ingredients/{id}", async (AppDbContext db, string id) =>
+{
+    var entity = await db.Ingredients.FindAsync(id);
+    if (entity == null) return Results.NotFound();
+    db.Ingredients.Remove(entity);
+    await db.SaveChangesAsync();
+    return Results.NoContent();
 });
 
 app.MapGet("/api/ingredients/{id}/versions", async (AppDbContext db, string id) =>
@@ -288,13 +311,38 @@ app.MapPost("/api/ingredients/{id}/latest-version-comment", async (AppDbContext 
 
 app.MapPut("/api/recipes", async (AppDbContext db, List<Recipe> recipes) =>
 {
-    db.RecipeLines.RemoveRange(db.RecipeLines);
-    db.Recipes.RemoveRange(db.Recipes);
-    await db.SaveChangesAsync();
-
-    db.Recipes.AddRange(recipes.Select(r => r.ToEntity()));
+    if (recipes == null) recipes = [];
+    // Upsert by id — never deletes a recipe the caller didn't send (see the ingredients PUT
+    // above for why: a stale full-replace silently deletes anything added since the snapshot).
+    // Deletion now only happens via the dedicated DELETE endpoint below.
+    var idsToUpsert = recipes.Select(r => r.Id).Where(id => !string.IsNullOrWhiteSpace(id)).ToHashSet();
+    var trackedExisting = await db.Recipes.Include(r => r.Lines).Where(r => idsToUpsert.Contains(r.Id)).ToDictionaryAsync(r => r.Id);
+    foreach (var recipe in recipes)
+    {
+        if (string.IsNullOrWhiteSpace(recipe.Id)) recipe.Id = "id_" + Guid.NewGuid().ToString("N")[..9];
+        var incoming = recipe.ToEntity();
+        if (trackedExisting.TryGetValue(recipe.Id, out var entity))
+        {
+            db.Entry(entity).CurrentValues.SetValues(incoming);
+            db.RecipeLines.RemoveRange(entity.Lines);
+            entity.Lines = incoming.Lines.Select(l => { l.RecipeId = entity.Id; return l; }).ToList();
+        }
+        else
+        {
+            db.Recipes.Add(incoming);
+        }
+    }
     await db.SaveChangesAsync();
     return Results.Ok(new { count = recipes.Count });
+});
+
+app.MapDelete("/api/recipes/{id}", async (AppDbContext db, string id) =>
+{
+    var entity = await db.Recipes.Include(r => r.Lines).FirstOrDefaultAsync(r => r.Id == id);
+    if (entity == null) return Results.NotFound();
+    db.Recipes.Remove(entity);
+    await db.SaveChangesAsync();
+    return Results.NoContent();
 });
 
 app.MapGet("/api/where-used/ingredient/{ingredientId}", async (AppDbContext db, string ingredientId) =>

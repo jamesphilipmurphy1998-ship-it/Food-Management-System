@@ -40,7 +40,7 @@ window.NutriCalcRecipes = (function () {
 
   function deleteRecipe(id) {
     recipes = recipes.filter(function (r) { return r.id !== id; });
-    saveData();
+    if (Storage && Storage.deleteRecipe) Storage.deleteRecipe(id);
   }
 
   // Mirrors app.js's isPackagingItem — recipes.js loads before app.js (see index.html script

@@ -16,7 +16,7 @@ param(
     [string]$PiHost = "192.168.0.50",
     [string]$PiUser = "dizziness7883",
     [string]$Service = "nutricost",
-    [string]$OneDriveFolder = "C:\Users\JamesMurphy\OneDrive - Wasabi\WASUK - Food Team - NPD\Wasabi AI Development Projects Saves\NutriCost\Wasabi FMS"
+    [string]$OneDriveFolder = "C:\Users\JamesMurphy\OneDrive - Wasabi\WASUK - Food Team - NPD\New Wasabi System Development\FMS System\2. Wasabi FMS Code & Database Backups"
 )
 
 $ErrorActionPreference = "Stop"

@@ -41,7 +41,7 @@ window.NutriCalcIngredients = (function () {
 
   function deleteIngredient(id) {
     ingredients = ingredients.filter(function (i) { return i.id !== id; });
-    saveData();
+    if (Storage && Storage.deleteIngredient) Storage.deleteIngredient(id);
   }
 
   function loadSampleIngredients() {

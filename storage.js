@@ -143,6 +143,24 @@ window.NutriCalcStorage = (function () {
     queueSaveRecipes();
   }
 
+  // Real deletes, separate from setIngredients/setRecipes — the PUT endpoints are upserts and
+  // never remove a row the caller didn't send, specifically so a stale cached array can't
+  // silently wipe out records added elsewhere. Deleting something has to say so explicitly.
+  function deleteIngredient(id) {
+    ingredientsCache = ingredientsCache.filter(function (i) { return i.id !== id; });
+    localSetIngredients(ingredientsCache);
+    if (useApiMode && API_BASE_URL) {
+      apiRequestAsync("DELETE", "/ingredients/" + encodeURIComponent(id), null).catch(function () {});
+    }
+  }
+  function deleteRecipe(id) {
+    recipesCache = recipesCache.filter(function (r) { return r.id !== id; });
+    localSetRecipes(recipesCache);
+    if (useApiMode && API_BASE_URL) {
+      apiRequestAsync("DELETE", "/recipes/" + encodeURIComponent(id), null).catch(function () {});
+    }
+  }
+
   // Initial non-blocking refresh from backend.
   setTimeout(function () { refreshFromApi(); }, 0);
 
@@ -151,6 +169,8 @@ window.NutriCalcStorage = (function () {
     setIngredients: setIngredients,
     getRecipes: getRecipes,
     setRecipes: setRecipes,
+    deleteIngredient: deleteIngredient,
+    deleteRecipe: deleteRecipe,
     refreshFromApi: refreshFromApi,
     useLocal: function () { useApiMode = false; },
     useApi: function (baseUrl) {

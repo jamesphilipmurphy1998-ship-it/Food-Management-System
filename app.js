@@ -164,6 +164,34 @@
     return !!ing[0].ingredientId && !ing[0].subRecipeId;
   }
 
+  /** The UOM a recipe presents itself as everywhere it's costed, weighed, or referenced from a
+   * parent (e.g. "1 EACH" of this sub-recipe). For a single-ingredient recipe this MUST be the
+   * base ingredient's own costUOM — it's nothing but a costing wrapper around one ingredient, so
+   * its unit can't independently diverge from what it wraps. A recipe's own costUOM/uom field is
+   * only meaningful for a real multi-ingredient recipe; on a single-ingredient wrapper it's
+   * frequently a leftover default from import (e.g. "G") that doesn't match the packaging item's
+   * real EACH/M unit, which silently broke cost-per-uom (it fell through the weight-ratio path,
+   * and packaging is correctly excluded from weight, dividing a real cost by zero) and made the
+   * displayed "Total" line for a single-ingredient recipe show the wrong unit entirely. */
+  function recipeOwnUom(rec, ingredients) {
+    // A recipe's own declared unit (costUOM/uom/serving_uom) is always trusted when present —
+    // even if unusual, e.g. a prep recipe correctly using KG while its raw input is EACH
+    // (2.5 whole cucumbers -> a KG-costed prepared product is a real transform, not a passthrough).
+    var ownUom = (rec.costUOM || rec.uom || rec.serving_uom || "").toString().trim().toUpperCase();
+    // Fall back to the base ingredient's unit (the "predecessor") only when: (a) the recipe
+    // genuinely has no unit assigned at all, or (b) it's a pure 1:1 costing wrapper (line
+    // qty === 1) — kept as a safety net for legacy records that were wrongly defaulted to "G"
+    // at import time before that default was removed, so their stored value looks "assigned"
+    // even though it never really was.
+    if (isSingleIngredientRecipe(rec) && (!ownUom || rec.ingredients[0].qty === 1)) {
+      var baseLine = rec.ingredients[0];
+      var baseIng = ingredients.find(function (i) { return i.id === baseLine.ingredientId; });
+      var baseUom = baseIng ? (baseIng.costUOM || baseIng.costUom || baseIng.CostUom || baseIng.CostUOM || baseIng.cost_uom || "") : "";
+      if (baseUom) return baseUom.toString().trim().toUpperCase();
+    }
+    return ownUom || "G";
+  }
+
   /** Returns badge HTML for a recipe line: PKG for packaging, Sub for sub-recipe, RM for raw material. Uses ingredient/recipe category. Single-ingredient sub-recipes use the same RM/PKG label as in Ingredient Centre. */
   function getRecipeLineBadge(ri, ingredients, recipes) {
     var pkg = '<span class="badge badge-pkg" style="font-size:9px;margin-right:4px">PKG</span>';
@@ -347,6 +375,23 @@
   function switchView(name, opts) {
     var currentEl = document.querySelector(".view.active");
     var currentName = currentEl && currentEl.id ? currentEl.id.replace("view-", "") : "";
+    // Leaving the Comparisons/Compare-result pair for anywhere else resets the search and
+    // selection, so coming back later starts fresh. Moving between comparisons and
+    // comparison-result (Compare button, swap, Back) doesn't count as "leaving".
+    var COMPARISON_VIEWS = ["comparisons", "comparison-result"];
+    if (COMPARISON_VIEWS.indexOf(currentName) !== -1 && COMPARISON_VIEWS.indexOf(name) === -1) {
+      comparisonSelected = [];
+      var compSearchInput = document.getElementById("comparison-search-input");
+      if (compSearchInput) compSearchInput.value = "";
+      var compSearchBody = document.getElementById("comparison-search-body");
+      if (compSearchBody) compSearchBody.innerHTML = "";
+      var compSearchCount = document.getElementById("comparison-search-count");
+      if (compSearchCount) compSearchCount.textContent = "";
+      var compSelectedWrap = document.getElementById("comparison-selected-wrap");
+      if (compSelectedWrap) compSelectedWrap.style.display = "none";
+      var compSelectedList = document.getElementById("comparison-selected-list");
+      if (compSelectedList) compSelectedList.innerHTML = "";
+    }
     if (!opts || !opts.isBack) {
       if (currentName && currentName !== name) {
         viewHistoryStack.push(currentName);
@@ -378,7 +423,650 @@
     if (name === "export-templates") loadExcelSavesIntoCache(function () { renderExportTemplates(); });
     if (name === "recipes") window.renderRecipesList();
     if (name === "project-recipes") window.renderProjectRecipesList();
+    if (name === "comparisons") filterComparisonSearch();
     persistLastView(name);
+  }
+
+  // Items picked from the Comparisons search — {kind: "ingredient"|"recipe", id, name, code}.
+  // Clicking a result row adds/removes it here instead of navigating away, so several items
+  // can be picked and looked at side by side (shown as chips below the search bar).
+  var comparisonSelected = [];
+
+  function isComparisonSelected(kind, id) {
+    return comparisonSelected.some(function (s) { return s.kind === kind && s.id === id; });
+  }
+
+  function toggleComparisonSelect(kind, id, name, code) {
+    var idx = comparisonSelected.findIndex(function (s) { return s.kind === kind && s.id === id; });
+    if (idx !== -1) comparisonSelected.splice(idx, 1);
+    else comparisonSelected.push({ kind: kind, id: id, name: name, code: code });
+    renderComparisonSelected();
+    filterComparisonSearch();
+  }
+
+  function removeComparisonSelected(kind, id) {
+    comparisonSelected = comparisonSelected.filter(function (s) { return !(s.kind === kind && s.id === id); });
+    renderComparisonSelected();
+    filterComparisonSearch();
+  }
+
+  /** "Compare" button on the real Recipe Detail page — jumps to the Comparisons search page
+   * with the recipe the user was just viewing already selected, ready to pick a second item
+   * to compare against. Doesn't clear any existing selection, just adds this one if missing. */
+  function openCurrentRecipeInComparisons() {
+    var recipes = Recipes.getRecipes();
+    var r = recipes.find(function (rec) { return rec.id === currentRecipeId; });
+    if (!r) return;
+    if (!isComparisonSelected("recipe", r.id)) {
+      comparisonSelected.push({ kind: "recipe", id: r.id, name: r.name, code: r.code || "" });
+    }
+    switchView("comparisons");
+    renderComparisonSelected();
+  }
+
+  /** One selected item's stats, normalized so ingredients and recipes can sit in the same
+   * comparison table. Cost is shown per the item's own natural unit (ingredient's costUOM, or
+   * a recipe's own resolved UOM via recipeOwnUom/getSubRecipeCostPerUom) since ingredients and
+   * recipes aren't priced on a common base. Nutrition is always per 100g, which both already
+   * share. Returns null if the item no longer exists (e.g. deleted after being selected). */
+  function buildComparisonStats(sel, ingredients, recipes) {
+    if (sel.kind === "ingredient") {
+      var ing = ingredients.find(function (i) { return i.id === sel.id; });
+      if (!ing) return null;
+      var costUom = (ing.costUOM || ing.costUom || ing.CostUom || ing.CostUOM || "").toString().toUpperCase();
+      return {
+        name: ing.name, code: ing.code || "—",
+        kind: isPackagingItem(ing) ? "Packaging" : "Ingredient",
+        status: ing.approved ? "Approved" : "In development",
+        cost: (ing.cost != null && ing.cost > 0) ? ((ing.currency || "£") + Number(ing.cost).toFixed(3) + " / " + (costUom || "—")) : "—",
+        kcal: ing.kcal, protein: ing.protein, fat: ing.fat, carb: ing.carb, fibre: ing.fibre, salt: ing.salt
+      };
+    }
+    var r = recipes.find(function (x) { return x.id === sel.id; });
+    if (!r) return null;
+    var uom = recipeOwnUom(r, ingredients);
+    var costPerUom = getSubRecipeCostPerUom(r, ingredients, uom);
+    var nut = Recipes.calcRecipeNutrition(r, ingredients);
+    return {
+      name: r.name, code: r.code || "—",
+      kind: isSingleIngredientRecipe(r) ? "Recipe (single-ingredient)" : ((r.recipeType || "finishedProduct") === "subRecipe" ? "Sub recipe" : "Recipe"),
+      status: r.approved ? "Approved" : "In development",
+      cost: costPerUom > 0 ? ("£" + costPerUom.toFixed(3) + " / " + uom) : "—",
+      kcal: nut.kcal, protein: nut.protein, fat: nut.fat, carb: nut.carb, fibre: nut.fibre, salt: nut.salt
+    };
+  }
+
+  function renderComparisonTable() {
+    var wrap = document.getElementById("comparison-result-body");
+    if (!wrap) return;
+    if (comparisonSelected.length === 0) {
+      showToast("Select at least one ingredient or recipe first");
+      return;
+    }
+    if (comparisonSelected.length === 1 && comparisonSelected[0].kind === "recipe") {
+      renderComparisonSingleRecipe(comparisonSelected[0].id);
+      return;
+    }
+    if (comparisonSelected.length === 2 && comparisonSelected[0].kind === "recipe" && comparisonSelected[1].kind === "recipe") {
+      renderComparisonTwoRecipes(comparisonSelected[0].id, comparisonSelected[1].id);
+      return;
+    }
+    var ingredients = Ingredients.getIngredients();
+    var recipes = Recipes.getRecipes();
+    var stats = comparisonSelected.map(function (s) { return buildComparisonStats(s, ingredients, recipes); }).filter(Boolean);
+    var fields = [
+      { key: "kind", label: "Type" },
+      { key: "code", label: "Code" },
+      { key: "status", label: "Status" },
+      { key: "cost", label: "Cost" },
+      { key: "kcal", label: "Energy (kcal/100g)" },
+      { key: "protein", label: "Protein (g/100g)" },
+      { key: "fat", label: "Fat (g/100g)" },
+      { key: "carb", label: "Carbs (g/100g)" },
+      { key: "fibre", label: "Fibre (g/100g)" },
+      { key: "salt", label: "Salt (g/100g)" }
+    ];
+    var html = "<div class=\"card\" style=\"padding:0\"><div style=\"overflow:auto\"><table class=\"data-table\"><thead><tr><th></th>" +
+      stats.map(function (s) { return "<th>" + escapeHtml(s.name) + "</th>"; }).join("") + "</tr></thead><tbody>" +
+      fields.map(function (f) {
+        return "<tr><td class=\"bold\">" + f.label + "</td>" + stats.map(function (s) {
+          var v = s[f.key];
+          return "<td>" + (v == null ? "—" : (typeof v === "number" ? formatIngredientDisplayNum(v) : v)) + "</td>";
+        }).join("") + "</tr>";
+      }).join("") + "</tbody></table></div></div>";
+    wrap.innerHTML = html;
+    switchView("comparison-result");
+  }
+
+  /** Self-contained single-recipe view, reached only by clicking Compare on the Comparisons
+   * page — mirrors the real recipe detail page's tab set (with "Ingredients" relabelled
+   * "Recipe" here only) but is entirely separate: its own view (view-comparison-result), own
+   * render function, never touches view-recipe-detail or any of its DOM/state, so nothing here
+   * can affect the real recipe page anywhere else. */
+  var COMPARISON_TABS = ["Recipe", "Cooking Instructions", "Nutrition", "Label", "HFSS Score", "Allergens", "Costing Summary", "Photography"];
+  var COMPARISON_TAB_KEYS = ["recipe", "cooking", "nutrition", "label", "hfss", "allergens", "costing", "photography"];
+
+  /** One shared tab bar, stretched full width, sitting in the top gap above the card(s). A
+   * single set of buttons drives every card's matching pane at once (see
+   * switchComparisonRecipeTab), rather than each card having its own separate tab bar. */
+  function buildComparisonSharedTabBar() {
+    var buttons = COMPARISON_TABS.map(function (label, idx) {
+      return "<button type=\"button\" class=\"tab-btn" + (idx === 0 ? " active" : "") + "\" data-comp-tab=\"" + COMPARISON_TAB_KEYS[idx] + "\" onclick=\"switchComparisonRecipeTab('" + COMPARISON_TAB_KEYS[idx] + "')\">" + label + "</button>";
+    }).join("");
+    return "<div class=\"tab-bar\" style=\"width:100%;margin-top:72px\">" + buttons + "</div>";
+  }
+
+
+  function renderComparisonSingleRecipe(recipeId) {
+    var wrap = document.getElementById("comparison-result-body");
+    if (!wrap) return;
+    var cardHtml = buildComparisonRecipeCardHtml(recipeId, 0, null, "calc(100% - 32px)");
+    if (!cardHtml) { wrap.innerHTML = ""; return; }
+    wrap.innerHTML = buildComparisonSharedTabBar() + "<div style=\"display:flex;gap:16px;flex-wrap:wrap;justify-content:center;margin-top:16px\">" + cardHtml + "</div>";
+    switchView("comparison-result");
+  }
+
+  /** Two recipes selected — same cards as the single-recipe view, side by side, each capped
+   * at half width so both fit in one row. */
+  function renderComparisonTwoRecipes(idA, idB) {
+    var wrap = document.getElementById("comparison-result-body");
+    if (!wrap) return;
+    var recipes = Recipes.getRecipes();
+    var rA = recipes.find(function (rec) { return rec.id === idA; });
+    var rB = recipes.find(function (rec) { return rec.id === idB; });
+    var maxLines = Math.max((rA && rA.ingredients || []).length, (rB && rB.ingredients || []).length);
+    var ingredientsForMap = Ingredients.getIngredients();
+    comparisonLineOrder[0] = rA ? rA.ingredients.slice() : [];
+    comparisonLineOrder[1] = rB ? rB.ingredients.slice() : [];
+    var arrA = rA ? buildRecipeLineCostArray(comparisonLineOrder[0], ingredientsForMap, recipes) : [];
+    var arrB = rB ? buildRecipeLineCostArray(comparisonLineOrder[1], ingredientsForMap, recipes) : [];
+    var cardA = buildComparisonRecipeCardHtml(idA, 0, maxLines, null, arrB);
+    var cardB = buildComparisonRecipeCardHtml(idB, 1, maxLines, null, arrA);
+    var diffCard = buildComparisonCostChangeCardHtml(rA, rB);
+    wrap.innerHTML = buildComparisonSharedTabBar() + "<div style=\"display:flex;gap:16px;flex-wrap:wrap;justify-content:center;align-items:flex-start;margin-top:16px\">" + (cardA || "") + (cardB || "") + "</div>" + diffCard;
+    switchView("comparison-result");
+  }
+
+  /** Same 4 costing figures shown in each recipe's own Costing Summary card, used again here
+   * to build the diff between two recipes. */
+  function computeComparisonCostStats(r, ingredients, recipes) {
+    var totalCost = getRecipeTotalCost(r, ingredients, recipes);
+    var totalWeight = (r.ingredients || []).reduce(function (s, ri) { return s + recipeLineWeightForTotal(ri); }, 0);
+    var serving = r.serving || 100;
+    return {
+      costPerKg: totalWeight > 0 ? totalCost / totalWeight * 1000 : 0,
+      costPerServing: totalWeight > 0 ? totalCost * (serving / totalWeight) : 0,
+      costPer100: totalWeight > 0 ? totalCost / totalWeight * 100 : 0,
+      totalCost: totalCost
+    };
+  }
+
+  /** "Cost Change" card — same stat-card theme as each recipe's own Costing Summary, showing
+   * the difference (second selected recipe minus first) for all 4 figures. Only meaningful
+   * with two recipes selected, so it's built once here rather than per-card. */
+  function buildComparisonCostChangeCardHtml(rA, rB) {
+    if (!rA || !rB) return "";
+    var ingredients = Ingredients.getIngredients();
+    var recipes = Recipes.getRecipes();
+    var statsA = computeComparisonCostStats(rA, ingredients, recipes);
+    var statsB = computeComparisonCostStats(rB, ingredients, recipes);
+    function diffCell(label, key) {
+      var diff = statsB[key] - statsA[key];
+      var sign = diff > 0 ? "+" : "";
+      var color = diff > 0 ? "var(--nc-red, #c0392b)" : (diff < 0 ? "var(--nc-green, #2e7d32)" : "var(--nc-gray-700)");
+      var pct = statsA[key] !== 0 ? (diff / statsA[key] * 100) : null;
+      var pctHtml = pct != null ? " <span style=\"font-size:11px;font-weight:400\">(" + (pct > 0 ? "+" : "") + pct.toFixed(1) + "%)</span>" : "";
+      return "<div class=\"stat-card\" style=\"width:fit-content\"><div class=\"stat-label\">" + label + "</div><div class=\"stat-value\" style=\"color:" + color + "\">" + sign + "£" + diff.toFixed(2) + pctHtml + "</div></div>";
+    }
+    return "<div class=\"card\" data-comp-pane=\"costing\" style=\"display:none;width:100%;margin-top:16px\">" +
+      "<h2 style=\"margin-bottom:8px\">Cost Comparison</h2>" +
+      "<p style=\"font-size:12px;color:var(--nc-gray-500);margin-bottom:8px\">" + escapeHtml(rB.name) + " vs " + escapeHtml(rA.name) + "</p>" +
+      "<div style=\"display:flex;flex-wrap:wrap;gap:12px\">" +
+      diffCell("Cost Change per kg", "costPerKg") +
+      diffCell("Cost Change per Serving", "costPerServing") +
+      diffCell("Cost Change per 100g", "costPer100") +
+      diffCell("Cost Change Total Recipe Cost", "totalCost") +
+      "</div></div>";
+  }
+
+  /** Each line's cost in row order — purely positional (row 1 vs row 1, row 2 vs row 2, ...),
+   * not matched by ingredient identity, so the other card can look up "whatever line happens
+   * to be in this same position". */
+  function buildRecipeLineCostArray(lines, ingredients, recipes) {
+    return (lines || []).map(function (ri) {
+      var costPerUom;
+      if (ri.subRecipeId) {
+        var sub = recipes.find(function (x) { return x.id === ri.subRecipeId; });
+        var subUom = sub ? recipeOwnUom(sub, ingredients) : (ri.uom || "G");
+        costPerUom = sub ? getSubRecipeCostPerUom(sub, ingredients, subUom) : 0;
+      } else {
+        var ing = ingredients.find(function (i) { return i.id === ri.ingredientId; });
+        costPerUom = ing ? (ing.cost || 0) : 0;
+      }
+      return costPerUom * (ri.qty || 0);
+    });
+  }
+
+  /** Per-card working copy of the recipe's ingredient lines, used only for the Recipe tab's
+   * drag-to-reorder (see comparisonLineDrop) — a view-only reshuffle, never touching the real
+   * recipe data or saving anything. Reset to the recipe's real line order whenever a card is
+   * freshly built (new Compare click, or after a card swap). */
+  var comparisonLineOrder = {};
+
+  function buildComparisonRecipeCardHtml(recipeId, cardIdx, padToLineCount, maxWidth, otherLineCostMap) {
+    var recipes = Recipes.getRecipes();
+    var ingredients = Ingredients.getIngredients();
+    var r = recipes.find(function (rec) { return rec.id === recipeId; });
+    if (!r) return null;
+    if (!comparisonLineOrder[cardIdx] || comparisonLineOrder[cardIdx].__recipeId !== recipeId) {
+      comparisonLineOrder[cardIdx] = (r.ingredients || []).slice();
+      comparisonLineOrder[cardIdx].__recipeId = recipeId;
+    }
+
+    var tabKeys = COMPARISON_TAB_KEYS;
+
+    var nut = Recipes.calcRecipeNutrition(r, ingredients);
+    var hfss = HFSS.calcHFSS(r, ingredients);
+    var totalCost = getRecipeTotalCost(r, ingredients, recipes);
+    var ownUom = recipeOwnUom(r, ingredients);
+    var costPerOwnUom = getSubRecipeCostPerUom(r, ingredients, ownUom);
+    var totalWeight = (r.ingredients || []).reduce(function (s, ri) { return s + recipeLineWeightForTotal(ri); }, 0);
+    var serving = r.serving || 100;
+    var costPer100 = totalWeight > 0 ? totalCost / totalWeight * 100 : 0;
+    var costPerKg = totalWeight > 0 ? totalCost / totalWeight * 1000 : 0;
+    var costPerServing = totalWeight > 0 ? totalCost * (serving / totalWeight) : 0;
+
+    function lineRowsHtml() {
+      var workingLines = comparisonLineOrder[cardIdx];
+      var totalChange = 0;
+      var hasChange = false;
+      var rows = (workingLines || []).map(function (ri, idx) {
+        var name, code, uom, costPerUom, lineCost;
+        if (ri.subRecipeId) {
+          var sub = recipes.find(function (x) { return x.id === ri.subRecipeId; });
+          name = sub ? sub.name : "(missing)"; code = sub ? sub.code : "—";
+          var subUom = sub ? recipeOwnUom(sub, ingredients) : (ri.uom || "G");
+          costPerUom = sub ? getSubRecipeCostPerUom(sub, ingredients, subUom) : 0;
+        } else {
+          var ing = ingredients.find(function (i) { return i.id === ri.ingredientId; });
+          name = ing ? ing.name : "(missing)"; code = ing ? ing.code : "—";
+          costPerUom = ing ? (ing.cost || 0) : 0;
+        }
+        uom = ri.uom || "G";
+        lineCost = costPerUom * (ri.qty || 0);
+        var pctRecipe = totalCost > 0 ? (lineCost / totalCost * 100) : 0;
+        var changeCell = "<td>—</td>";
+        if (otherLineCostMap && idx < otherLineCostMap.length) {
+          var change = lineCost - otherLineCostMap[idx];
+          totalChange += change;
+          hasChange = true;
+          var sign = change > 0 ? "+" : "";
+          var color = change > 0 ? "var(--nc-red, #c0392b)" : (change < 0 ? "var(--nc-green, #2e7d32)" : "var(--nc-gray-700)");
+          changeCell = "<td class=\"num\" style=\"color:" + color + "\">" + sign + "£" + change.toFixed(3) + "</td>";
+        }
+        var handleCell = "<td draggable=\"true\" data-comp-line-idx=\"" + idx + "\" ondragstart=\"comparisonLineDragStart(event," + cardIdx + "," + idx + ")\" ondragend=\"comparisonLineDragEnd(event)\" style=\"cursor:grab;color:var(--nc-gray-300);text-align:center;width:20px;user-select:none\" title=\"Drag to reorder\">&#8942;&#8942;</td>";
+        return "<tr ondragover=\"comparisonLineDragOver(event," + cardIdx + "," + idx + ")\" ondrop=\"comparisonLineDrop(event," + cardIdx + "," + idx + ")\">" + handleCell + "<td style=\"font-family:var(--nc-mono);font-size:12px;color:var(--nc-gray-600)\">" + escapeHtml(code || "—") + "</td>" +
+          "<td class=\"bold\">" + escapeHtml(name) + "</td>" +
+          "<td class=\"num\">" + (ri.qty || 0) + " " + escapeHtml(uom) + "</td>" +
+          "<td class=\"num\">" + pctRecipe.toFixed(1) + "%</td>" +
+          "<td class=\"num\">" + (ri.scrapPct || 0) + "%</td>" +
+          "<td class=\"num\">£" + costPerUom.toFixed(3) + " / " + escapeHtml(uom) + "</td>" +
+          "<td class=\"num\">£" + lineCost.toFixed(3) + "</td>" +
+          changeCell + "</tr>";
+      }).join("");
+      // Pad with blank rows so this card's Total row lines up with the other card's, when the
+      // two recipes being compared have different numbers of ingredient lines.
+      var lineCount = (workingLines || []).length;
+      var padCount = padToLineCount ? Math.max(0, padToLineCount - lineCount) : 0;
+      var fillerRow = "<tr><td></td><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>";
+      var filler = padCount > 0 ? new Array(padCount + 1).join(fillerRow) : "";
+      var totalChangeCell = "<td class=\"num bold\">—</td>";
+      if (hasChange) {
+        var totalSign = totalChange > 0 ? "+" : "";
+        var totalColor = totalChange > 0 ? "var(--nc-red, #c0392b)" : (totalChange < 0 ? "var(--nc-green, #2e7d32)" : "var(--nc-gray-700)");
+        totalChangeCell = "<td class=\"num bold\" style=\"color:" + totalColor + "\">" + totalSign + "£" + totalChange.toFixed(3) + "</td>";
+      }
+      return "<div style=\"overflow-x:auto\"><table class=\"data-table\"><colgroup><col style=\"width:24px\"><col><col style=\"width:220px\"><col><col><col style=\"width:52px\"><col><col><col></colgroup><thead><tr><th></th><th>Code</th><th>Ingredient</th><th>Qty</th><th>% Recipe</th><th>Scrap %</th><th>Cost per UOM (£)</th><th>Line Cost</th><th>Line Cost Change</th></tr></thead><tbody id=\"comp-line-tbody-" + cardIdx + "\">" +
+        (rows || "<tr><td colspan=\"9\" style=\"color:var(--nc-gray-400)\">No ingredient lines.</td></tr>") +
+        filler +
+        "<tr><td></td><td></td><td class=\"bold\">Total</td><td class=\"num bold\">1 " + escapeHtml(ownUom) + "</td><td class=\"num bold\">100%</td><td></td><td></td><td class=\"num bold\">£" + totalCost.toFixed(3) + "</td>" + totalChangeCell + "</tr>" +
+        "</tbody></table></div>";
+    }
+
+    var allergenSet = {};
+    (r.ingredients || []).forEach(function (ri) {
+      var ing = ri.ingredientId ? ingredients.find(function (i) { return i.id === ri.ingredientId; }) : null;
+      (ing && ing.allergens || []).forEach(function (a) { allergenSet[a] = true; });
+    });
+    var allergenList = Object.keys(allergenSet);
+
+    var panels = {
+      recipe: lineRowsHtml(),
+      cooking: "<div style=\"white-space:pre-wrap;font-size:13px\">" + (escapeHtml(r.method || r.methodKitchen || r.methodFactory || "") || "<span style=\"color:var(--nc-gray-400)\">No cooking instructions recorded.</span>") + "</div>",
+      nutrition: "<table class=\"data-table\"><tbody>" +
+        "<tr><td class=\"bold\">Energy</td><td class=\"num\">" + formatIngredientDisplayNum(nut.kcal) + " kcal / 100g</td></tr>" +
+        "<tr><td class=\"bold\">Protein</td><td class=\"num\">" + formatIngredientDisplayNum(nut.protein) + " g / 100g</td></tr>" +
+        "<tr><td class=\"bold\">Fat</td><td class=\"num\">" + formatIngredientDisplayNum(nut.fat) + " g / 100g</td></tr>" +
+        "<tr><td class=\"bold\">Carbs</td><td class=\"num\">" + formatIngredientDisplayNum(nut.carb) + " g / 100g</td></tr>" +
+        "<tr><td class=\"bold\">Sugar</td><td class=\"num\">" + formatIngredientDisplayNum(nut.sugar) + " g / 100g</td></tr>" +
+        "<tr><td class=\"bold\">Fibre</td><td class=\"num\">" + formatIngredientDisplayNum(nut.fibre) + " g / 100g</td></tr>" +
+        "<tr><td class=\"bold\">Salt</td><td class=\"num\">" + formatIngredientDisplayNum(nut.salt) + " g / 100g</td></tr>" +
+        "</tbody></table>",
+      label: "<p style=\"font-size:12px;color:var(--nc-gray-500)\">Nutrition declaration (per 100g):</p><table class=\"data-table\"><tbody>" +
+        "<tr><td class=\"bold\">Energy</td><td class=\"num\">" + formatIngredientDisplayNum(nut.kcal) + " kcal</td></tr>" +
+        "<tr><td class=\"bold\">Fat</td><td class=\"num\">" + formatIngredientDisplayNum(nut.fat) + " g</td></tr>" +
+        "<tr><td class=\"bold\">of which Sugars</td><td class=\"num\">" + formatIngredientDisplayNum(nut.sugar) + " g</td></tr>" +
+        "<tr><td class=\"bold\">Fibre</td><td class=\"num\">" + formatIngredientDisplayNum(nut.fibre) + " g</td></tr>" +
+        "<tr><td class=\"bold\">Protein</td><td class=\"num\">" + formatIngredientDisplayNum(nut.protein) + " g</td></tr>" +
+        "<tr><td class=\"bold\">Salt</td><td class=\"num\">" + formatIngredientDisplayNum(nut.salt) + " g</td></tr>" +
+        "</tbody></table>",
+      hfss: "<table class=\"data-table\"><tbody>" +
+        "<tr><td class=\"bold\">HFSS Status</td><td>" + (hfss.isHFSS ? "<span class=\"badge badge-red\">HFSS</span>" : "<span class=\"badge badge-green\">Non-HFSS</span>") + "</td></tr>" +
+        "<tr><td class=\"bold\">Score</td><td class=\"num\">" + hfss.total + "</td></tr>" +
+        "</tbody></table>",
+      allergens: allergenList.length
+        ? allergenList.map(function (a) { return "<span class=\"allergen-tag allergen-present\" style=\"margin-right:6px\">" + escapeHtml(a) + "</span>"; }).join("")
+        : "<span style=\"color:var(--nc-gray-400)\">None</span>",
+      costing: "<div style=\"display:flex;flex-wrap:wrap;gap:12px\">" +
+        "<div class=\"stat-card\" style=\"width:fit-content\"><div class=\"stat-label\">Cost per kg</div><div class=\"stat-value\">£" + costPerKg.toFixed(2) + "</div></div>" +
+        "<div class=\"stat-card\" style=\"width:fit-content\"><div class=\"stat-label\">Cost per Serving</div><div class=\"stat-value\">£" + costPerServing.toFixed(2) + "</div></div>" +
+        "<div class=\"stat-card\" style=\"width:fit-content\"><div class=\"stat-label\">Cost per 100g</div><div class=\"stat-value\">£" + costPer100.toFixed(2) + "</div></div>" +
+        "<div class=\"stat-card\" style=\"width:fit-content\"><div class=\"stat-label\">Total Recipe Cost</div><div class=\"stat-value\">£" + totalCost.toFixed(2) + "</div></div>" +
+        "</div>" +
+        "<div style=\"margin-top:16px\">" +
+        "<h3 style=\"font-size:14px;margin-bottom:8px\">Pricing &amp; Margin Calculator</h3>" +
+        "<div style=\"display:flex;flex-wrap:wrap;gap:12px;margin-bottom:12px\">" +
+        "<div class=\"form-group\" style=\"width:150px\"><label class=\"form-label\">Target Sell Price (£)</label><input class=\"form-input\" type=\"number\" step=\"any\" min=\"0\" placeholder=\"e.g. 3.50\" id=\"comp-sell-price-" + cardIdx + "\" oninput=\"comparisonRecalcMargins(" + cardIdx + ")\"></div>" +
+        "<div class=\"form-group\" style=\"width:150px\"><label class=\"form-label\">Target Margin (%)</label><input class=\"form-input\" type=\"number\" step=\"any\" min=\"0\" max=\"100\" placeholder=\"e.g. 65\" id=\"comp-target-margin-" + cardIdx + "\" oninput=\"comparisonRecalcMargins(" + cardIdx + ")\"></div>" +
+        "</div>" +
+        "<div style=\"display:flex;flex-wrap:wrap;gap:12px\">" +
+        "<div class=\"stat-card\" style=\"width:fit-content;border-color:var(--nc-green);background:var(--nc-green-light)\"><div class=\"stat-label\" style=\"color:#059669\">Gross Profit / Unit</div><div class=\"stat-value\" style=\"color:#065F46\" id=\"comp-margin-profit-" + cardIdx + "\">—</div></div>" +
+        "<div class=\"stat-card\" style=\"width:fit-content;border-color:var(--nc-green);background:var(--nc-green-light)\" id=\"comp-margin-pct-card-" + cardIdx + "\"><div class=\"stat-label\" style=\"color:#059669\">Gross Margin %</div><div class=\"stat-value\" style=\"color:#065F46\" id=\"comp-margin-pct-" + cardIdx + "\">—</div></div>" +
+        "<div class=\"stat-card\" style=\"width:fit-content;border-color:var(--nc-amber);background:var(--nc-amber-light)\"><div class=\"stat-label\" style=\"color:#92400E\">Min Sell Price for Target Margin</div><div class=\"stat-value\" style=\"color:#92400E\" id=\"comp-margin-min-price-" + cardIdx + "\">—</div></div>" +
+        "</div></div>",
+      photography: "<span style=\"color:var(--nc-gray-400)\">Photography is not available in this view.</span>"
+    };
+
+    var tabPanels = tabKeys.map(function (key, idx) {
+      return "<div class=\"comp-recipe-tab-pane\" data-comp-pane=\"" + key + "\" style=\"" + (idx === 0 ? "" : "display:none;") + "padding-top:12px\">" + panels[key] + "</div>";
+    }).join("");
+
+    var statusBadge = r.approved ? "<span class=\"badge badge-approved\">Approved</span>" : "<span class=\"badge badge-development\">In development</span>";
+    var kindBadge = (r.recipeType || "finishedProduct") === "subRecipe" ? "<span class=\"badge badge-subrecipe\">Sub recipe</span>" : "<span class=\"badge badge-finishedproduct\">Finished product</span>";
+
+    return "<div class=\"card\" data-comp-card=\"" + cardIdx + "\" data-comp-recipe-id=\"" + escapeHtml(recipeId) + "\" style=\"flex:1 1 480px;max-width:" + (maxWidth || "calc(50% - 8px)") + ";padding:20px 8px\">" +
+      "<div style=\"display:flex;justify-content:space-between;align-items:start;flex-wrap:wrap;gap:8px\">" +
+      "<h2 style=\"margin-bottom:4px;cursor:grab\" draggable=\"true\" data-comp-title=\"" + cardIdx + "\" ondragstart=\"comparisonCardDragStart(event," + cardIdx + ")\" ondragover=\"comparisonCardDragOver(event)\" ondrop=\"comparisonCardDrop(event," + cardIdx + ")\" ondragend=\"comparisonCardDragEnd(event)\">" + escapeHtml(r.name) + "</h2>" +
+      "<div style=\"display:flex;gap:6px\">" + statusBadge + kindBadge + "</div>" +
+      "</div>" +
+      (r.code ? "<p style=\"font-size:12px;color:var(--nc-gray-500);margin-bottom:2px\">Code: " + escapeHtml(r.code) + "</p>" : "") +
+      (r.desc ? "<p style=\"font-size:12px;color:var(--nc-gray-500);margin-bottom:8px\">" + escapeHtml(r.desc) + "</p>" : "") +
+      tabPanels +
+      "</div>";
+  }
+
+  /** Drag a card's title across the midline onto the other card's title to swap which recipe
+   * displays first/second — re-renders the whole comparison (cards, Cost Comparison, everything)
+   * against the new order by reordering comparisonSelected and calling renderComparisonTable(). */
+  var comparisonCardDragIdx = null;
+  function comparisonCardDragStart(e, cardIdx) {
+    comparisonCardDragIdx = cardIdx;
+    e.currentTarget.style.opacity = "0.4";
+    e.dataTransfer.effectAllowed = "move";
+  }
+  function comparisonCardDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  }
+  function comparisonCardDrop(e, targetIdx) {
+    e.preventDefault();
+    if (comparisonCardDragIdx == null || comparisonCardDragIdx === targetIdx) return;
+    var activeTabBtn = document.querySelector("#comparison-result-body > .tab-bar .tab-btn.active");
+    var activeTabKey = activeTabBtn ? activeTabBtn.getAttribute("data-comp-tab") : null;
+    var tmp = comparisonSelected[0];
+    comparisonSelected[0] = comparisonSelected[1];
+    comparisonSelected[1] = tmp;
+    comparisonCardDragIdx = null;
+    renderComparisonSelected();
+    renderComparisonTable();
+    if (activeTabKey) switchComparisonRecipeTab(activeTabKey);
+  }
+  function comparisonCardDragEnd(e) {
+    e.currentTarget.style.opacity = "";
+    comparisonCardDragIdx = null;
+  }
+
+  /** Drag a line's handle (just left of the Code column) up or down within its own recipe's
+   * table to reorder it — view-only, never edits or saves the actual recipe. Moving a line only
+   * changes that card's "Line Cost Change" values (it now lines up against a different row on
+   * the other card), nothing else about the line itself. */
+  var comparisonLineDragState = null;
+  function comparisonLineDragStart(e, cardIdx, idx) {
+    comparisonLineDragState = { cardIdx: cardIdx, idx: idx };
+    var tr = e.currentTarget.closest ? e.currentTarget.closest("tr") : null;
+    if (tr) tr.style.opacity = "0.4";
+    e.dataTransfer.effectAllowed = "move";
+  }
+  var COMPARISON_INSERT_BORDER = "3px solid var(--nc-primary, #2e7d32)";
+  function comparisonClearLineIndicators(cardIdx) {
+    var tbody = document.getElementById("comp-line-tbody-" + cardIdx);
+    if (!tbody) return;
+    tbody.querySelectorAll("tr").forEach(function (row) {
+      row.style.borderTop = "";
+      row.style.borderBottom = "";
+    });
+  }
+  function comparisonLineDragOver(e, cardIdx, idx) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    if (!comparisonLineDragState || comparisonLineDragState.cardIdx !== cardIdx) return;
+    var tr = e.currentTarget;
+    var rect = tr.getBoundingClientRect();
+    var before = (e.clientY - rect.top) < rect.height / 2;
+    comparisonClearLineIndicators(cardIdx);
+    if (before) tr.style.borderTop = COMPARISON_INSERT_BORDER;
+    else tr.style.borderBottom = COMPARISON_INSERT_BORDER;
+    tr.dataset.compInsertBefore = before ? "1" : "0";
+  }
+  function comparisonLineDrop(e, cardIdx, targetIdx) {
+    e.preventDefault();
+    var before = e.currentTarget.dataset.compInsertBefore !== "0";
+    comparisonClearLineIndicators(cardIdx);
+    if (!comparisonLineDragState || comparisonLineDragState.cardIdx !== cardIdx) {
+      comparisonLineDragState = null;
+      return;
+    }
+    var fromIdx = comparisonLineDragState.idx;
+    var insertIdx = before ? targetIdx : targetIdx + 1;
+    if (fromIdx === insertIdx || fromIdx === insertIdx - 1) { comparisonLineDragState = null; return; }
+    var lines = comparisonLineOrder[cardIdx];
+    if (!lines) { comparisonLineDragState = null; return; }
+    var recipeId = lines.__recipeId;
+    var moved = lines.splice(fromIdx, 1)[0];
+    if (fromIdx < insertIdx) insertIdx--;
+    lines.splice(insertIdx, 0, moved);
+    lines.__recipeId = recipeId;
+    comparisonLineDragState = null;
+    comparisonRefreshCardsAfterLineReorder();
+  }
+  function comparisonLineDragEnd(e) {
+    var tr = e.currentTarget.closest ? e.currentTarget.closest("tr") : null;
+    if (tr) tr.style.opacity = "";
+    if (comparisonLineDragState) comparisonClearLineIndicators(comparisonLineDragState.cardIdx);
+    comparisonLineDragState = null;
+  }
+
+  /** Rebuilds both recipe cards in place from the current comparisonLineOrder — used after a
+   * line-reorder drag, since the Line Cost Change on BOTH cards depends on each other's row
+   * order. Preserves whichever tab is currently active. */
+  function comparisonRefreshCardsAfterLineReorder() {
+    var ingredients = Ingredients.getIngredients();
+    var recipes = Recipes.getRecipes();
+    var activeTabBtn = document.querySelector("#comparison-result-body > .tab-bar .tab-btn.active");
+    var activeTabKey = activeTabBtn ? activeTabBtn.getAttribute("data-comp-tab") : null;
+    var idA = comparisonLineOrder[0] ? comparisonLineOrder[0].__recipeId : null;
+    var idB = comparisonLineOrder[1] ? comparisonLineOrder[1].__recipeId : null;
+    var cardAEl = document.querySelector('[data-comp-card="0"]');
+    if (idB && cardAEl) {
+      var maxLines = Math.max(comparisonLineOrder[0].length, comparisonLineOrder[1].length);
+      var arrA = buildRecipeLineCostArray(comparisonLineOrder[0], ingredients, recipes);
+      var arrB = buildRecipeLineCostArray(comparisonLineOrder[1], ingredients, recipes);
+      var cardBEl = document.querySelector('[data-comp-card="1"]');
+      var htmlA = buildComparisonRecipeCardHtml(idA, 0, maxLines, null, arrB);
+      var htmlB = buildComparisonRecipeCardHtml(idB, 1, maxLines, null, arrA);
+      if (cardAEl && htmlA) cardAEl.outerHTML = htmlA;
+      if (cardBEl && htmlB) cardBEl.outerHTML = htmlB;
+    } else if (idA && cardAEl) {
+      var htmlSingle = buildComparisonRecipeCardHtml(idA, 0, null, "calc(100% - 32px)");
+      if (htmlSingle) cardAEl.outerHTML = htmlSingle;
+    }
+    if (activeTabKey) switchComparisonRecipeTab(activeTabKey);
+  }
+
+  /** One shared tab bar (see buildComparisonSharedTabBar) drives every card at once — this
+   * flips the matching pane in ALL cards together, so comparing two recipes shows the same
+   * tab side by side rather than each card having its own independent tab state. */
+  function switchComparisonRecipeTab(key) {
+    document.querySelectorAll("#comparison-result-body > .tab-bar [data-comp-tab]").forEach(function (btn) {
+      btn.classList.toggle("active", btn.getAttribute("data-comp-tab") === key);
+    });
+    document.querySelectorAll("#comparison-result-body [data-comp-pane]").forEach(function (pane) {
+      pane.style.display = pane.getAttribute("data-comp-pane") === key ? "" : "none";
+    });
+  }
+
+  /** Same math as the real recipe page's recalcMargins(), scoped to one card's own recipe and
+   * its own namespaced inputs/outputs, so two cards' calculators don't interfere. */
+  function comparisonRecalcMargins(cardIdx) {
+    var card = document.querySelector('#comparison-result-body [data-comp-card="' + cardIdx + '"]');
+    if (!card) return;
+    var recipeId = card.getAttribute("data-comp-recipe-id");
+    var recipes = Recipes.getRecipes();
+    var ingredients = Ingredients.getIngredients();
+    var r = recipes.find(function (rec) { return rec.id === recipeId; });
+    if (!r) return;
+    var totalCost = getRecipeTotalCost(r, ingredients, recipes);
+    var costPerUnit = totalCost;
+    var sellPrice = parseFloat(document.getElementById("comp-sell-price-" + cardIdx).value);
+    var profitEl = document.getElementById("comp-margin-profit-" + cardIdx);
+    var pctEl = document.getElementById("comp-margin-pct-" + cardIdx);
+    var pctCardEl = document.getElementById("comp-margin-pct-card-" + cardIdx);
+    if (sellPrice > 0) {
+      var profit = sellPrice - costPerUnit;
+      var marginPct = (profit / sellPrice) * 100;
+      profitEl.textContent = "£" + profit.toFixed(2);
+      pctEl.textContent = Data.round(marginPct) + "%";
+      pctCardEl.style.borderColor = marginPct >= 50 ? "var(--nc-green)" : marginPct >= 30 ? "var(--nc-amber)" : "var(--nc-red)";
+      pctCardEl.style.background = marginPct >= 50 ? "var(--nc-green-light)" : marginPct >= 30 ? "var(--nc-amber-light)" : "var(--nc-red-light)";
+    } else {
+      profitEl.textContent = "—";
+      pctEl.textContent = "—";
+    }
+    var targetMargin = parseFloat(document.getElementById("comp-target-margin-" + cardIdx).value);
+    var minPriceEl = document.getElementById("comp-margin-min-price-" + cardIdx);
+    if (targetMargin > 0 && targetMargin < 100) {
+      minPriceEl.textContent = "£" + (costPerUnit / (1 - targetMargin / 100)).toFixed(2);
+    } else {
+      minPriceEl.textContent = "—";
+    }
+  }
+
+  function renderComparisonSelected() {
+    var wrap = document.getElementById("comparison-selected-wrap");
+    var list = document.getElementById("comparison-selected-list");
+    if (!wrap || !list) return;
+    wrap.style.display = comparisonSelected.length ? "" : "none";
+    list.innerHTML = comparisonSelected.map(function (s, idx) {
+      var kindLabel = s.kind === "ingredient" ? "Ingredient" : "Recipe";
+      return "<span class=\"badge\" draggable=\"true\" data-comp-selected-idx=\"" + idx + "\" ondragstart=\"comparisonSelectedDragStart(event," + idx + ")\" ondragover=\"comparisonSelectedDragOver(event)\" ondrop=\"comparisonSelectedDrop(event," + idx + ")\" ondragend=\"comparisonSelectedDragEnd(event)\" style=\"display:inline-flex;align-items:center;gap:6px;padding:6px 10px;background:var(--nc-gray-50);border:1px solid var(--nc-gray-200);border-radius:999px;font-size:12px;cursor:grab\">" +
+        "<span style=\"color:var(--nc-gray-400)\">" + kindLabel + "</span>" +
+        "<span class=\"bold\">" + escapeHtml(s.name) + "</span>" +
+        (s.code ? "<span style=\"font-family:var(--nc-mono);color:var(--nc-gray-500)\">" + escapeHtml(s.code) + "</span>" : "") +
+        "<button type=\"button\" onclick=\"removeComparisonSelected('" + s.kind + "','" + s.id.replace(/'/g, "\\'") + "')\" style=\"border:none;background:none;cursor:pointer;color:var(--nc-gray-400);font-size:14px;line-height:1;padding:0\" title=\"Remove\">&times;</button>" +
+        "</span>";
+    }).join("");
+  }
+
+  var comparisonSelectedDragIdx = null;
+  function comparisonSelectedDragStart(e, idx) {
+    comparisonSelectedDragIdx = idx;
+    e.currentTarget.style.opacity = "0.4";
+    e.dataTransfer.effectAllowed = "move";
+  }
+  function comparisonSelectedDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  }
+  function comparisonSelectedDrop(e, targetIdx) {
+    e.preventDefault();
+    if (comparisonSelectedDragIdx == null || comparisonSelectedDragIdx === targetIdx) return;
+    var moved = comparisonSelected.splice(comparisonSelectedDragIdx, 1)[0];
+    comparisonSelected.splice(targetIdx, 0, moved);
+    comparisonSelectedDragIdx = null;
+    renderComparisonSelected();
+  }
+  function comparisonSelectedDragEnd(e) {
+    e.currentTarget.style.opacity = "";
+    comparisonSelectedDragIdx = null;
+  }
+
+  /** Global search across ingredients and recipes (including single-ingredient wrapper
+   * recipes), for the Comparisons page. Matches on name and code/altCodes. Clicking a row
+   * selects/deselects it (see comparisonSelected above) rather than navigating away. */
+  function filterComparisonSearch() {
+    var body = document.getElementById("comparison-search-body");
+    var countEl = document.getElementById("comparison-search-count");
+    if (!body) return;
+    var qEl = document.getElementById("comparison-search-input");
+    var q = (qEl ? qEl.value : "").toLowerCase().trim();
+    if (!q) {
+      body.innerHTML = "";
+      if (countEl) countEl.textContent = "Type to search across every ingredient and recipe.";
+      return;
+    }
+    var statusFilter = (document.getElementById("comparison-search-status-filter") || {}).value || "all";
+    var typeFilter = (document.getElementById("comparison-search-type-filter") || {}).value || "all";
+    var ingredients = Ingredients.getIngredients();
+    var recipes = Recipes.getRecipes();
+    function statusMatches(approved) {
+      if (statusFilter === "approved") return !!approved;
+      if (statusFilter === "development") return !approved;
+      return true;
+    }
+    function matches(name, code, altCodes) {
+      if ((name || "").toLowerCase().indexOf(q) !== -1) return true;
+      if ((code || "").toLowerCase().indexOf(q) !== -1) return true;
+      return (altCodes || []).some(function (c) { return (c || "").toLowerCase().indexOf(q) !== -1; });
+    }
+    var ingRows = (typeFilter === "recipes" ? [] : ingredients).filter(function (i) { return matches(i.name, i.code, i.altCodes) && statusMatches(i.approved); })
+      .map(function (i) {
+        var statusBadge = i.approved ? "<span class=\"badge badge-approved\" style=\"font-size:10px\">Approved</span>" : "<span class=\"badge badge-development\" style=\"font-size:10px\">In development</span>";
+        var typeLabel = isPackagingItem(i) ? "Packaging" : "Ingredient";
+        var selected = isComparisonSelected("ingredient", i.id);
+        var safeId = i.id.replace(/'/g, "\\'");
+        var safeName = escapeHtml(i.name).replace(/'/g, "\\'");
+        return "<tr class=\"row-clickable\" style=\"cursor:pointer" + (selected ? ";background:var(--nc-gray-50)" : "") + "\" onclick=\"toggleComparisonSelect('ingredient','" + safeId + "','" + safeName + "','" + (i.code || "") + "')\">" +
+          "<td class=\"bold\">" + (selected ? "<span style=\"color:var(--nc-primary, #2e7d32);margin-right:4px\">&#10003;</span>" : "") + escapeHtml(i.name) + "</td>" +
+          "<td style=\"color:var(--nc-gray-500)\">" + typeLabel + "</td>" +
+          "<td style=\"font-size:12px;color:var(--nc-gray-600);font-family:var(--nc-mono)\">" + (i.code || "—") + "</td>" +
+          "<td>" + statusBadge + "</td></tr>";
+      });
+    var recRows = (typeFilter === "ingredients" ? [] : recipes).filter(function (r) { return matches(r.name, r.code, null) && statusMatches(r.approved); })
+      .map(function (r) {
+        var statusBadge = r.approved ? "<span class=\"badge badge-approved\" style=\"font-size:10px\">Approved</span>" : "<span class=\"badge badge-development\" style=\"font-size:10px\">In development</span>";
+        var typeLabel = isSingleIngredientRecipe(r) ? "Recipe (single-ingredient)" : ((r.recipeType || "finishedProduct") === "subRecipe" ? "Sub recipe" : "Recipe");
+        var selected = isComparisonSelected("recipe", r.id);
+        var safeId = r.id.replace(/'/g, "\\'");
+        var safeName = escapeHtml(r.name).replace(/'/g, "\\'");
+        return "<tr class=\"row-clickable\" style=\"cursor:pointer" + (selected ? ";background:var(--nc-gray-50)" : "") + "\" onclick=\"toggleComparisonSelect('recipe','" + safeId + "','" + safeName + "','" + (r.code || "") + "')\">" +
+          "<td class=\"bold\">" + (selected ? "<span style=\"color:var(--nc-primary, #2e7d32);margin-right:4px\">&#10003;</span>" : "") + escapeHtml(r.name) + "</td>" +
+          "<td style=\"color:var(--nc-gray-500)\">" + typeLabel + "</td>" +
+          "<td style=\"font-size:12px;color:var(--nc-gray-600);font-family:var(--nc-mono)\">" + (r.code || "—") + "</td>" +
+          "<td>" + statusBadge + "</td></tr>";
+      });
+    var rows = ingRows.concat(recRows);
+    body.innerHTML = rows.length ? rows.join("") : "<tr><td colspan=\"4\" style=\"color:var(--nc-gray-400)\">No matches.</td></tr>";
+    if (countEl) countEl.textContent = rows.length + " match" + (rows.length !== 1 ? "es" : "") + " (" + ingRows.length + " ingredient" + (ingRows.length !== 1 ? "s" : "") + ", " + recRows.length + " recipe" + (recRows.length !== 1 ? "s" : "") + ")";
   }
 
   // Remembers where the user was so a page refresh (F5) returns to the same spot instead of
@@ -417,6 +1105,16 @@
     if (!entry) { switchView("recipes"); return; }
     if (entry.type === "recipe") { openRecipe(entry.id, null, true); return; }
     switchView(entry.name);
+  }
+
+  // Single always-visible Back button in the top bar — different views already have their own
+  // back logic (recipe detail tracks its own nav stack of parent recipes), so this just routes
+  // to whichever one applies to the currently active view instead of duplicating that logic.
+  function topbarGoBack() {
+    var activeView = document.querySelector(".view.active");
+    var name = activeView && activeView.id ? activeView.id.replace("view-", "") : "";
+    if (name === "recipe-detail") { goBackFromRecipeDetail(); return; }
+    goBack();
   }
 
   function getProjects() {
@@ -1838,6 +2536,13 @@
     dd.classList.add("open");
   }
 
+  /** "(vN)" shown right after a name wherever it's listed — N is how many times this record
+   * has been saved (versionHistory.length), starting at v1 for a never-yet-edited record. */
+  function versionBadge(entity) {
+    var v = (entity && entity.versionHistory && entity.versionHistory.length) || 1;
+    return "<span style=\"font-size:10px;color:var(--nc-gray-400);margin-left:4px\">(v" + v + ")</span>";
+  }
+
   function rowHtml(i, usedInCount) {
     var tagsStr = (i.descriptionTags || []).join(" ");
     var isPkg = isPackagingItem(i);
@@ -1851,7 +2556,7 @@
     var costDisplay = i.cost != null && i.cost > 0 ? (i.currency || "£") + Number(i.cost).toFixed(2) : "—";
     var uomDisplay = costUom || "—";
     return "<tr class=\"row-clickable\" onclick=\"handleIngredientRowClick(event, '" + i.id + "')\" ondblclick=\"handleIngredientRowDblClick(event, '" + i.id + "')\" oncontextmenu=\"return handleIngredientRowContextMenu(event, '" + i.id + "')\" style=\"cursor:pointer\">" +
-      "<td class=\"bold\">" + approvedLabel + typeLabel + i.name + noNutBadge + usedInBadge + (tagsStr ? "<span style=\"display:none\"> " + tagsStr + "</span>" : "") + "</td>" +
+      "<td class=\"bold\">" + approvedLabel + typeLabel + i.name + versionBadge(i) + noNutBadge + usedInBadge + (tagsStr ? "<span style=\"display:none\"> " + tagsStr + "</span>" : "") + "</td>" +
       "<td style=\"font-size:12px;color:var(--nc-gray-600);font-family:var(--nc-mono)\">" + (i.code || "—") + "</td>" +
       "<td style=\"color:var(--nc-gray-500)\">" + (i.cat || "") + "</td>" +
       "<td class=\"num\">" + formatNutritionCell(i.kj, isPkg) + "</td>" +
@@ -2311,7 +3016,7 @@
     var costDisplay = cost != null && cost > 0 ? (baseIng && baseIng.currency === "$" ? "$" : "£") + Number(cost).toFixed(2) : "—";
     var uomDisplay = costUom || "—";
     return "<tr class=\"row-clickable\" onclick=\"handleIngredientCentreRowClick(event, 'rec:" + r.id.replace(/'/g, "\\'") + "')\" ondblclick=\"handleIngredientCentreRowDblClick(event, 'rec:" + r.id.replace(/'/g, "\\'") + "')\" oncontextmenu=\"return handleIngredientCentreRowContextMenu(event, 'rec:" + r.id.replace(/'/g, "\\'") + "')\" style=\"cursor:pointer\">" +
-      "<td class=\"bold\">" + approvedLabel + typeLabel + r.name + usedInBadge + (tagsStr ? "<span style=\"display:none\"> " + tagsStr + "</span>" : "") + "</td>" +
+      "<td class=\"bold\">" + approvedLabel + typeLabel + r.name + versionBadge(r) + usedInBadge + (tagsStr ? "<span style=\"display:none\"> " + tagsStr + "</span>" : "") + "</td>" +
       "<td style=\"font-size:12px;color:var(--nc-gray-600);font-family:var(--nc-mono)\">" + (r.code || "—") + "</td>" +
       "<td style=\"color:var(--nc-gray-500)\">" + (baseIng ? (baseIng.cat || "") : "") + "</td>" +
       "<td class=\"num\">" + formatNutritionCell(kj, isPkg) + "</td>" +
@@ -2381,7 +3086,7 @@
         }
         if (ri.subRecipeId && recipes.length) {
           var subRec = recipes.find(function (r) { return r.id === ri.subRecipeId; });
-          if (subRec && (subRec.costUOM || subRec.uom || subRec.serving_uom)) lineUom = (subRec.costUOM || subRec.uom || subRec.serving_uom).toString().toUpperCase();
+          if (subRec) lineUom = recipeOwnUom(subRec, ingredients);
         }
         merged[key] = ri.ingredientId
           ? { ingredientId: ri.ingredientId, qty: qtyG, uom: lineUom, fvnOverride: ri.fvnOverride || null }
@@ -2886,6 +3591,10 @@
       toggleBtn.textContent = r.approved ? "Mark as in development" : "Mark as approved";
       toggleBtn.style.display = "";
     }
+    // Approved recipes are locked: the Edit modal (name/code/type/UOM/weight) must not be
+    // reachable until someone explicitly unlocks the recipe via toggleRecipeApproved().
+    var editBtn = document.getElementById("recipe-detail-edit-btn");
+    if (editBtn) editBtn.style.display = r.approved ? "none" : "";
     var kindBadge = document.getElementById("recipe-detail-kind-badge");
     if (kindBadge) {
       var isSub = (r.recipeType || "finishedProduct") === "subRecipe";
@@ -2963,6 +3672,7 @@
     var ingredients = Ingredients.getIngredients();
     var r = recipes.find(function (rec) { return rec.id === currentRecipeId; });
     if (!r) return;
+    if (r.approved) { showToast("This recipe is approved and locked. Mark it as in development to edit it."); return; }
     document.getElementById("edit-rec-name").value = r.name || "";
     document.getElementById("edit-rec-code").value = r.code || "";
     var editTagsEl = document.getElementById("edit-rec-description-tags");
@@ -3108,7 +3818,7 @@
     var totalWeight = (r.ingredients || []).reduce(function (s, ri) {
       return s + (typeof recipeLineWeightForTotal === "function" ? recipeLineWeightForTotal(ri) : 0);
     }, 0);
-    var recipeUom = (r.costUOM || r.uom || r.serving_uom || "G").toString().trim().toUpperCase() || "G";
+    var recipeUom = recipeOwnUom(r, ingredientsLib);
     var totalDisplay = (recipeUom === "EACH") ? "1 EACH" : (typeof Data !== "undefined" && Data.round ? Data.round(totalWeight) + "g" : totalWeight + "g");
     return {
       code: r.code != null ? String(r.code) : "",
@@ -3306,6 +4016,7 @@
     var recipes = Recipes.getRecipes();
     var r = recipes.find(function (rec) { return rec.id === currentRecipeId; });
     if (!r) return;
+    if (r.approved) { showToast("This recipe is approved and locked. Mark it as in development to edit it."); closeModal("modal-recipe-edit-name"); return; }
     var editUomEl = document.getElementById("edit-rec-cost-uom");
     var editUnitWeightEl = document.getElementById("edit-rec-unit-weight");
     var uwVal = editUnitWeightEl ? parseFloat(editUnitWeightEl.value) : NaN;
@@ -3350,21 +4061,38 @@
     showToast("Recipe deleted");
   }
 
-  function duplicateCurrentRecipe() {
+  function openDuplicateRecipeModal() {
     var recipes = Recipes.getRecipes();
     var r = recipes.find(function (rec) { return rec.id === currentRecipeId; });
     if (!r) return;
+    populateProjectSelects();
+    var nameEl = document.getElementById("duplicate-rec-name");
+    var projectEl = document.getElementById("duplicate-rec-project");
+    if (nameEl) nameEl.value = r.name + " (Copy)";
+    if (projectEl) projectEl.value = getRecipeProjectSlug(r) || "";
+    openModal("modal-duplicate-recipe");
+  }
+
+  function confirmDuplicateRecipe() {
+    var recipes = Recipes.getRecipes();
+    var r = recipes.find(function (rec) { return rec.id === currentRecipeId; });
+    if (!r) return;
+    var nameEl = document.getElementById("duplicate-rec-name");
+    var projectEl = document.getElementById("duplicate-rec-project");
+    var name = (nameEl && nameEl.value.trim()) || (r.name + " (Copy)");
     var dup = JSON.parse(JSON.stringify(r));
     dup.id = Data.genId();
-    dup.name = r.name + " (Copy)";
-    dup.code = "";
+    dup.name = name;
+    dup.code = "NEW";
     dup.approved = false;
     dup.recipeType = r.recipeType || "finishedProduct";
     dup.created = new Date().toISOString();
     dup.method = r.method || "";
     dup.methodKitchen = r.methodKitchen || "";
     dup.methodFactory = r.methodFactory || "";
+    setRecipeProjectInTags(dup, projectEl ? projectEl.value : "");
     Recipes.saveRecipe(dup);
+    closeModal("modal-duplicate-recipe");
     renderAll();
     openRecipe(dup.id);
     showToast("Recipe duplicated");
@@ -3447,7 +4175,7 @@
     var tagsStr = (r.descriptionTags || []).join(" ");
     return '<div class="card recipe-card row-clickable" onclick="openRecipe(\'' + r.id + '\')" oncontextmenu="return handleRecipeContextMenu(event, \'' + r.id.replace(/'/g, "\\'") + '\')" style="cursor:pointer">' +
       '<div style="display:flex;justify-content:space-between;align-items:start">' +
-      '<div><h3 style="font-size:15px;font-weight:600;color:var(--nc-secondary)">' + statusBadge + kindBadge + codeChip + r.name + (tagsStr ? "<span style=\"display:none\"> " + tagsStr + "</span>" : "") + "</h3>" +
+      '<div><h3 style="font-size:15px;font-weight:600;color:var(--nc-secondary)">' + statusBadge + kindBadge + codeChip + r.name + versionBadge(r) + (tagsStr ? "<span style=\"display:none\"> " + tagsStr + "</span>" : "") + "</h3>" +
       "<p style=\"font-size:12px;color:var(--nc-gray-500);margin-top:2px\">" + r.ingredients.length + " ingredient(s) · " + r.type + " · " + Data.round(nut.kcal) + " kcal/100g</p></div>" +
       '<span class="badge ' + (hfss.isHFSS ? "badge-red" : "badge-green") + "\">" + (hfss.isHFSS ? "HFSS" : "Non-HFSS") + " (" + hfss.total + ")</span></div></div>";
   }
@@ -3465,7 +4193,7 @@
     var hfssBadge = "<span class=\"badge " + (hfss.isHFSS ? "badge-red" : "badge-green") + "\" style=\"font-size:10px\">" + (hfss.isHFSS ? "HFSS" : "Non-HFSS") + " (" + hfss.total + ")</span>";
     var safeId = r.id.replace(/'/g, "\\'");
     return "<tr class=\"row-clickable\" onclick=\"openRecipe('" + safeId + "','" + fromView + "')\" oncontextmenu=\"return handleRecipeContextMenu(event, '" + safeId + "')\" style=\"cursor:pointer\">" +
-      "<td class=\"bold\">" + statusBadge + kindBadge + r.name + usedInBadge + (tagsStr ? "<span style=\"display:none\"> " + tagsStr + "</span>" : "") + "</td>" +
+      "<td class=\"bold\">" + statusBadge + kindBadge + r.name + versionBadge(r) + usedInBadge + (tagsStr ? "<span style=\"display:none\"> " + tagsStr + "</span>" : "") + "</td>" +
       "<td style=\"font-size:12px;color:var(--nc-gray-600);font-family:var(--nc-mono)\">" + (r.code || "—") + "</td>" +
       "<td class=\"num recipe-centre-col-ing-count\">" + (r.ingredients ? r.ingredients.length : 0) + "</td>" +
       "<td class=\"num\">" + formatIngredientDisplayNum(nut.kj) + "</td>" +
@@ -3614,7 +4342,7 @@
 
   function populateProjectSelects() {
     var folders = getProjectFolders();
-    ["new-rec-project", "edit-rec-project"].forEach(function (id) {
+    ["new-rec-project", "edit-rec-project", "duplicate-rec-project"].forEach(function (id) {
       var sel = document.getElementById(id);
       if (!sel) return;
       var currentVal = sel.value;
@@ -3700,6 +4428,8 @@
     if (!q) { dd.classList.remove("open"); return; }
     var statusFilterEl = document.getElementById("recipe-ing-status-filter");
     var statusFilter = statusFilterEl ? statusFilterEl.value : "all";
+    var typeFilterEl = document.getElementById("recipe-ing-type-filter");
+    var typeFilter = typeFilterEl ? typeFilterEl.value : "all";
     var ingredients = Ingredients.getIngredients();
     var recipes = Recipes.getRecipes();
     var r = recipes.find(function (rec) { return rec.id === currentRecipeId; });
@@ -3708,14 +4438,27 @@
       if (statusFilter === "development") return !item.approved;
       return true;
     }
+    // Ingredients only ever come back as "rm"/"packaging"/"other" here — sub-recipes here are
+    // always recipeType "subRecipe" (finished products can't be added as a component today, see
+    // the comment below), so "sub" matches every sub-recipe result and "finished" matches none.
+    function ingKindMatches(i) {
+      if (typeFilter === "sub" || typeFilter === "finished") return false;
+      if (typeFilter === "rm") return !isPackagingItem(i);
+      if (typeFilter === "packaging") return isPackagingItem(i);
+      if (typeFilter === "other") return !isPackagingItem(i) && (i.cat || "").trim() === "Other";
+      return true;
+    }
+    function subKindMatches() {
+      return typeFilter === "all" || typeFilter === "sub";
+    }
     function ingScore(i) {
       var arr = [searchWordsMatch(i.name, q), searchWordsMatch(i.code, q), searchWordsMatch((i.descriptionTags || []).join(" "), q), searchWordsMatch(i.cat, q), searchWordsMatch(i.supplier, q)];
       (i.altCodes || []).forEach(function (c) { arr.push(searchWordsMatch(c, q)); });
       return arr.reduce(function (a, b) { return a.score >= b.score ? a : b; }, { match: false, score: 0 });
     }
-    var ingMatches = ingredients.filter(function (i) { return !isDelisted(i.name) && statusMatches(i) && ingScore(i).match; }).sort(function (a, b) { return ingScore(b).score - ingScore(a).score; }).slice(0, 6);
+    var ingMatches = ingredients.filter(function (i) { return !isDelisted(i.name) && statusMatches(i) && ingKindMatches(i) && ingScore(i).match; }).sort(function (a, b) { return ingScore(b).score - ingScore(a).score; }).slice(0, 6);
     var subMatches = [];
-    if (r) {
+    if (r && subKindMatches()) {
       // Sub-recipes must be addable to ANY recipe, not just "finished products" — nesting a
       // sub-recipe inside another sub-recipe is completely normal (e.g. LR MIX inside HR FRIED
       // CHICKEN, itself inside a finished pack). Restricting this to finishedProduct-only made
@@ -3741,7 +4484,7 @@
     }
     var html = subMatches.map(function (rec) {
       var codePart = (rec.code && rec.code.trim()) ? rec.code : "";
-      var recUom = (rec.costUOM || rec.uom || rec.serving_uom || "G").toString().toUpperCase();
+      var recUom = recipeOwnUom(rec, ingredients);
       var costPerUom = getSubRecipeCostPerUom(rec, ingredients, recUom);
       var costPart = costPerUom > 0 ? "£" + costPerUom.toFixed(3) + "/" + recUom : "—";
       var typeBadge = "<span class=\"badge badge-subrecipe\" style=\"font-size:9px\">Sub</span>";
@@ -3787,10 +4530,9 @@
     if (!r) return;
     if (r.ingredients.some(function (ri) { return ri.subRecipeId === subRecipeId; })) { showToast("Sub recipe already in recipe"); return; }
     var subRec = recipes.find(function (rec) { return rec.id === subRecipeId; });
-    var recipeUom = (subRec && (subRec.costUOM || subRec.uom || subRec.serving_uom || "")) ? (subRec.costUOM || subRec.uom || subRec.serving_uom).toString().trim().toUpperCase() : "G";
+    var recipeUom = subRec ? recipeOwnUom(subRec, Ingredients.getIngredients()) : "G";
     if (!recipeUom || (Data.UOM_OPTIONS || ["G", "KG", "L", "ML", "M", "EACH"]).indexOf(recipeUom) < 0) recipeUom = "G";
-    var defaultQty = (recipeUom === "EACH" || recipeUom === "M") ? 1 : 100;
-    r.ingredients.push({ subRecipeId: subRecipeId, qty: defaultQty, uom: recipeUom, fvnOverride: null });
+    r.ingredients.push({ subRecipeId: subRecipeId, qty: 1, uom: recipeUom, fvnOverride: null });
     addRecipeVersionBeforeSave(r);
     document.getElementById("recipe-ing-search").value = "";
     document.getElementById("recipe-ing-dropdown").classList.remove("open");
@@ -3807,8 +4549,7 @@
     if (r.ingredients.some(function (ri) { return ri.ingredientId === ingId; })) { showToast("Ingredient already in recipe"); return; }
     var ing = ingredients.find(function (i) { return i.id === ingId; });
     var uom = (ing && (ing.costUOM || ing.costUom || ing.CostUom || ing.CostUOM)) ? (ing.costUOM || ing.costUom || ing.CostUom || ing.CostUOM).toUpperCase() : "KG";
-    var defaultQty = (uom === "EACH") ? 1 : 100;
-    r.ingredients.push({ ingredientId: ingId, qty: defaultQty, uom: uom, fvnOverride: null });
+    r.ingredients.push({ ingredientId: ingId, qty: 1, uom: uom, fvnOverride: null });
     addRecipeVersionBeforeSave(r);
     document.getElementById("recipe-ing-search").value = "";
     document.getElementById("recipe-ing-dropdown").classList.remove("open");
@@ -3968,7 +4709,7 @@
       if (ri.subRecipeId) {
         var subRec = recipes.find(function (rec) { return rec.id === ri.subRecipeId; });
         if (!subRec) return;
-        var subRecUom = (subRec.costUOM || subRec.uom || subRec.serving_uom || "G").toString().trim().toUpperCase();
+        var subRecUom = recipeOwnUom(subRec, ingredients);
         if (!subRecUom || (Data.UOM_OPTIONS || ["G", "KG", "L", "ML", "M", "EACH"]).indexOf(subRecUom) < 0) subRecUom = "G";
         var current = (ri.uom || "G").toUpperCase();
         // updateSubRecipeUom has no density-based weight<->volume conversion, so only the
@@ -3987,8 +4728,7 @@
     var body = document.getElementById("recipe-ingredients-body");
     var empty = document.getElementById("recipe-ing-empty");
     var totalW = (r.ingredients || []).reduce(function (s, ri) { return s + recipeLineWeightForTotal(ri); }, 0);
-    var recipeUom = (r.costUOM || r.uom || r.serving_uom || "G").toString().trim().toUpperCase();
-    if (!recipeUom) recipeUom = "G";
+    var recipeUom = recipeOwnUom(r, ingredients);
     var totalDisplay = (recipeUom === "EACH") ? "1 EACH" : (Data.round(totalW) + "g");
     var totalLabelEl = document.getElementById("total-weight-label");
     if (totalLabelEl) totalLabelEl.textContent = (recipeUom === "EACH") ? "Total: " : "Total weight: ";
@@ -4031,7 +4771,7 @@
       if (ri.subRecipeId) {
         var subRec = recipes.find(function (rec) { return rec.id === ri.subRecipeId; });
         if (!subRec) return "";
-        var subRecipeUom = (subRec.costUOM || subRec.uom || subRec.serving_uom || "G").toString().toUpperCase();
+        var subRecipeUom = recipeOwnUom(subRec, ingredients);
         var subCostPerUom = getSubRecipeCostPerUom(subRec, ingredients, subRecipeUom);
         var costBase = Data.qtyToCostBase(ri.qty, ri.uom || "G", subRecipeUom);
         var qtyPerBuom = costBase;
@@ -4058,8 +4798,10 @@
         var rowClick = "openRecipe('" + ri.subRecipeId.replace(/'/g, "\\'") + "')";
         var rowCtx = isSingle ? "openSingleIngredientRecipeActionsMenu(event, '" + ri.subRecipeId.replace(/'/g, "\\'") + "'); return false" : "handleRecipeContextMenu(event, '" + ri.subRecipeId.replace(/'/g, "\\'") + "'); return false";
         var subBadge = getRecipeLineBadge(ri, ingredients, recipes);
-        return "<tr class=\"row-clickable\" style=\"cursor:pointer\" onclick=\"if(!event.target.closest('input,select,button')){" + rowClick + "}\" oncontextmenu=\"" + rowCtx + "\">" +
-          "<td oncontextmenu=\"" + rowCtx + "\" style=\"font-size:12px;color:var(--nc-gray-600);font-family:var(--nc-mono)\">" + codePart + "</td><td oncontextmenu=\"" + rowCtx + "\" class=\"bold\">" + subBadge + subRec.name + "</td>" +
+        // Only the code/name cells navigate — clicking elsewhere in the row (qty, scrap, etc.)
+        // must never jump away while someone's trying to edit those fields.
+        return "<tr oncontextmenu=\"" + rowCtx + "\">" +
+          "<td class=\"recipe-line-nav\" onclick=\"" + rowClick + "\" oncontextmenu=\"" + rowCtx + "\" style=\"font-size:12px;color:var(--nc-gray-600);font-family:var(--nc-mono)\">" + codePart + "</td><td class=\"recipe-line-nav bold\" onclick=\"" + rowClick + "\" oncontextmenu=\"" + rowCtx + "\">" + subBadge + subRec.name + "</td>" +
           "<td onclick=\"event.stopPropagation()\" oncontextmenu=\"" + rowCtx + "\">" + (locked
             ? "<span style=\"font-family:var(--nc-mono);font-size:12px\">" + ri.qty + " " + lineUom + "</span>"
             : "<div style=\"display:flex;gap:4px;align-items:center\"><input class=\"form-input\" type=\"number\" value=\"" + ri.qty + "\" min=\"0\" step=\"any\" style=\"width:70px;padding:4px 8px\" onchange=\"updateSubRecipeQty('" + ri.subRecipeId.replace(/'/g, "\\'") + "', this.value)\" oncontextmenu=\"" + rowCtx + "\"><select class=\"form-select\" style=\"width:56px;padding:4px 4px;font-size:11px\" onchange=\"updateSubRecipeUom('" + ri.subRecipeId.replace(/'/g, "\\'") + "', this.value)\" oncontextmenu=\"" + rowCtx + "\">" + uomSel + "</select></div>") + "</td>" +
@@ -4089,8 +4831,11 @@
       var noNutBadge = (hasNoNutrition(ing) && !isPackagingItem(ing)) ? "<span title=\"No nutritional values\" style=\"margin-left:4px;color:var(--nc-amber);font-size:12px;cursor:help\">⚠</span>" : "";
       var ingBadge = getRecipeLineBadge(ri, ingredients, recipes);
       var ingCtx = "openIngredientActionsMenu(event, '" + ri.ingredientId.replace(/'/g, "\\'") + "'); return false";
-      return "<tr class=\"row-clickable\" style=\"cursor:pointer\" onclick=\"if(!event.target.closest('input,select,button')){openIngredientView('" + ri.ingredientId.replace(/'/g, "\\'") + "')}\" oncontextmenu=\"" + ingCtx + "\">" +
-        "<td oncontextmenu=\"" + ingCtx + "\" style=\"font-size:12px;color:var(--nc-gray-600);font-family:var(--nc-mono)\">" + (ing.code && ing.code.trim() ? ing.code : "—") + "</td><td oncontextmenu=\"" + ingCtx + "\" class=\"bold\">" + ingBadge + ing.name + noNutBadge + "</td>" +
+      var ingNavClick = "openIngredientView('" + ri.ingredientId.replace(/'/g, "\\'") + "')";
+      // Only the code/name cells navigate — clicking elsewhere in the row (qty, scrap, etc.)
+      // must never jump away while someone's trying to edit those fields.
+      return "<tr oncontextmenu=\"" + ingCtx + "\">" +
+        "<td class=\"recipe-line-nav\" onclick=\"" + ingNavClick + "\" oncontextmenu=\"" + ingCtx + "\" style=\"font-size:12px;color:var(--nc-gray-600);font-family:var(--nc-mono)\">" + (ing.code && ing.code.trim() ? ing.code : "—") + "</td><td class=\"recipe-line-nav bold\" onclick=\"" + ingNavClick + "\" oncontextmenu=\"" + ingCtx + "\">" + ingBadge + ing.name + noNutBadge + "</td>" +
         "<td onclick=\"event.stopPropagation()\" oncontextmenu=\"" + ingCtx + "\">" + (locked
           ? "<span style=\"font-family:var(--nc-mono);font-size:12px\">" + ri.qty + " " + lineUom + "</span>"
           : "<div style=\"display:flex;gap:4px;align-items:center\"><input class=\"form-input\" type=\"number\" value=\"" + ri.qty + "\" min=\"0\" step=\"any\" style=\"width:70px;padding:4px 8px\" onchange=\"updateIngredientQty('" + ri.ingredientId + "', this.value)\" oncontextmenu=\"" + ingCtx + "\"><select class=\"form-select\" style=\"width:56px;padding:4px 4px;font-size:11px\" onchange=\"updateIngredientUom('" + ri.ingredientId + "', this.value)\" oncontextmenu=\"" + ingCtx + "\">" + uomSel + "</select></div>") + "</td>" +
@@ -4161,7 +4906,7 @@
       if (ri.subRecipeId) {
         var sr = Recipes.getRecipes().find(function (r) { return r.id === ri.subRecipeId; });
         if (sr && !visited[ri.subRecipeId]) {
-          var subRecipeUom = (sr.costUOM || sr.uom || sr.serving_uom || "G").toString().toUpperCase();
+          var subRecipeUom = recipeOwnUom(sr, ingredients);
           // Pass a COPY of visited, not the shared object — visited must only guard against
           // this branch being its own ancestor (a true cycle). Sharing/mutating one object
           // across sibling lines wrongly zeroes out any sub-recipe used by more than one line
@@ -4230,7 +4975,23 @@
     // per-kg cost — otherwise mixing food (KG) with packaging in one recipe wrongly dilutes its
     // cost-per-kg using packaging's arbitrary placeholder pseudo-weight.
     var totalG = (subRec.ingredients || []).reduce(function (s, ri) { return s + costWeightForLine(ri, ingredients); }, 0);
-    if (totalG <= 0) return 0;
+    if (totalG <= 0) {
+      // A single-ingredient wrapper around a zero-weight item (packaging) has no weight to
+      // divide by, but it can still have a real cost — don't discard it. Some of these were
+      // imported with their own uom/costUOM defaulted to "G" (wrong — e.g. a label roll that's
+      // really priced per EACH, or wrap that's really priced per M) rather than left matching
+      // the base ingredient's actual unit, which is what sent them down this weight-ratio path
+      // in the first place. Derive the price directly from the one base line instead: totalCost
+      // already equals price × (that line's qty converted into the base ingredient's own
+      // costUOM), so dividing by the line's qty gives price-per-1-unit-of-the-line's-own-uom,
+      // which can then be converted into whatever uom the caller actually asked for.
+      var lines = subRec.ingredients || [];
+      if (totalCost > 0 && lines.length === 1 && lines[0].qty > 0) {
+        var costPerLineUnit = totalCost / lines[0].qty;
+        return costPerLineUnit * Data.qtyToCostBase(1, recipeUom, lines[0].uom || "G");
+      }
+      return 0;
+    }
     return (totalCost / totalG) * 1000;
   }
 
@@ -4252,7 +5013,7 @@
       if (ri.subRecipeId) {
         var subRec = (recipes || Recipes.getRecipes()).find(function (rec) { return rec.id === ri.subRecipeId; });
         if (subRec) {
-          var subRecipeUom = (subRec.costUOM || subRec.uom || subRec.serving_uom || "G").toString().toUpperCase();
+          var subRecipeUom = recipeOwnUom(subRec, ingredients);
           var subCostPerUom = getSubRecipeCostPerUom(subRec, ingredients, subRecipeUom);
           var costBase = Data.qtyToCostBase(ri.qty, ri.uom || "G", subRecipeUom);
           totalCost += subCostPerUom * costBase;
@@ -4564,7 +5325,7 @@
       if (ri.subRecipeId) {
         var subRec = recipes.find(function (r) { return r.id === ri.subRecipeId; });
         if (!subRec) return null;
-        var subRecipeUom = (subRec.costUOM || subRec.uom || subRec.serving_uom || "G").toString().toUpperCase();
+        var subRecipeUom = recipeOwnUom(subRec, ingredients);
         costPerKg = getSubRecipeCostPerUom(subRec, ingredients, subRecipeUom);
         lineCost = costPerKg * Data.qtyToCostBase(ri.qty, ri.uom || "G", subRecipeUom);
         if (!costPerKg || costPerKg === 0) missingCostCount++;
@@ -4599,8 +5360,7 @@
         '<td style="width:120px"><div style="display:flex;align-items:center;gap:6px"><div style="flex:1;height:6px;background:var(--nc-gray-100);border-radius:3px;overflow:hidden">' +
         '<div style="height:100%;width:' + barWidth + '%;background:var(--nc-primary);border-radius:3px"></div></div><span class="num" style="font-size:11px;min-width:36px;text-align:right">' + Data.round(pctOfTotal) + "%</span></div></td></tr>";
     }).join("");
-    var recipeUom = (recipe.costUOM || recipe.uom || recipe.serving_uom || "G").toString().trim().toUpperCase();
-    if (!recipeUom) recipeUom = "G";
+    var recipeUom = recipeOwnUom(recipe, ingredients);
     var totalQtyDisplay = (recipeUom === "EACH") ? "1 EACH" : (Data.round(totalWeight) + "g");
     foot.innerHTML = "<tr style=\"border-top:2px solid var(--nc-gray-300)\"><td class=\"bold\">TOTAL</td><td class=\"num bold\">" + totalQtyDisplay + "</td><td></td><td class=\"num bold\" style=\"font-family:var(--nc-mono);font-size:13px\">£" + totalCost.toFixed(2) + "</td><td class=\"num bold\">100%</td></tr>";
     var missingNote = document.getElementById("cost-missing-note");
@@ -4920,7 +5680,11 @@
       costUOM: (costUOM != null && String(costUOM).trim() !== "") ? String(costUOM).trim() : "",
       supplier: supplierVal || "",
       allergens: Data.autoDetectAllergens(name, cat),
-      fvn: Data.autoDetectFVN(name, cat)
+      fvn: Data.autoDetectFVN(name, cat),
+      // Anything sourced from an import (spreadsheet today, an API feed later) is trusted
+      // data, not a work-in-progress draft — only items built by hand via the "+ New
+      // Ingredient"/"+ New Recipe" forms should start out "in development".
+      approved: true
     };
   }
 
@@ -5059,7 +5823,8 @@
           recipeType: "finishedProduct",
           serving: 100,
           ingredients: recipeIngredients,
-          created: new Date().toISOString()
+          created: new Date().toISOString(),
+          approved: true
         };
         recipes.push(newRecipe);
         Recipes.setRecipes(recipes);
@@ -5115,7 +5880,8 @@
       costUOM: costUom,
       supplier: item.supplierVal || "",
       allergens: Data.autoDetectAllergens(item.name, item.cat),
-      fvn: Data.autoDetectFVN(item.name, item.cat)
+      fvn: Data.autoDetectFVN(item.name, item.cat),
+      approved: true
     };
   }
 
@@ -5427,7 +6193,8 @@ desc: "Imported from " + (fname || "spreadsheet"),
         recipeType: recipeType,
         serving: 100,
         ingredients: [],
-          created: new Date().toISOString()
+          created: new Date().toISOString(),
+          approved: true
         };
         if (group.parentUom) newRec.costUOM = group.parentUom;
         if (groupOwnCost != null && groupOwnCost > 0) { newRec.sheetCost = groupOwnCost; newRec.ownCost = groupOwnCost; }
@@ -5458,7 +6225,8 @@ desc: "Imported from " + (fname || "spreadsheet"),
           costUOM: item.costUom || "KG",
           supplier: item.supplier || "",
           allergens: Data.autoDetectAllergens(item.itemName, item.cat),
-          fvn: Data.autoDetectFVN(item.itemName, item.cat)
+          fvn: Data.autoDetectFVN(item.itemName, item.cat),
+          approved: true
         };
         ingredients.push(existingBase);
         importedIng++;
@@ -5488,7 +6256,8 @@ desc: "Imported from " + (fname || "spreadsheet"),
           serving: 100,
           costUOM: group.parentUom || existingBase.costUOM || "KG",
           ingredients: [singleLine],
-          created: new Date().toISOString()
+          created: new Date().toISOString(),
+          approved: true
         };
         if (group.parentUom) singleRec.costUOM = group.parentUom;
         recipes.push(singleRec);
@@ -5556,7 +6325,8 @@ desc: "Imported from " + (fname || "spreadsheet"),
             costUOM: item.costUom || "KG",
             supplier: item.supplier,
             allergens: Data.autoDetectAllergens(item.itemName, item.cat),
-            fvn: Data.autoDetectFVN(item.itemName, item.cat)
+            fvn: Data.autoDetectFVN(item.itemName, item.cat),
+            approved: true
           };
           ingredients.push(newIng);
           importedIng++;
@@ -5608,8 +6378,28 @@ desc: "Imported from " + (fname || "spreadsheet"),
 
   // Attach globals for HTML onclick
   window.switchView = switchView;
+  window.filterComparisonSearch = filterComparisonSearch;
+  window.toggleComparisonSelect = toggleComparisonSelect;
+  window.removeComparisonSelected = removeComparisonSelected;
+  window.openCurrentRecipeInComparisons = openCurrentRecipeInComparisons;
+  window.comparisonSelectedDragStart = comparisonSelectedDragStart;
+  window.comparisonSelectedDragOver = comparisonSelectedDragOver;
+  window.comparisonSelectedDrop = comparisonSelectedDrop;
+  window.comparisonSelectedDragEnd = comparisonSelectedDragEnd;
+  window.renderComparisonTable = renderComparisonTable;
+  window.switchComparisonRecipeTab = switchComparisonRecipeTab;
+  window.comparisonCardDragStart = comparisonCardDragStart;
+  window.comparisonCardDragOver = comparisonCardDragOver;
+  window.comparisonCardDrop = comparisonCardDrop;
+  window.comparisonCardDragEnd = comparisonCardDragEnd;
+  window.comparisonLineDragStart = comparisonLineDragStart;
+  window.comparisonLineDragOver = comparisonLineDragOver;
+  window.comparisonLineDrop = comparisonLineDrop;
+  window.comparisonLineDragEnd = comparisonLineDragEnd;
+  window.comparisonRecalcMargins = comparisonRecalcMargins;
   window.goBack = goBack;
   window.goBackFromRecipeDetail = goBackFromRecipeDetail;
+  window.topbarGoBack = topbarGoBack;
   window.switchReportsTab = switchReportsTab;
   window.openNewProjectModal = openNewProjectModal;
   window.openEditProjectModal = openEditProjectModal;
@@ -5693,7 +6483,8 @@ desc: "Imported from " + (fname || "spreadsheet"),
   window.saveRecipeMethodField = saveRecipeMethodField;
   window.switchMethodSource = switchMethodSource;
   window.deleteCurrentRecipe = deleteCurrentRecipe;
-  window.duplicateCurrentRecipe = duplicateCurrentRecipe;
+  window.openDuplicateRecipeModal = openDuplicateRecipeModal;
+  window.confirmDuplicateRecipe = confirmDuplicateRecipe;
   window.filterRecipes = filterRecipes;
   window.renderRecipesList = renderRecipesList;
   window.renderProjectRecipesList = renderProjectRecipesList;

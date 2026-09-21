@@ -7,7 +7,7 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect fill='%235d8c3e' width='32' height='32' rx='4'/><text x='16' y='22' font-size='18' font-weight='bold' fill='white' text-anchor='middle' font-family='system-ui,sans-serif'>W</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=20260917-recipe-search-columns-v2">
+<link rel="stylesheet" href="styles.css?v=20260917-recipe-line-nav-cells">
 </head>
 <body>
 
@@ -25,6 +25,7 @@
     <a href="#" onclick="window.location.href=window.location.origin+'/api/auth/logout';return false;" class="topbar-nav-signout">Sign out</a>
   </nav>
   <div class="topbar-right" style="position:relative">
+    <button class="btn topbar-board-menu-btn" onclick="topbarGoBack()" title="Back">← Back</button>
     <button class="btn btn-icon topbar-board-menu-btn" id="topbar-settings-btn" onclick="toggleSettingsDropdown(event)" title="Board options"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M3 8a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0zm5 0a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0zm5 0a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0z"/></svg></button>
     <div class="nc-settings-dropdown" id="topbar-settings-dropdown">
       <div class="nc-bmd-section-title">Board options</div>
@@ -109,6 +110,10 @@
       <button class="sidebar-item" onclick="switchView('reports')" data-view="reports">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M2 1h12a1 1 0 011 1v12a1 1 0 01-1 1H2a1 1 0 01-1-1V2a1 1 0 011-1zm1 2v3h4V3H3zm6 0v3h4V3H9zM3 8v2h10V8H3zm0 4v1h10v-1H3z" opacity=".8"/></svg>
         Reports &amp; Labels
+      </button>
+      <button class="sidebar-item" onclick="switchView('comparisons')" data-view="comparisons">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M3 13V6h3v7H3zm4 0V2h3v11H7zm4 0V9h3v4h-3z" opacity=".8"/></svg>
+        Comparisons
       </button>
     </div>
     <div class="sidebar-divider"></div>
@@ -305,7 +310,6 @@
       <div class="page-header">
         <h1 id="project-recipes-title">Recipes</h1>
         <div class="actions">
-          <button type="button" class="btn" onclick="goBack()">← Back</button>
           <button type="button" class="btn" onclick="openNewIngredientModal()">
             <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2a1 1 0 011 1v4h4a1 1 0 110 2H9v4a1 1 0 11-2 0V9H3a1 1 0 010-2h4V3a1 1 0 011-1z"/></svg>
             New Ingredient
@@ -375,7 +379,6 @@
           <p>Create a recipe or ingredient with the buttons above. New recipes are auto-tagged with this project. Or tag existing recipes in Recipe Centre → Edit name &amp; code → Project folder.</p>
           <button class="btn" onclick="openNewIngredientModal()">Create Ingredient</button>
           <button class="btn btn-primary" onclick="openNewRecipeModalForProject()" style="margin-left:8px">Create Recipe</button>
-          <button class="btn" onclick="goBack()" style="margin-left:8px">Back</button>
         </div>
       </div>
     </div>
@@ -541,6 +544,7 @@
           <span class="badge badge-status" id="recipe-detail-status-badge">In development</span>
           <span class="badge" id="recipe-detail-kind-badge">Finished product</span>
           <button class="btn btn-sm btn-primary" id="recipe-detail-edit-btn" onclick="openEditRecipeNameModal()">Edit</button>
+          <button class="btn btn-sm" onclick="openCurrentRecipeInComparisons()">Compare</button>
           <!-- Nested dropdown: trigger row opens submenu (onmouseenter); other rows close submenu (onmouseenter); submenu closes on leave (onmouseleave). See app.js "Nested dropdown pattern". -->
           <div class="dropdown-wrap" style="position:relative;display:inline-block">
             <button class="btn btn-sm" id="recipe-detail-export-btn" onclick="toggleExportDropdown(event)">Export</button>
@@ -563,9 +567,8 @@
             </div>
           </div>
           <button class="btn btn-sm" id="recipe-detail-toggle-approved" onclick="toggleRecipeApproved()">Mark as approved</button>
-          <button class="btn" onclick="duplicateCurrentRecipe()">Duplicate</button>
+          <button class="btn" onclick="openDuplicateRecipeModal()">Duplicate</button>
           <button class="btn btn-danger" onclick="deleteCurrentRecipe()">Delete</button>
-          <button class="btn" onclick="goBackFromRecipeDetail()">← Back</button>
         </div>
       </div>
       <div id="recipe-detail-meta" style="margin-top:8px;">
@@ -576,8 +579,8 @@
 
       <!-- Recipe Tabs -->
       <div class="tabs" id="recipe-tabs">
-        <button class="tab-btn active" onclick="switchRecipeTab('ingredients')">Ingredients</button>
-        <button class="tab-btn" onclick="switchRecipeTab('method')">All Data</button>
+        <button class="tab-btn active" id="recipe-tab-ingredients-btn" onclick="switchRecipeTab('ingredients')">Ingredients</button>
+        <button class="tab-btn" onclick="switchRecipeTab('method')">Cooking Instructions</button>
         <button class="tab-btn" onclick="switchRecipeTab('nutrition')">Nutrition</button>
         <button class="tab-btn" onclick="switchRecipeTab('label')">Label</button>
         <button class="tab-btn" onclick="switchRecipeTab('hfss')">HFSS Score</button>
@@ -605,6 +608,14 @@
               <option value="all">All statuses</option>
               <option value="approved">Approved only</option>
               <option value="development">In development only</option>
+            </select>
+            <select class="form-input" id="recipe-ing-type-filter" style="width:150px;flex:none" onchange="searchIngredientForRecipe()">
+              <option value="all">All types</option>
+              <option value="rm">RM</option>
+              <option value="sub">Sub recipe</option>
+              <option value="finished">Finished product</option>
+              <option value="packaging">Packaging</option>
+              <option value="other">Other</option>
             </select>
           </div>
           <table class="data-table" id="recipe-ingredients-table">
@@ -758,8 +769,8 @@
       <div class="tab-pane" id="tab-costing">
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:16px">
           <div class="stat-card">
-            <div class="stat-label">Total Recipe Cost</div>
-            <div class="stat-value" id="cost-total">£0.00</div>
+            <div class="stat-label">Cost per kg</div>
+            <div class="stat-value" id="cost-per-kg">£0.00</div>
           </div>
           <div class="stat-card">
             <div class="stat-label">Cost per Serving</div>
@@ -771,8 +782,8 @@
             <div class="stat-value" id="cost-per100">£0.00</div>
           </div>
           <div class="stat-card">
-            <div class="stat-label">Cost per kg</div>
-            <div class="stat-value" id="cost-per-kg">£0.00</div>
+            <div class="stat-label">Total Recipe Cost</div>
+            <div class="stat-value" id="cost-total">£0.00</div>
           </div>
         </div>
 
@@ -785,12 +796,12 @@
               <input class="form-input" type="number" id="cost-sell-price" step="any" min="0" value="" placeholder="e.g. 3.50" oninput="recalcMargins()">
             </div>
             <div class="form-group">
-              <label class="form-label">Target Margin (%)</label>
-              <input class="form-input" type="number" id="cost-target-margin" step="any" min="0" max="100" value="" placeholder="e.g. 65" oninput="recalcMarginFromPct()">
-            </div>
-            <div class="form-group">
               <label class="form-label">Yield / Servings per Batch</label>
               <input class="form-input" type="number" id="cost-yield" step="any" min="1" value="1" oninput="recalcMargins()">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Target Margin (%)</label>
+              <input class="form-input" type="number" id="cost-target-margin" step="any" min="0" max="100" value="" placeholder="e.g. 65" oninput="recalcMarginFromPct()">
             </div>
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px" id="margin-results">
@@ -820,7 +831,7 @@
             <span style="font-size:12px;color:var(--nc-gray-400)" id="cost-missing-note"></span>
           </div>
           <table class="data-table">
-            <thead><tr><th>Ingredient</th><th>Qty</th><th style="width:100px">Cost per UOM (£)</th><th>Line Cost</th><th>% of Total</th></tr></thead>
+            <thead><tr><th>Ingredient</th><th>Qty</th><th style="width:100px">Cost per UOM (£)</th><th>Line Cost</th><th>% of Total Cost</th></tr></thead>
             <tbody id="costing-table-body"></tbody>
             <tfoot id="costing-table-foot"></tfoot>
           </table>
@@ -868,7 +879,55 @@
         </div>
       </div>
     </div>
-  </div>
+
+    <!-- ═══════ COMPARISONS ═══════ -->
+    <div class="view" id="view-comparisons">
+      <div class="page-header">
+        <h1>Comparisons</h1>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Comparison search</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <input class="form-input" type="text" id="comparison-search-input" placeholder="Search ingredients, recipes, everything..." oninput="filterComparisonSearch()" style="flex:1;min-width:200px">
+          <select class="form-select" id="comparison-search-status-filter" onchange="filterComparisonSearch()" style="width:auto;flex:none">
+            <option value="all">All statuses</option>
+            <option value="approved">Approved</option>
+            <option value="development">In development</option>
+          </select>
+          <select class="form-select" id="comparison-search-type-filter" onchange="filterComparisonSearch()" style="width:auto;flex:none">
+            <option value="all">All types</option>
+            <option value="ingredients">Ingredients</option>
+            <option value="recipes">Recipes</option>
+          </select>
+        </div>
+      </div>
+      <button type="button" class="btn btn-primary" id="comparison-compare-btn" onclick="renderComparisonTable()" style="margin-bottom:16px">Compare</button>
+      <div id="comparison-selected-wrap" style="display:none;margin-bottom:16px">
+        <label class="form-label">Selected</label>
+        <div id="comparison-selected-list" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+      </div>
+      <p style="font-size:12px;color:var(--nc-gray-500)" id="comparison-search-count"></p>
+      <div class="card" style="padding:0;">
+        <div style="overflow:auto;max-height:min(70vh, 700px);">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Code</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="comparison-search-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════ COMPARISON RESULT (separate page — reached only by clicking Compare) ═══════ -->
+    <div class="view" id="view-comparison-result">
+      <div id="comparison-result-body"></div>
+    </div>
 
     <!-- ═══════ REPORTS ═══════ -->
     <div class="view" id="view-reports">
@@ -1165,6 +1224,27 @@
     <div class="modal-actions">
       <button class="btn" onclick="closeModal('modal-recipe')">Cancel</button>
       <button class="btn btn-primary" onclick="saveRecipe()">Create Recipe</button>
+    </div>
+  </div>
+</div>
+
+<!-- Duplicate Recipe Modal (from recipe detail) -->
+<div class="modal-overlay" id="modal-duplicate-recipe">
+  <div class="modal" style="width:420px">
+    <div class="modal-title">Duplicate recipe</div>
+    <div class="form-group">
+      <label class="form-label">Naming</label>
+      <input class="form-input" type="text" id="duplicate-rec-name" placeholder="Recipe name">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Folder</label>
+      <select class="form-select" id="duplicate-rec-project">
+        <option value="">— None —</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('modal-duplicate-recipe')">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmDuplicateRecipe()">Duplicate</button>
     </div>
   </div>
 </div>
@@ -1503,7 +1583,7 @@
 <script src="hfss.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="app.js?v=20260917-recipe-search-columns-v2"></script>
+<script src="app.js?v=20260918-remove-qty-per-buom-column"></script>
 <script src="excel-import.js?v=20260916-parentnoofportions-col-k"></script>
 <script src="reports.js"></script>
 </body>
