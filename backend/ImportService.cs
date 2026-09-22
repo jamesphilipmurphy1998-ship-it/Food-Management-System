@@ -287,7 +287,14 @@ public sealed class ImportService(InMemoryStore store) : IImportService
                     // wrong parent code) while every reference to the item elsewhere — including
                     // its own header rows — consistently quotes the same real cost. Without
                     // this, those bogus child rows get summed into a nonsense derived cost.
-                    OwnCost = groupSheetCost
+                    OwnCost = groupSheetCost,
+                    // A brand-new recipe coming straight from the BOM sheet is real, approved
+                    // source data, not a draft — matches the frontend JS import's own behavior
+                    // (see app.js's client-side import path). Only newly-CREATED recipes get
+                    // this. A re-upload later refreshing this same recipe (below) also marks it
+                    // approved — the sheet is the source of truth for anything it touches,
+                    // whether that's the first time or a refresh.
+                    Approved = true
                 };
                 store.Recipes.Add(existing);
                 result.RecipesCreated++;
@@ -298,6 +305,7 @@ public sealed class ImportService(InMemoryStore store) : IImportService
                 existing.Code = string.IsNullOrWhiteSpace(existing.Code) ? group.Code : existing.Code;
                 if (!string.IsNullOrWhiteSpace(group.Uom)) existing.Uom = group.Uom;
                 if (groupSheetCost > 0) { existing.SheetCost = groupSheetCost; existing.OwnCost = groupSheetCost; }
+                existing.Approved = true;
             }
             parentToRecipeId[parentKey] = existing.Id;
         }
@@ -340,6 +348,7 @@ public sealed class ImportService(InMemoryStore store) : IImportService
                 rec.RecipeType = "subRecipe";
                 rec.Uom = singleUom;
                 rec.Ingredients = [singleLine];
+                rec.Approved = true;
             }
             else
             {
@@ -351,7 +360,8 @@ public sealed class ImportService(InMemoryStore store) : IImportService
                     RecipeType = "subRecipe",
                     Uom = singleUom,
                     Desc = "Imported from " + (req.SourceName ?? "spreadsheet") + " — single-component ingredient (links to base)",
-                    Ingredients = [singleLine]
+                    Ingredients = [singleLine],
+                    Approved = true
                 };
                 store.Recipes.Add(rec);
                 result.RecipesCreated++;
@@ -548,8 +558,61 @@ public sealed class ImportService(InMemoryStore store) : IImportService
             Salt = item.Salt,
             Cost = item.CostPerKg,
             CostUOM = !string.IsNullOrWhiteSpace(item.CostUom) ? item.CostUom : "KG",
-            Supplier = item.Supplier
+            Supplier = item.Supplier,
+            Allergens = AutoDetectAllergens(item.ItemName),
+            Fvn = AutoDetectFvn(item.ItemName, item.Cat),
+            Approved = true
         };
+    }
+
+    // Ported from data.js autoDetectAllergens — keep the two in sync. Backend-imported
+    // ingredients were previously left with an empty allergen list entirely (this function
+    // didn't exist here), which is compliance-relevant, not just cosmetic.
+    private static List<string> AutoDetectAllergens(string name)
+    {
+        var n = (name ?? "").ToLowerInvariant();
+        var rules = new (string Allergen, string[] Patterns)[]
+        {
+            ("Milk", ["milk", "cream", "butter", "cheese", "yogurt", "yoghurt", "whey", "casein", "lactose", "dairy"]),
+            ("Eggs", ["egg", "eggs", "albumin", "mayonnaise", "meringue"]),
+            ("Cereals containing gluten", ["wheat", "flour", "bread", "pasta", "barley", "rye", "oat", "spelt", "semolina", "couscous", "bulgur", "noodle"]),
+            ("Nuts", ["almond", "walnut", "hazelnut", "cashew", "pecan", "pistachio", "macadamia", "brazil nut", "chestnut"]),
+            ("Peanuts", ["peanut"]),
+            ("Soya", ["soy", "soya", "tofu", "tempeh", "edamame", "miso"]),
+            ("Fish", ["fish", "salmon", "tuna", "cod", "haddock", "mackerel", "anchov", "sardine", "trout", "bass", "plaice", "sole", "halibut"]),
+            ("Crustaceans", ["prawn", "shrimp", "crab", "lobster", "crayfish", "langoustine", "scampi"]),
+            ("Molluscs", ["mussel", "oyster", "squid", "clam", "octopus", "snail", "scallop", "cockle", "whelk"]),
+            ("Celery", ["celery", "celeriac"]),
+            ("Mustard", ["mustard"]),
+            ("Sesame", ["sesame", "tahini"]),
+            ("Lupin", ["lupin"]),
+            ("Sulphur dioxide", ["sulphite", "sulfite", "sulphur dioxide", "sulfur dioxide", "dried fruit", "wine", "vinegar"])
+        };
+        var detected = new List<string>();
+        foreach (var (allergen, patterns) in rules)
+        {
+            if (patterns.Any(p => n.Contains(p))) detected.Add(allergen);
+        }
+        return detected;
+    }
+
+    // Ported from data.js autoDetectFVN — keep the two in sync.
+    private static bool AutoDetectFvn(string name, string? cat)
+    {
+        var n = (name ?? "").ToLowerInvariant();
+        var c = (cat ?? "").ToLowerInvariant();
+        if (c.Contains("fruit") || c.Contains("vegetable") || c.Contains("nut") || c.Contains("seed")) return true;
+        string[] fvnTerms =
+        [
+            "apple", "banana", "orange", "lemon", "lime", "berry", "grape", "melon", "peach", "pear", "plum",
+            "cherry", "mango", "pineapple", "kiwi", "fig", "date", "raisin", "sultana", "coconut", "tomato",
+            "onion", "garlic", "pepper", "carrot", "broccoli", "spinach", "cabbage", "pea", "bean", "lentil",
+            "corn", "sweetcorn", "courgette", "aubergine", "beetroot", "celery", "leek", "mushroom", "potato",
+            "sweet potato", "parsnip", "turnip", "swede", "squash", "pumpkin", "almond", "walnut", "hazelnut",
+            "cashew", "pecan", "pistachio", "peanut", "brazil nut", "macadamia", "sunflower seed", "pumpkin seed",
+            "sesame seed", "flaxseed", "chia seed"
+        ];
+        return fvnTerms.Any(t => n.Contains(t));
     }
 
     private static void UpdateIngredient(Ingredient target, ItemData src)
@@ -571,6 +634,12 @@ public sealed class ImportService(InMemoryStore store) : IImportService
             target.AltCodes.Add(src.Code2);
         if (!string.IsNullOrWhiteSpace(src.Supplier)) target.Supplier = src.Supplier;
         if (!string.IsNullOrWhiteSpace(src.Cat) && src.Cat != "Other") target.Cat = src.Cat;
+        // The sheet is the source of truth for anything it touches — also doubles as a backfill
+        // for records created before Fvn/Allergens detection existed here at all, since every
+        // future re-upload now re-derives them instead of leaving them permanently empty.
+        target.Approved = true;
+        target.Fvn = AutoDetectFvn(target.Name, target.Cat);
+        target.Allergens = AutoDetectAllergens(target.Name);
         target.VersionHistory.Add(DateTimeOffset.UtcNow.ToString("O"));
     }
 
