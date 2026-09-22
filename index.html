@@ -544,6 +544,7 @@
           <span class="badge badge-status" id="recipe-detail-status-badge">In development</span>
           <span class="badge" id="recipe-detail-kind-badge">Finished product</span>
           <button class="btn btn-sm btn-primary" id="recipe-detail-edit-btn" onclick="openEditRecipeNameModal()">Edit</button>
+          <button class="btn btn-sm" id="recipe-undo-btn" style="display:none" onclick="undoRecipeChange()" title="Undo the last ingredient change">&#8630; Undo</button>
           <button class="btn btn-sm" onclick="openCurrentRecipeInComparisons()">Compare</button>
           <!-- Nested dropdown: trigger row opens submenu (onmouseenter); other rows close submenu (onmouseenter); submenu closes on leave (onmouseleave). See app.js "Nested dropdown pattern". -->
           <div class="dropdown-wrap" style="position:relative;display:inline-block">
@@ -929,7 +930,9 @@
 
     <!-- ═══════ COMPARISON RESULT (separate page — reached only by clicking Compare) ═══════ -->
     <div class="view" id="view-comparison-result">
-      <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:8px">
+        <button type="button" class="btn" id="comparison-undo-btn" style="display:none" onclick="undoComparisonChange()" title="Undo the last quantity change">&#8630; Undo</button>
+        <button type="button" class="btn btn-primary" id="comparison-save-changes-btn" style="display:none" onclick="saveComparisonChanges()" title="Write edited quantities back to the recipe(s)">Save Changes</button>
         <button type="button" class="btn" onclick="saveCurrentComparison()">Save this comparison</button>
       </div>
       <div id="comparison-result-body"></div>
@@ -1242,6 +1245,19 @@
     <div class="modal-actions">
       <button class="btn" onclick="closeModal('modal-recipe')">Cancel</button>
       <button class="btn btn-primary" onclick="saveRecipe()">Create Recipe</button>
+    </div>
+  </div>
+</div>
+
+<!-- Comparison Save/Discard/Cancel Modal (leaving compare-result with unsaved qty edits) -->
+<div class="modal-overlay" id="modal-comparison-leave">
+  <div class="modal" style="width:420px">
+    <div class="modal-title">Unsaved quantity changes</div>
+    <p style="font-size:13px;color:var(--nc-gray-600)">This comparison has quantities you've edited that haven't been saved to the recipe(s) yet. What would you like to do?</p>
+    <div class="modal-actions">
+      <button class="btn" onclick="comparisonLeaveModalCancel()">Cancel</button>
+      <button class="btn btn-danger" onclick="comparisonLeaveModalDiscard()">Discard</button>
+      <button class="btn btn-primary" onclick="comparisonLeaveModalSave()">Save</button>
     </div>
   </div>
 </div>

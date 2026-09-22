@@ -373,7 +373,47 @@
   var viewHistoryStack = [];
   var VIEW_HISTORY_MAX = 20;
 
+  // Holds the {name, opts} navigation that was interrupted by the Save/Discard/Cancel prompt
+  // below, so Save/Discard can resume it once the user picks — Cancel just clears this and
+  // leaves the user on the comparison page.
+  var comparisonPendingNav = null;
+
   function switchView(name, opts) {
+    var currentEl = document.querySelector(".view.active");
+    var currentName = currentEl && currentEl.id ? currentEl.id.replace("view-", "") : "";
+    // Leaving the compare-result page with unsaved qty edits (see comparisonLineQtyChange) —
+    // ask whether to write them back to the real recipe(s) before navigating away, discard
+    // them, or stay put. Navigation itself is deferred until the user picks Save or Discard.
+    if (currentName === "comparison-result" && name !== "comparison-result" && typeof comparisonHasUnsavedChanges === "function" && comparisonHasUnsavedChanges()) {
+      comparisonPendingNav = { name: name, opts: opts };
+      openModal("modal-comparison-leave");
+      return;
+    }
+    switchViewInner(name, opts);
+  }
+
+  function comparisonLeaveModalSave() {
+    saveComparisonChanges({ silent: true });
+    closeModal("modal-comparison-leave");
+    var nav = comparisonPendingNav;
+    comparisonPendingNav = null;
+    if (nav) switchViewInner(nav.name, nav.opts);
+  }
+
+  function comparisonLeaveModalDiscard() {
+    discardComparisonChanges();
+    closeModal("modal-comparison-leave");
+    var nav = comparisonPendingNav;
+    comparisonPendingNav = null;
+    if (nav) switchViewInner(nav.name, nav.opts);
+  }
+
+  function comparisonLeaveModalCancel() {
+    comparisonPendingNav = null;
+    closeModal("modal-comparison-leave");
+  }
+
+  function switchViewInner(name, opts) {
     var currentEl = document.querySelector(".view.active");
     var currentName = currentEl && currentEl.id ? currentEl.id.replace("view-", "") : "";
     // Leaving the Comparisons/Compare-result pair for anywhere else resets the search and
@@ -652,8 +692,8 @@
     var ingredientsForMap = Ingredients.getIngredients();
     comparisonLineOrder[0] = rA ? rA.ingredients.slice() : [];
     comparisonLineOrder[1] = rB ? rB.ingredients.slice() : [];
-    var arrA = rA ? buildRecipeLineCostArray(comparisonLineOrder[0], ingredientsForMap, recipes) : [];
-    var arrB = rB ? buildRecipeLineCostArray(comparisonLineOrder[1], ingredientsForMap, recipes) : [];
+    var arrA = rA ? buildRecipeLineCostMap(comparisonLineOrder[0], ingredientsForMap, recipes) : null;
+    var arrB = rB ? buildRecipeLineCostMap(comparisonLineOrder[1], ingredientsForMap, recipes) : null;
     var cardA = buildComparisonRecipeCardHtml(idA, 0, maxLines, null, arrB);
     var cardB = buildComparisonRecipeCardHtml(idB, 1, maxLines, null, arrA);
     var diffCard = buildComparisonCostChangeCardHtml(rA, rB);
@@ -706,19 +746,31 @@
   /** Each line's cost in row order — purely positional (row 1 vs row 1, row 2 vs row 2, ...),
    * not matched by ingredient identity, so the other card can look up "whatever line happens
    * to be in this same position". */
-  function buildRecipeLineCostArray(lines, ingredients, recipes) {
-    return (lines || []).map(function (ri) {
-      var costPerUom;
+  /** Keyed by ingredient/sub-recipe identity ("ing:<id>" / "sub:<id>"), not row position — two
+   * recipes rarely list the same ingredients in the same order, so matching by row index (the
+   * old behaviour) compared unrelated lines against each other and produced nonsense "Line Cost
+   * Change" figures. Also carries the recipe's own total, so the Total row's change can be the
+   * real total-cost difference rather than a sum of only the lines that happened to line up. */
+  function buildRecipeLineCostMap(lines, ingredients, recipes) {
+    var byKey = {};
+    var total = 0;
+    (lines || []).forEach(function (ri) {
+      var costPerUom, key;
       if (ri.subRecipeId) {
         var sub = recipes.find(function (x) { return x.id === ri.subRecipeId; });
         var subUom = sub ? recipeOwnUom(sub, ingredients) : (ri.uom || "G");
         costPerUom = sub ? getSubRecipeCostPerUom(sub, ingredients, subUom) : 0;
+        key = "sub:" + ri.subRecipeId;
       } else {
         var ing = ingredients.find(function (i) { return i.id === ri.ingredientId; });
         costPerUom = ing ? (ing.cost || 0) : 0;
+        key = "ing:" + ri.ingredientId;
       }
-      return costPerUom * (ri.qty || 0);
+      var lineCost = costPerUom * (ri.qty || 0);
+      byKey[key] = (byKey[key] || 0) + lineCost; // same ingredient used twice in one recipe sums together
+      total += lineCost;
     });
+    return { byKey: byKey, total: total };
   }
 
   /** Per-card working copy of the recipe's ingredient lines, used only for the Recipe tab's
@@ -726,6 +778,13 @@
    * recipe data or saving anything. Reset to the recipe's real line order whenever a card is
    * freshly built (new Compare click, or after a card swap). */
   var comparisonLineOrder = {};
+  // Tracks which cards have a qty edit not yet written back to the real recipe (see
+  // comparisonLineQtyChange / saveComparisonChanges) — drives the "Save Changes" button and
+  // the leave-page prompt.
+  var comparisonDirty = {};
+  function comparisonHasUnsavedChanges() {
+    return Object.keys(comparisonDirty).some(function (k) { return comparisonDirty[k]; });
+  }
 
   function buildComparisonRecipeCardHtml(recipeId, cardIdx, padToLineCount, maxWidth, otherLineCostMap) {
     var recipes = Recipes.getRecipes();
@@ -735,6 +794,10 @@
     if (!comparisonLineOrder[cardIdx] || comparisonLineOrder[cardIdx].__recipeId !== recipeId) {
       comparisonLineOrder[cardIdx] = (r.ingredients || []).slice();
       comparisonLineOrder[cardIdx].__recipeId = recipeId;
+      comparisonLineOrder[cardIdx].__origQty = comparisonLineOrder[cardIdx].map(function (ri) { return ri.qty; });
+      comparisonDirty[cardIdx] = false;
+      comparisonUndoStack = comparisonUndoStack.filter(function (e) { return e.cardIdx !== cardIdx; });
+      updateComparisonUndoButton();
     }
 
     var tabKeys = COMPARISON_TAB_KEYS;
@@ -749,13 +812,16 @@
     var costPer100 = totalWeight > 0 ? totalCost / totalWeight * 100 : 0;
     var costPerKg = totalWeight > 0 ? totalCost / totalWeight * 1000 : 0;
     var costPerServing = totalWeight > 0 ? totalCost * (serving / totalWeight) : 0;
+    var locked = !!r.approved;
 
     function lineRowsHtml() {
       var workingLines = comparisonLineOrder[cardIdx];
       var totalChange = 0;
-      var hasChange = false;
-      var rows = (workingLines || []).map(function (ri, idx) {
-        var name, code, uom, costPerUom, lineCost;
+      // Recompute costPerUom/lineCost for every line first, so the Total row and each line's
+      // % Recipe reflect any qty edits made below (in-development recipes only — see
+      // comparisonLineQtyChange) rather than the stored, unedited recipe total.
+      var lineData = (workingLines || []).map(function (ri) {
+        var name, code, uom, costPerUom;
         if (ri.subRecipeId) {
           var sub = recipes.find(function (x) { return x.id === ri.subRecipeId; });
           name = sub ? sub.name : "(missing)"; code = sub ? sub.code : "—";
@@ -767,25 +833,43 @@
           costPerUom = ing ? (ing.cost || 0) : 0;
         }
         uom = ri.uom || "G";
-        lineCost = costPerUom * (ri.qty || 0);
-        var pctRecipe = totalCost > 0 ? (lineCost / totalCost * 100) : 0;
+        var lineCost = costPerUom * (ri.qty || 0);
+        return { name: name, code: code, uom: uom, costPerUom: costPerUom, lineCost: lineCost };
+      });
+      var tabTotalCost = lineData.reduce(function (s, d) { return s + d.lineCost; }, 0);
+      var rows = (workingLines || []).map(function (ri, idx) {
+        var d = lineData[idx];
+        var pctRecipe = tabTotalCost > 0 ? (d.lineCost / tabTotalCost * 100) : 0;
+        // Matched by ingredient/sub-recipe identity, not row position — the two recipes rarely
+        // list their lines in the same order, so comparing "whatever's in this same row" (the
+        // old behaviour) diffed unrelated ingredients against each other. A line with no match
+        // in the other recipe (only present here) shows "—" rather than a meaningless number.
         var changeCell = "<td>—</td>";
-        if (otherLineCostMap && idx < otherLineCostMap.length) {
-          var change = lineCost - otherLineCostMap[idx];
-          totalChange += change;
-          hasChange = true;
-          var sign = change > 0 ? "+" : "";
-          var color = change > 0 ? "var(--nc-red, #c0392b)" : (change < 0 ? "var(--nc-green, #2e7d32)" : "var(--nc-gray-700)");
-          changeCell = "<td class=\"num\" style=\"color:" + color + "\">" + sign + "£" + change.toFixed(3) + "</td>";
+        if (otherLineCostMap) {
+          var key = ri.subRecipeId ? "sub:" + ri.subRecipeId : "ing:" + ri.ingredientId;
+          if (Object.prototype.hasOwnProperty.call(otherLineCostMap.byKey, key)) {
+            var change = d.lineCost - otherLineCostMap.byKey[key];
+            var sign = change > 0 ? "+" : "";
+            var color = change > 0 ? "var(--nc-red, #c0392b)" : (change < 0 ? "var(--nc-green, #2e7d32)" : "var(--nc-gray-700)");
+            changeCell = "<td class=\"num\" style=\"color:" + color + "\">" + sign + "£" + change.toFixed(3) + "</td>";
+          } else {
+            changeCell = "<td class=\"num\" style=\"color:var(--nc-gray-400)\">only here</td>";
+          }
         }
         var handleCell = "<td draggable=\"true\" data-comp-line-idx=\"" + idx + "\" ondragstart=\"comparisonLineDragStart(event," + cardIdx + "," + idx + ")\" ondragend=\"comparisonLineDragEnd(event)\" style=\"cursor:grab;color:var(--nc-gray-300);text-align:center;width:20px;user-select:none\" title=\"Drag to reorder\">&#8942;&#8942;</td>";
-        return "<tr ondragover=\"comparisonLineDragOver(event," + cardIdx + "," + idx + ")\" ondrop=\"comparisonLineDrop(event," + cardIdx + "," + idx + ")\">" + handleCell + "<td style=\"font-family:var(--nc-mono);font-size:12px;color:var(--nc-gray-600)\">" + escapeHtml(code || "—") + "</td>" +
-          "<td class=\"bold\">" + escapeHtml(name) + "</td>" +
-          "<td class=\"num\">" + (ri.qty || 0) + " " + escapeHtml(uom) + "</td>" +
+        // Qty is only editable here for a recipe still in development (not approved) — the
+        // same lock rules as the real recipe page apply once approved. Editing recalculates
+        // this card's Recipe-tab totals only (Nutrition/Costing tabs stay on stored data).
+        var qtyCell = locked
+          ? "<td class=\"num\">" + (ri.qty || 0) + " " + escapeHtml(d.uom) + "</td>"
+          : "<td onclick=\"event.stopPropagation()\" class=\"num\"><input type=\"number\" class=\"form-input\" min=\"0\" step=\"any\" value=\"" + (ri.qty || 0) + "\" style=\"width:70px;padding:4px 6px;text-align:right\" onchange=\"comparisonLineQtyChange(" + cardIdx + "," + idx + ", this.value)\"> " + escapeHtml(d.uom) + "</td>";
+        return "<tr ondragover=\"comparisonLineDragOver(event," + cardIdx + "," + idx + ")\" ondrop=\"comparisonLineDrop(event," + cardIdx + "," + idx + ")\">" + handleCell + "<td style=\"font-family:var(--nc-mono);font-size:12px;color:var(--nc-gray-600)\">" + escapeHtml(d.code || "—") + "</td>" +
+          "<td class=\"bold\">" + escapeHtml(d.name) + "</td>" +
+          qtyCell +
           "<td class=\"num\">" + pctRecipe.toFixed(1) + "%</td>" +
           "<td class=\"num\">" + (ri.scrapPct || 0) + "%</td>" +
-          "<td class=\"num\">£" + costPerUom.toFixed(3) + " / " + escapeHtml(uom) + "</td>" +
-          "<td class=\"num\">£" + lineCost.toFixed(3) + "</td>" +
+          "<td class=\"num\">£" + d.costPerUom.toFixed(3) + " / " + escapeHtml(d.uom) + "</td>" +
+          "<td class=\"num\">£" + d.lineCost.toFixed(3) + "</td>" +
           changeCell + "</tr>";
       }).join("");
       // Pad with blank rows so this card's Total row lines up with the other card's, when the
@@ -795,7 +879,8 @@
       var fillerRow = "<tr><td></td><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>";
       var filler = padCount > 0 ? new Array(padCount + 1).join(fillerRow) : "";
       var totalChangeCell = "<td class=\"num bold\">—</td>";
-      if (hasChange) {
+      if (otherLineCostMap) {
+        totalChange = tabTotalCost - otherLineCostMap.total;
         var totalSign = totalChange > 0 ? "+" : "";
         var totalColor = totalChange > 0 ? "var(--nc-red, #c0392b)" : (totalChange < 0 ? "var(--nc-green, #2e7d32)" : "var(--nc-gray-700)");
         totalChangeCell = "<td class=\"num bold\" style=\"color:" + totalColor + "\">" + totalSign + "£" + totalChange.toFixed(3) + "</td>";
@@ -803,7 +888,7 @@
       return "<div style=\"overflow-x:auto\"><table class=\"data-table\"><colgroup><col style=\"width:24px\"><col><col style=\"width:220px\"><col><col><col style=\"width:52px\"><col><col><col></colgroup><thead><tr><th></th><th>Code</th><th>Ingredient</th><th>Qty</th><th>% Recipe</th><th>Scrap %</th><th>Cost per UOM (£)</th><th>Line Cost</th><th>Line Cost Change</th></tr></thead><tbody id=\"comp-line-tbody-" + cardIdx + "\">" +
         (rows || "<tr><td colspan=\"9\" style=\"color:var(--nc-gray-400)\">No ingredient lines.</td></tr>") +
         filler +
-        "<tr><td></td><td></td><td class=\"bold\">Total</td><td class=\"num bold\">1 " + escapeHtml(ownUom) + "</td><td class=\"num bold\">100%</td><td></td><td></td><td class=\"num bold\">£" + totalCost.toFixed(3) + "</td>" + totalChangeCell + "</tr>" +
+        "<tr><td></td><td></td><td class=\"bold\">Total</td><td class=\"num bold\">1 " + escapeHtml(ownUom) + "</td><td class=\"num bold\">100%</td><td></td><td></td><td class=\"num bold\">£" + tabTotalCost.toFixed(3) + "</td>" + totalChangeCell + "</tr>" +
         "</tbody></table></div>";
     }
 
@@ -983,8 +1068,8 @@
     var cardAEl = document.querySelector('[data-comp-card="0"]');
     if (idB && cardAEl) {
       var maxLines = Math.max(comparisonLineOrder[0].length, comparisonLineOrder[1].length);
-      var arrA = buildRecipeLineCostArray(comparisonLineOrder[0], ingredients, recipes);
-      var arrB = buildRecipeLineCostArray(comparisonLineOrder[1], ingredients, recipes);
+      var arrA = buildRecipeLineCostMap(comparisonLineOrder[0], ingredients, recipes);
+      var arrB = buildRecipeLineCostMap(comparisonLineOrder[1], ingredients, recipes);
       var cardBEl = document.querySelector('[data-comp-card="1"]');
       var htmlA = buildComparisonRecipeCardHtml(idA, 0, maxLines, null, arrB);
       var htmlB = buildComparisonRecipeCardHtml(idB, 1, maxLines, null, arrA);
@@ -995,6 +1080,88 @@
       if (htmlSingle) cardAEl.outerHTML = htmlSingle;
     }
     if (activeTabKey) switchComparisonRecipeTab(activeTabKey);
+  }
+
+  /** Qty edit on an in-development recipe's Recipe tab (see lineRowsHtml/locked in
+   * buildComparisonRecipeCardHtml — approved recipes never render this input). Mutates the
+   * working line in place (marks the card dirty) and rebuilds both cards so totals/line-cost
+   * change stay in sync; nothing is written to the real recipe until Save Changes is clicked. */
+  // Undo stack for comparison qty edits — one shared stack across both cards so Undo always
+  // reverts whichever edit happened most recently, regardless of which card it was on.
+  var comparisonUndoStack = [];
+  var COMPARISON_UNDO_MAX = 20;
+  function updateComparisonUndoButton() {
+    var btn = document.getElementById("comparison-undo-btn");
+    if (btn) btn.style.display = comparisonUndoStack.length ? "" : "none";
+  }
+
+  function comparisonLineQtyChange(cardIdx, idx, val) {
+    var lines = comparisonLineOrder[cardIdx];
+    if (!lines || !lines[idx]) return;
+    comparisonUndoStack.push({ cardIdx: cardIdx, idx: idx, qty: lines[idx].qty });
+    if (comparisonUndoStack.length > COMPARISON_UNDO_MAX) comparisonUndoStack.shift();
+    lines[idx].qty = parseFloat(val) || 0;
+    comparisonDirty[cardIdx] = true;
+    comparisonRefreshCardsAfterLineReorder();
+    comparisonUpdateSaveChangesButton();
+    updateComparisonUndoButton();
+  }
+
+  function undoComparisonChange() {
+    var last = comparisonUndoStack.pop();
+    updateComparisonUndoButton();
+    if (!last) return;
+    var lines = comparisonLineOrder[last.cardIdx];
+    if (!lines || !lines[last.idx]) return;
+    lines[last.idx].qty = last.qty;
+    var origQty = lines.__origQty || [];
+    comparisonDirty[last.cardIdx] = lines.some(function (ri, i) { return (ri.qty || 0) !== (origQty[i] || 0); });
+    comparisonRefreshCardsAfterLineReorder();
+    comparisonUpdateSaveChangesButton();
+  }
+
+  function comparisonUpdateSaveChangesButton() {
+    var btn = document.getElementById("comparison-save-changes-btn");
+    if (btn) btn.style.display = comparisonHasUnsavedChanges() ? "" : "none";
+  }
+
+  /** Writes every dirty card's edited quantities back to the real recipe (same versioning call
+   * used by the real recipe page) and persists via Recipes.setRecipes. Only ever touches
+   * recipes still in development — approved recipes can't produce a dirty card in the first
+   * place, since their qty cells aren't editable. */
+  function saveComparisonChanges(opts) {
+    var silent = opts && opts.silent;
+    if (!comparisonHasUnsavedChanges()) return;
+    var recipes = Recipes.getRecipes();
+    Object.keys(comparisonDirty).forEach(function (cardIdx) {
+      if (!comparisonDirty[cardIdx]) return;
+      var lines = comparisonLineOrder[cardIdx];
+      if (!lines || !lines.__recipeId) return;
+      var r = recipes.find(function (rec) { return rec.id === lines.__recipeId; });
+      if (!r) return;
+      addRecipeVersionBeforeSave(r);
+      lines.__origQty = lines.map(function (ri) { return ri.qty; });
+      comparisonDirty[cardIdx] = false;
+      comparisonUndoStack = comparisonUndoStack.filter(function (e) { return String(e.cardIdx) !== String(cardIdx); });
+    });
+    Recipes.setRecipes(recipes);
+    comparisonUpdateSaveChangesButton();
+    updateComparisonUndoButton();
+    if (!silent) showToast("Comparison changes saved to the recipe(s)");
+  }
+
+  /** Reverts every dirty card's edited quantities back to what they were when this comparison
+   * was opened (or last saved), without touching the real recipe. */
+  function discardComparisonChanges() {
+    Object.keys(comparisonDirty).forEach(function (cardIdx) {
+      if (!comparisonDirty[cardIdx]) return;
+      var lines = comparisonLineOrder[cardIdx];
+      if (!lines || !lines.__origQty) return;
+      lines.forEach(function (ri, idx) { ri.qty = lines.__origQty[idx]; });
+      comparisonDirty[cardIdx] = false;
+      comparisonUndoStack = comparisonUndoStack.filter(function (e) { return String(e.cardIdx) !== String(cardIdx); });
+    });
+    updateComparisonUndoButton();
   }
 
   /** One shared tab bar (see buildComparisonSharedTabBar) drives every card at once — this
@@ -3607,6 +3774,7 @@
     var scrapPct = parseFloat(val);
     if (isNaN(scrapPct) || scrapPct < 0) scrapPct = 0;
     if (scrapPct > 99) scrapPct = 99;
+    snapshotRecipeForUndo(r);
     ri.scrapPct = scrapPct;
     Recipes.setRecipes(recipes);
     renderAll();
@@ -3632,6 +3800,7 @@
       }
     }
     window.recipeDetailBackView = fromView || "recipes";
+    if (currentRecipeId !== id) { recipeUndoStack = []; updateRecipeUndoButton(); }
     currentRecipeId = id;
     var recipes = Recipes.getRecipes();
     var r = recipes.find(function (rec) { return rec.id === id; });
@@ -4632,10 +4801,41 @@
     recalcCurrentRecipe();
   }
 
+  // Undo stack for recipe-detail edits (qty/uom/scrap changes, line removal) — see
+  // snapshotRecipeForUndo/undoRecipeChange below. Capped so it can't grow unbounded in a long
+  // editing session.
+  var recipeUndoStack = [];
+  var RECIPE_UNDO_MAX = 20;
+  function snapshotRecipeForUndo(r) {
+    recipeUndoStack.push({ recipeId: r.id, ingredients: JSON.parse(JSON.stringify(r.ingredients || [])) });
+    if (recipeUndoStack.length > RECIPE_UNDO_MAX) recipeUndoStack.shift();
+    updateRecipeUndoButton();
+  }
+  function updateRecipeUndoButton() {
+    var btn = document.getElementById("recipe-undo-btn");
+    if (btn) btn.style.display = recipeUndoStack.length ? "" : "none";
+  }
+  function undoRecipeChange() {
+    var last = recipeUndoStack.pop();
+    updateRecipeUndoButton();
+    if (!last) return;
+    var recipes = Recipes.getRecipes();
+    var idx = recipes.findIndex(function (rec) { return rec.id === last.recipeId; });
+    if (idx < 0) return;
+    recipes[idx].ingredients = last.ingredients;
+    Recipes.setRecipes(recipes);
+    if (currentRecipeId === last.recipeId) {
+      renderRecipeIngredients();
+      recalcCurrentRecipe();
+    }
+    showToast("Undone");
+  }
+
   function removeIngredientFromRecipe(ingId) {
     var recipes = Recipes.getRecipes();
     var r = recipes.find(function (rec) { return rec.id === currentRecipeId; });
     if (!r) return;
+    snapshotRecipeForUndo(r);
     r.ingredients = r.ingredients.filter(function (ri) { return ri.ingredientId !== ingId; });
     addRecipeVersionBeforeSave(r);
     var idx = recipes.findIndex(function (rec) { return rec.id === currentRecipeId; });
@@ -4648,6 +4848,7 @@
     var recipes = Recipes.getRecipes();
     var r = recipes.find(function (rec) { return rec.id === currentRecipeId; });
     if (!r) return;
+    snapshotRecipeForUndo(r);
     r.ingredients = r.ingredients.filter(function (ri) { return ri.subRecipeId !== subRecipeId; });
     addRecipeVersionBeforeSave(r);
     var idx = recipes.findIndex(function (rec) { return rec.id === currentRecipeId; });
@@ -4660,6 +4861,7 @@
     var recipes = Recipes.getRecipes();
     var r = recipes.find(function (rec) { return rec.id === currentRecipeId; });
     if (!r) return;
+    snapshotRecipeForUndo(r);
     var ri = r.ingredients.find(function (x) { return x.ingredientId === ingId; });
     if (ri) ri.qty = parseFloat(val) || 0;
     addRecipeVersionBeforeSave(r);
@@ -4673,6 +4875,7 @@
     var recipes = Recipes.getRecipes();
     var r = recipes.find(function (rec) { return rec.id === currentRecipeId; });
     if (!r) return;
+    snapshotRecipeForUndo(r);
     var ri = r.ingredients.find(function (x) { return x.subRecipeId === subRecipeId; });
     if (ri) ri.qty = parseFloat(val) || 0;
     addRecipeVersionBeforeSave(r);
@@ -4688,6 +4891,7 @@
     if (!r) return;
     var ri = r.ingredients.find(function (x) { return x.subRecipeId === subRecipeId; });
     if (!ri) return;
+    snapshotRecipeForUndo(r);
     var newUom = (uomVal && Data.UOM_OPTIONS.indexOf(uomVal.toUpperCase()) >= 0) ? uomVal.toUpperCase() : "G";
     if (newUom === (ri.uom || "G")) return;
     var oldUom = (ri.uom || "G").toUpperCase();
@@ -4713,6 +4917,7 @@
     if (!ri) return;
     var newUom = (uomVal && Data.UOM_OPTIONS.indexOf(uomVal.toUpperCase()) >= 0) ? uomVal.toUpperCase() : "G";
     if (newUom === (ri.uom || "G")) return;
+    snapshotRecipeForUndo(r);
     var oldUom = (ri.uom || "G").toUpperCase();
     var ingredients = Ingredients.getIngredients();
     var ing = ingredients.find(function (i) { return i.id === ingId; });
@@ -6563,6 +6768,12 @@ desc: "Imported from " + (fname || "spreadsheet"),
   window.comparisonSelectedDragEnd = comparisonSelectedDragEnd;
   window.renderComparisonTable = renderComparisonTable;
   window.saveCurrentComparison = saveCurrentComparison;
+  window.comparisonLineQtyChange = comparisonLineQtyChange;
+  window.undoComparisonChange = undoComparisonChange;
+  window.saveComparisonChanges = saveComparisonChanges;
+  window.comparisonLeaveModalSave = comparisonLeaveModalSave;
+  window.comparisonLeaveModalDiscard = comparisonLeaveModalDiscard;
+  window.comparisonLeaveModalCancel = comparisonLeaveModalCancel;
   window.renderComparisonSaves = renderComparisonSaves;
   window.openComparisonSave = openComparisonSave;
   window.deleteComparisonSave = deleteComparisonSave;
@@ -6725,6 +6936,7 @@ desc: "Imported from " + (fname || "spreadsheet"),
   window.updateSubRecipeQty = updateSubRecipeQty;
   window.updateSubRecipeUom = updateSubRecipeUom;
   window.updateIngredientQty = updateIngredientQty;
+  window.undoRecipeChange = undoRecipeChange;
   window.updateIngredientUom = updateIngredientUom;
   window.recalcCurrentRecipe = recalcCurrentRecipe;
   window.switchRecipeTab = switchRecipeTab;
