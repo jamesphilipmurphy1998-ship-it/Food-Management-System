@@ -4328,6 +4328,15 @@
     dup.name = name;
     dup.code = "NEW";
     dup.approved = false;
+    // A "NEW"-coded duplicate was never itself costed by Business Central — it only inherited
+    // the original's ownCost via the deep clone above. Carrying that figure forward would let
+    // it silently override live-calculated costs wherever it's used as a sub-recipe, even after
+    // its ingredients are edited (see getSubRecipeCostPerUom/getSubRecipeTotalCost's ownCost
+    // shortcut). Clearing it here makes a duplicate behave like any other in-development recipe
+    // with no BC-imported cost yet: always live-tallied from its own lines until it's actually
+    // re-approved through a fresh BOM import.
+    dup.ownCost = 0;
+    dup.sheetCost = 0;
     dup.recipeType = r.recipeType || "finishedProduct";
     dup.created = new Date().toISOString();
     dup.method = r.method || "";
@@ -5134,7 +5143,7 @@
           : "<input type=\"number\" class=\"form-input\" min=\"0\" max=\"99\" step=\"any\" value=\"" + lineScrapPct + "\" style=\"width:55px;padding:4px 6px\" onchange=\"updateRecipeLineScrapPct('ing:" + ri.ingredientId.replace(/'/g, "\\'") + "', this.value)\" title=\"This ingredient's own scrap when used in this recipe.\" oncontextmenu=\"" + ingCtx + "\">%") + "</td>" +
         "<td oncontextmenu=\"" + ingCtx + "\"><span style=\"font-size:12px;font-family:var(--nc-mono);color:var(--nc-gray-600)\" title=\"Edit this ingredient's cost in Ingredient Centre\">" + (ing.cost > 0 ? "£" + Number(ing.cost).toFixed(3) : "<span style=\"color:var(--nc-gray-300)\">—</span>") + "</span></td>" +
         "<td oncontextmenu=\"" + ingCtx + "\" class=\"num\" style=\"font-family:var(--nc-mono);font-size:12px\">" + costDisplay + "</td>" +
-        "<td oncontextmenu=\"" + ingCtx + "\">" + (ing.fvn ? '<span class="badge badge-green" style="font-size:10px">FVN</span>' : "—") + "</td>" +
+        "<td oncontextmenu=\"" + ingCtx + "\"></td>" + // FVN column left blank for now — not in use, kept as a slot for a future feature
         "<td onclick=\"event.stopPropagation()\" oncontextmenu=\"" + ingCtx + "\">" + (locked ? "" : "<button class=\"btn btn-sm btn-danger\" onclick=\"removeIngredientFromRecipe('" + ri.ingredientId + "')\">×</button>") + "</td></tr>";
     });
     // Dark figure = "cost per 1 unit of this recipe's own UOM" using whatever's actually used
