@@ -138,9 +138,21 @@
   function searchWordsMatch(text, q) {
     if (!q || !(text = (text || "").toString())) return { match: !q, score: 0 };
     var t = text.toLowerCase();
+    // A trailing space on the RAW query (before it gets trimmed below) means the user just
+    // finished typing a whole word — e.g. "new " — rather than still mid-word. Used on top of
+    // the existing substring/word-order scoring below: whole-word matches ("RM New Beef Slice",
+    // "(New recipe)") now outrank a query that merely happens to appear inside a longer word
+    // ("Newlyweds", "Newly Weds"), across every search box on the site since they all share
+    // this one function. Doesn't change anything when there's no trailing space.
+    var wholeWordQuery = /\s$/.test(q);
     var qLower = q.toLowerCase().trim();
     var words = qLower.split(/\s+/).filter(Boolean);
     if (words.length === 0) return { match: true, score: 2 };
+    if (wholeWordQuery) {
+      var escaped = qLower.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      var wholeWordRe = new RegExp("(^|[^a-z0-9])" + escaped + "($|[^a-z0-9])");
+      if (wholeWordRe.test(t)) return { match: true, score: 3 };
+    }
     if (t.indexOf(qLower) !== -1) return { match: true, score: 2 };
     var allMatch = words.every(function (w) { return t.indexOf(w) !== -1; });
     if (!allMatch) return { match: false, score: 0 };
@@ -377,6 +389,12 @@
   // below, so Save/Discard can resume it once the user picks — Cancel just clears this and
   // leaves the user on the comparison page.
   var comparisonPendingNav = null;
+  // Same idea for leaving the recipe detail page with unsaved ingredient edits — see
+  // openRecipe/saveCurrentRecipeChanges/discardCurrentRecipeChanges below. A pending action is
+  // a function (not just {name, opts}) since this same prompt also guards openRecipe() itself
+  // (navigating from one recipe straight to another never goes through switchView at all).
+  var recipeLeavePendingAction = null;
+  var recipeSnapshotAtOpen = null;
 
   function switchView(name, opts) {
     var currentEl = document.querySelector(".view.active");
@@ -389,7 +407,35 @@
       openModal("modal-comparison-leave");
       return;
     }
+    if (currentName === "recipe-detail" && name !== "recipe-detail" && typeof Recipes.hasUnsavedChanges === "function" && Recipes.hasUnsavedChanges()) {
+      recipeLeavePendingAction = function () { switchViewInner(name, opts); };
+      openModal("modal-recipe-leave");
+      return;
+    }
     switchViewInner(name, opts);
+  }
+
+  function recipeLeaveModalSave() {
+    Recipes.flushSave();
+    showToast("Recipe saved");
+    updateRecipeSaveButton();
+    closeModal("modal-recipe-leave");
+    var fn = recipeLeavePendingAction;
+    recipeLeavePendingAction = null;
+    if (fn) fn();
+  }
+
+  function recipeLeaveModalDiscard() {
+    discardCurrentRecipeChanges();
+    closeModal("modal-recipe-leave");
+    var fn = recipeLeavePendingAction;
+    recipeLeavePendingAction = null;
+    if (fn) fn();
+  }
+
+  function recipeLeaveModalCancel() {
+    recipeLeavePendingAction = null;
+    closeModal("modal-recipe-leave");
   }
 
   function comparisonLeaveModalSave() {
@@ -515,20 +561,82 @@
 
   /** "Save this comparison" button on the Comparison Result page — stores the current
    * comparisonSelected set (whatever's currently being compared) under a name for later. */
+  // Pricing calculator inputs are per-card (cardIdx matches comparisonSelected's own index) and
+  // always present in the DOM regardless of which tab is active (see COMPARISON_TAB_KEYS —
+  // every pane is rendered, just hidden), so they can be read here even if the user saved while
+  // looking at the Recipe tab rather than Costing Summary.
+  function buildComparisonSaveItems() {
+    return comparisonSelected.map(function (s, idx) {
+      var sellPriceEl = document.getElementById("comp-sell-price-" + idx);
+      var annualVolumeEl = document.getElementById("comp-annual-volume-" + idx);
+      return {
+        kind: s.kind, id: s.id, name: s.name, code: s.code,
+        sellPrice: sellPriceEl && sellPriceEl.value !== "" ? sellPriceEl.value : null,
+        annualVolume: annualVolumeEl && annualVolumeEl.value !== "" ? annualVolumeEl.value : null
+      };
+    });
+  }
+
+  // Set while modal-comparison-save-overwrite is open, so its three buttons know which existing
+  // save they're acting on.
+  var comparisonSaveOverwriteTarget = null;
+
   function saveCurrentComparison() {
     if (!comparisonSelected.length) return;
+    // Same exact set of items (order-independent) already saved under a name? Offer to
+    // overwrite that entry in place instead of silently piling up duplicate saves every time
+    // someone re-saves the same comparison (e.g. after tweaking the sell price) — or save a
+    // fresh copy alongside it as a new version.
+    var currentKeySet = comparisonSelected.map(function (s) { return s.kind + ":" + s.id; }).sort().join("|");
+    var saves = getComparisonSaves();
+    var existing = saves.find(function (sv) {
+      var keySet = (sv.items || []).map(function (it) { return it.kind + ":" + it.id; }).sort().join("|");
+      return keySet === currentKeySet;
+    });
+    if (existing) {
+      comparisonSaveOverwriteTarget = existing;
+      var msgEl = document.getElementById("comparison-save-overwrite-msg");
+      if (msgEl) msgEl.textContent = "This comparison is already saved as \"" + existing.name + "\". What would you like to do?";
+      openModal("modal-comparison-save-overwrite");
+      return;
+    }
     var defaultName = comparisonSelected.map(function (s) { return s.name; }).join(" vs ");
     var name = prompt("Name this comparison:", defaultName);
     if (!name) return;
-    var saves = getComparisonSaves();
-    saves.unshift({
-      id: Data.genId(),
-      name: name,
-      savedAt: new Date().toISOString(),
-      items: comparisonSelected.map(function (s) { return { kind: s.kind, id: s.id, name: s.name, code: s.code }; }),
-    });
+    saves.unshift({ id: Data.genId(), name: name, savedAt: new Date().toISOString(), items: buildComparisonSaveItems() });
     setComparisonSaves(saves);
     showToast("Comparison saved");
+  }
+
+  function comparisonSaveOverwriteConfirm() {
+    var existing = comparisonSaveOverwriteTarget;
+    comparisonSaveOverwriteTarget = null;
+    closeModal("modal-comparison-save-overwrite");
+    if (!existing) return;
+    existing.savedAt = new Date().toISOString();
+    existing.items = buildComparisonSaveItems();
+    var saves = getComparisonSaves().filter(function (sv) { return sv.id !== existing.id; });
+    saves.unshift(existing);
+    setComparisonSaves(saves);
+    showToast("Comparison updated");
+  }
+
+  function comparisonSaveOverwriteAsNew() {
+    var existing = comparisonSaveOverwriteTarget;
+    comparisonSaveOverwriteTarget = null;
+    closeModal("modal-comparison-save-overwrite");
+    var defaultName = existing ? existing.name + " (2)" : comparisonSelected.map(function (s) { return s.name; }).join(" vs ");
+    var name = prompt("Name this new version:", defaultName);
+    if (!name) return;
+    var saves = getComparisonSaves();
+    saves.unshift({ id: Data.genId(), name: name, savedAt: new Date().toISOString(), items: buildComparisonSaveItems() });
+    setComparisonSaves(saves);
+    showToast("Saved as a new version");
+  }
+
+  function comparisonSaveOverwriteCancel() {
+    comparisonSaveOverwriteTarget = null;
+    closeModal("modal-comparison-save-overwrite");
   }
 
   function renderComparisonSaves() {
@@ -557,6 +665,17 @@
     if (!save) return;
     comparisonSelected = save.items.slice();
     renderComparisonTable();
+    // renderComparisonTable() builds the cards synchronously (innerHTML, no async gap), so the
+    // per-card calculator inputs already exist in the DOM by this point — restore whatever was
+    // saved for each card index and recalculate so the figures aren't just the raw saved
+    // sellPrice/annualVolume sitting unused in blank-looking inputs.
+    save.items.forEach(function (item, idx) {
+      var sellPriceEl = document.getElementById("comp-sell-price-" + idx);
+      var annualVolumeEl = document.getElementById("comp-annual-volume-" + idx);
+      if (sellPriceEl) sellPriceEl.value = item.sellPrice != null ? item.sellPrice : "";
+      if (annualVolumeEl) annualVolumeEl.value = item.annualVolume != null ? item.annualVolume : "";
+      if (sellPriceEl || annualVolumeEl) comparisonRecalcMargins(idx);
+    });
   }
 
   function deleteComparisonSave(id) {
@@ -699,6 +818,7 @@
     var diffCard = buildComparisonCostChangeCardHtml(rA, rB);
     wrap.innerHTML = buildComparisonSharedTabBar() + "<div style=\"display:flex;gap:16px;flex-wrap:wrap;justify-content:center;align-items:flex-start;margin-top:16px\">" + (cardA || "") + (cardB || "") + "</div>" + diffCard;
     switchView("comparison-result");
+    equalizeComparisonCardHeaders();
   }
 
   /** Same 4 costing figures shown in each recipe's own Costing Summary card, used again here
@@ -740,7 +860,68 @@
       diffCell("Cost Change per Serving", "costPerServing") +
       diffCell("Cost Change per 100g", "costPer100") +
       diffCell("Cost Change Total Recipe Cost", "totalCost") +
+      "<div class=\"stat-card\" style=\"min-width:200px;width:fit-content;position:relative;padding-right:28px\">" +
+      "<div class=\"stat-label\" id=\"comp-annual-cell-label\">Annual Profit Change</div>" +
+      "<div class=\"stat-value\" id=\"comp-annual-profit-change\">—</div>" +
+      "<button type=\"button\" onclick=\"toggleAnnualComparisonCellMode()\" title=\"Switch between Annual Profit Change and Annual Cost Saving\" style=\"position:absolute;top:8px;right:6px;background:none;border:none;cursor:pointer;color:var(--nc-gray-400);font-size:10px;padding:2px;line-height:1\">&#9660;</button>" +
+      "</div>" +
       "</div></div>";
+  }
+
+  // "profit" = Annual Profit Change (sellPrice-aware, positive=more profit=green — matches the
+  // per-card Annual Profit/Year cells). "cost" = Annual Cost Saving — the annualized version of
+  // "Cost Change Total Recipe Cost" above, same sign convention as its 4 siblings (cost going
+  // DOWN is the good direction, so negative=green here, opposite of profit mode). Same
+  // underlying £-impact data, two different lenses on it — not persisted, resets on rebuild.
+  var comparisonAnnualCellMode = "profit";
+  function toggleAnnualComparisonCellMode() {
+    comparisonAnnualCellMode = comparisonAnnualCellMode === "profit" ? "cost" : "profit";
+    updateAnnualProfitChangeCell();
+  }
+
+  /** Annual Profit/Cost cell depends on each card's own live Target Sell Price + Annual Volume
+   * inputs, not just recipe data — so unlike the other 4 Cost Comparison cells (static,
+   * computed once at card build time), this one has to be refreshed from here every time either
+   * card's calculator changes, using whichever cards are actually on screen. */
+  function updateAnnualProfitChangeCell() {
+    var cell = document.getElementById("comp-annual-profit-change");
+    var labelEl = document.getElementById("comp-annual-cell-label");
+    if (!cell) return;
+    var diff, color;
+    if (comparisonAnnualCellMode === "profit") {
+      if (labelEl) labelEl.textContent = "Annual Profit Change";
+      var elA = document.getElementById("comp-margin-annual-profit-0");
+      var elB = document.getElementById("comp-margin-annual-profit-1");
+      if (!elA || !elB) { cell.textContent = "—"; return; }
+      var parse = function (el) {
+        var n = parseFloat((el.textContent || "").replace(/[£,]/g, ""));
+        return isNaN(n) ? null : n;
+      };
+      var a = parse(elA), b = parse(elB);
+      if (a == null || b == null) { cell.textContent = "—"; return; }
+      diff = b - a;
+      color = diff > 0 ? "var(--nc-green, #2e7d32)" : (diff < 0 ? "var(--nc-red, #c0392b)" : "var(--nc-gray-700)");
+    } else {
+      if (labelEl) labelEl.textContent = "Annual Cost Saving";
+      var cardA = document.querySelector('#comparison-result-body [data-comp-card="0"]');
+      var cardB = document.querySelector('#comparison-result-body [data-comp-card="1"]');
+      var volA = parseFloat(document.getElementById("comp-annual-volume-0") ? document.getElementById("comp-annual-volume-0").value : "");
+      var volB = parseFloat(document.getElementById("comp-annual-volume-1") ? document.getElementById("comp-annual-volume-1").value : "");
+      if (!cardA || !cardB || !(volA > 0) || !(volB > 0)) { cell.textContent = "—"; return; }
+      var recipes = Recipes.getRecipes();
+      var ingredients = Ingredients.getIngredients();
+      var rA = recipes.find(function (r) { return r.id === cardA.getAttribute("data-comp-recipe-id"); });
+      var rB = recipes.find(function (r) { return r.id === cardB.getAttribute("data-comp-recipe-id"); });
+      if (!rA || !rB) { cell.textContent = "—"; return; }
+      var annualCostA = getRecipeTotalCost(rA, ingredients, recipes) * volA;
+      var annualCostB = getRecipeTotalCost(rB, ingredients, recipes) * volB;
+      diff = annualCostB - annualCostA;
+      // Cost going down is the saving, same convention as the 4 cost-change cells above.
+      color = diff < 0 ? "var(--nc-green, #2e7d32)" : (diff > 0 ? "var(--nc-red, #c0392b)" : "var(--nc-gray-700)");
+    }
+    var sign = diff > 0 ? "+" : "";
+    cell.style.color = color;
+    cell.textContent = sign + "£" + diff.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
   /** Each line's cost in row order — purely positional (row 1 vs row 1, row 2 vs row 2, ...),
@@ -856,14 +1037,20 @@
             changeCell = "<td class=\"num\" style=\"color:var(--nc-gray-400)\">only here</td>";
           }
         }
-        var handleCell = "<td draggable=\"true\" data-comp-line-idx=\"" + idx + "\" ondragstart=\"comparisonLineDragStart(event," + cardIdx + "," + idx + ")\" ondragend=\"comparisonLineDragEnd(event)\" style=\"cursor:grab;color:var(--nc-gray-300);text-align:center;width:20px;user-select:none\" title=\"Drag to reorder\">&#8942;&#8942;</td>";
+        // Row reordering is a development-time convenience, same lock rules as everything else
+        // here — an approved recipe's line order isn't something a comparison view should let
+        // anyone casually shuffle.
+        var handleCell = locked
+          ? "<td style=\"color:var(--nc-gray-200);text-align:center;width:20px;user-select:none\">&#8942;&#8942;</td>"
+          : "<td draggable=\"true\" data-comp-line-idx=\"" + idx + "\" ondragstart=\"comparisonLineDragStart(event," + cardIdx + "," + idx + ")\" ondragend=\"comparisonLineDragEnd(event)\" style=\"cursor:grab;color:var(--nc-gray-300);text-align:center;width:20px;user-select:none\" title=\"Drag to reorder\">&#8942;&#8942;</td>";
         // Qty is only editable here for a recipe still in development (not approved) — the
         // same lock rules as the real recipe page apply once approved. Editing recalculates
         // this card's Recipe-tab totals only (Nutrition/Costing tabs stay on stored data).
         var qtyCell = locked
           ? "<td class=\"num\">" + (ri.qty || 0) + " " + escapeHtml(d.uom) + "</td>"
-          : "<td onclick=\"event.stopPropagation()\" class=\"num\"><input type=\"number\" class=\"form-input\" min=\"0\" step=\"any\" value=\"" + (ri.qty || 0) + "\" style=\"width:70px;padding:4px 6px;text-align:right\" onchange=\"comparisonLineQtyChange(" + cardIdx + "," + idx + ", this.value)\"> " + escapeHtml(d.uom) + "</td>";
-        return "<tr ondragover=\"comparisonLineDragOver(event," + cardIdx + "," + idx + ")\" ondrop=\"comparisonLineDrop(event," + cardIdx + "," + idx + ")\">" + handleCell + "<td style=\"font-family:var(--nc-mono);font-size:12px;color:var(--nc-gray-600)\">" + escapeHtml(d.code || "—") + "</td>" +
+          : "<td onclick=\"event.stopPropagation()\" class=\"num\" style=\"padding:6px 12px\"><input type=\"number\" class=\"form-input\" min=\"0\" step=\"any\" value=\"" + (ri.qty || 0) + "\" style=\"width:58px;padding:2px 6px;text-align:right;box-sizing:border-box\" onchange=\"comparisonLineQtyChange(" + cardIdx + "," + idx + ", this.value)\"> " + escapeHtml(d.uom) + "</td>";
+        var rowDragAttrs = locked ? "" : " ondragover=\"comparisonLineDragOver(event," + cardIdx + "," + idx + ")\" ondrop=\"comparisonLineDrop(event," + cardIdx + "," + idx + ")\"";
+        return "<tr" + rowDragAttrs + ">" + handleCell + "<td style=\"font-family:var(--nc-mono);font-size:12px;color:var(--nc-gray-600)\">" + escapeHtml(d.code || "—") + "</td>" +
           "<td class=\"bold\">" + escapeHtml(d.name) + "</td>" +
           qtyCell +
           "<td class=\"num\">" + pctRecipe.toFixed(1) + "%</td>" +
@@ -876,19 +1063,40 @@
       // two recipes being compared have different numbers of ingredient lines.
       var lineCount = (workingLines || []).length;
       var padCount = padToLineCount ? Math.max(0, padToLineCount - lineCount) : 0;
-      var fillerRow = "<tr><td></td><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>";
+      // Was only 8 <td>s against this table's real 9 columns, and had no explicit height at
+      // all — on some renders that made the filler shorter than a genuine content row, so the
+      // Total row didn't actually land in the same place as the other card's even though the
+      // line COUNT was padded correctly. A fixed height matching a normal single-line row
+      // (confirmed via the locked/unlocked row-height parity fix earlier) makes this exact
+      // regardless of either card's lock state.
+      // Deliberately structured like a real row's cells rather than plain empty <td>s — a real
+      // row's ~60px height turned out to come from the qty cell's <input> box (padding+border),
+      // not from generic td padding, so a filler with no input never reached the same height
+      // even with matching classes/glyphs (measured ~40px vs ~60px either way). Including one
+      // here (disabled, row hidden via visibility) was the only thing that actually closed the
+      // gap — confirmed by measurement, not guessed.
+      // `height` on the <tr> itself is only ever a hint in table layout — the actual rendered
+      // row height comes from each <td>'s own auto/content height, so it has to be set on every
+      // cell individually (confirmed by direct measurement) to reliably force this row to match
+      // a real single-line row's height (60px) regardless of either card's lock state.
+      var fillerTd = "<td style=\"height:60px\"></td>";
+      var fillerRow = "<tr style=\"visibility:hidden\">" + new Array(10).join(fillerTd) + "</tr>";
       var filler = padCount > 0 ? new Array(padCount + 1).join(fillerRow) : "";
-      var totalChangeCell = "<td class=\"num bold\">—</td>";
+      var totalChangeCell = "<td class=\"num bold\" style=\"height:60px\">—</td>";
       if (otherLineCostMap) {
         totalChange = tabTotalCost - otherLineCostMap.total;
         var totalSign = totalChange > 0 ? "+" : "";
         var totalColor = totalChange > 0 ? "var(--nc-red, #c0392b)" : (totalChange < 0 ? "var(--nc-green, #2e7d32)" : "var(--nc-gray-700)");
-        totalChangeCell = "<td class=\"num bold\" style=\"color:" + totalColor + "\">" + totalSign + "£" + totalChange.toFixed(3) + "</td>";
+        totalChangeCell = "<td class=\"num bold\" style=\"height:60px;color:" + totalColor + "\">" + totalSign + "£" + totalChange.toFixed(3) + "</td>";
       }
-      return "<div style=\"overflow-x:auto\"><table class=\"data-table\"><colgroup><col style=\"width:24px\"><col><col style=\"width:220px\"><col><col><col style=\"width:52px\"><col><col><col></colgroup><thead><tr><th></th><th>Code</th><th>Ingredient</th><th>Qty</th><th>% Recipe</th><th>Scrap %</th><th>Cost per UOM (£)</th><th>Line Cost</th><th>Line Cost Change</th></tr></thead><tbody id=\"comp-line-tbody-" + cardIdx + "\">" +
+      // The Total row's own cells also get an explicit per-cell height, same as the filler row
+      // above and for the same reason — without it, this row is the one that ends up
+      // compressed to keep the two cards' overall table heights matching each other, which just
+      // moves the misalignment here instead of fixing it.
+      return "<div style=\"overflow-x:auto\"><table class=\"data-table\"><colgroup><col style=\"width:24px\"><col><col style=\"width:220px\"><col style=\"width:96px\"><col><col style=\"width:52px\"><col style=\"width:100px\"><col><col></colgroup><thead><tr><th></th><th>Code</th><th>Ingredient</th><th>Qty</th><th>% Recipe</th><th>Scrap %</th><th>Cost per UOM (£)</th><th>Line Cost</th><th>Line Cost Change</th></tr></thead><tbody id=\"comp-line-tbody-" + cardIdx + "\">" +
         (rows || "<tr><td colspan=\"9\" style=\"color:var(--nc-gray-400)\">No ingredient lines.</td></tr>") +
         filler +
-        "<tr><td></td><td></td><td class=\"bold\">Total</td><td class=\"num bold\">1 " + escapeHtml(ownUom) + "</td><td class=\"num bold\">100%</td><td></td><td></td><td class=\"num bold\">£" + tabTotalCost.toFixed(3) + "</td>" + totalChangeCell + "</tr>" +
+        "<tr><td style=\"height:60px\"></td><td style=\"height:60px\"></td><td class=\"bold\" style=\"height:60px\">Total</td><td class=\"num bold\" style=\"height:60px\">1 " + escapeHtml(ownUom) + "</td><td class=\"num bold\" style=\"height:60px\">100%</td><td style=\"height:60px\"></td><td style=\"height:60px\"></td><td class=\"num bold\" style=\"height:60px\">£" + tabTotalCost.toFixed(3) + "</td>" + totalChangeCell + "</tr>" +
         "</tbody></table></div>";
     }
 
@@ -936,12 +1144,12 @@
         "<h3 style=\"font-size:14px;margin-bottom:8px\">Pricing &amp; Margin Calculator</h3>" +
         "<div style=\"display:flex;flex-wrap:wrap;gap:12px;margin-bottom:12px\">" +
         "<div class=\"form-group\" style=\"width:150px\"><label class=\"form-label\">Target Sell Price (£)</label><input class=\"form-input\" type=\"number\" step=\"any\" min=\"0\" placeholder=\"e.g. 3.50\" id=\"comp-sell-price-" + cardIdx + "\" oninput=\"comparisonRecalcMargins(" + cardIdx + ")\"></div>" +
-        "<div class=\"form-group\" style=\"width:150px\"><label class=\"form-label\">Target Margin (%)</label><input class=\"form-input\" type=\"number\" step=\"any\" min=\"0\" max=\"100\" placeholder=\"e.g. 65\" id=\"comp-target-margin-" + cardIdx + "\" oninput=\"comparisonRecalcMargins(" + cardIdx + ")\"></div>" +
+        "<div class=\"form-group\" style=\"width:190px\"><label class=\"form-label\" style=\"white-space:nowrap\">Annual Volume (units)</label><input class=\"form-input\" type=\"number\" step=\"any\" min=\"0\" placeholder=\"e.g. 50000\" id=\"comp-annual-volume-" + cardIdx + "\" oninput=\"comparisonRecalcMargins(" + cardIdx + ")\"></div>" +
         "</div>" +
         "<div style=\"display:flex;flex-wrap:wrap;gap:12px\">" +
         "<div class=\"stat-card\" style=\"width:fit-content;border-color:var(--nc-green);background:var(--nc-green-light)\"><div class=\"stat-label\" style=\"color:#059669\">Gross Profit / Unit</div><div class=\"stat-value\" style=\"color:#065F46\" id=\"comp-margin-profit-" + cardIdx + "\">—</div></div>" +
         "<div class=\"stat-card\" style=\"width:fit-content;border-color:var(--nc-green);background:var(--nc-green-light)\" id=\"comp-margin-pct-card-" + cardIdx + "\"><div class=\"stat-label\" style=\"color:#059669\">Gross Margin %</div><div class=\"stat-value\" style=\"color:#065F46\" id=\"comp-margin-pct-" + cardIdx + "\">—</div></div>" +
-        "<div class=\"stat-card\" style=\"width:fit-content;border-color:var(--nc-amber);background:var(--nc-amber-light)\"><div class=\"stat-label\" style=\"color:#92400E\">Min Sell Price for Target Margin</div><div class=\"stat-value\" style=\"color:#92400E\" id=\"comp-margin-min-price-" + cardIdx + "\">—</div></div>" +
+        "<div class=\"stat-card\" style=\"width:fit-content;border-color:var(--nc-green);background:var(--nc-green-light)\"><div class=\"stat-label\" style=\"color:#059669\">Annual Profit / Year</div><div class=\"stat-value\" style=\"color:#065F46\" id=\"comp-margin-annual-profit-" + cardIdx + "\">—</div></div>" +
         "</div></div>",
       photography: "<span style=\"color:var(--nc-gray-400)\">Photography is not available in this view.</span>"
     };
@@ -952,16 +1160,55 @@
 
     var statusBadge = r.approved ? "<span class=\"badge badge-approved\">Approved</span>" : "<span class=\"badge badge-development\">In development</span>";
     var kindBadge = (r.recipeType || "finishedProduct") === "subRecipe" ? "<span class=\"badge badge-subrecipe\">Sub recipe</span>" : "<span class=\"badge badge-finishedproduct\">Finished product</span>";
+    // Same weight display as the real recipe page's "Total weight" (app.js renderRecipeIngredients)
+    // — EACH-based recipes show "1 EACH" as the primary figure, plus a derived gram weight
+    // underneath wherever the lines carry a known per-unit weight; weight-based recipes just
+    // show the summed weight directly.
+    var weightLabel = (ownUom === "EACH") ? "Total: " : "Total weight: ";
+    var weightPrimary = (ownUom === "EACH") ? "1 EACH" : (Data.round(totalWeight) + "g");
+    var weightHtml = "<div style=\"font-size:12px;color:var(--nc-gray-500);margin-top:2px\">" + weightLabel + "<strong>" + weightPrimary + "</strong>" +
+      ((ownUom === "EACH" && totalWeight > 0) ? "<br><span style=\"font-size:11px\">Total weight: </span><strong style=\"font-size:11px\">" + Data.round(totalWeight) + "g</strong>" : "") +
+      "</div>";
 
     return "<div class=\"card\" data-comp-card=\"" + cardIdx + "\" data-comp-recipe-id=\"" + escapeHtml(recipeId) + "\" style=\"flex:1 1 480px;max-width:" + (maxWidth || "calc(50% - 8px)") + ";padding:20px 8px\">" +
+      "<div data-comp-card-header=\"" + cardIdx + "\">" +
       "<div style=\"display:flex;justify-content:space-between;align-items:start;flex-wrap:wrap;gap:8px\">" +
       "<h2 style=\"margin-bottom:4px;cursor:grab\" draggable=\"true\" data-comp-title=\"" + cardIdx + "\" ondragstart=\"comparisonCardDragStart(event," + cardIdx + ")\" ondragover=\"comparisonCardDragOver(event)\" ondrop=\"comparisonCardDrop(event," + cardIdx + ")\" ondragend=\"comparisonCardDragEnd(event)\">" + escapeHtml(r.name) + "</h2>" +
-      "<div style=\"display:flex;gap:6px\">" + statusBadge + kindBadge + "</div>" +
+      "<div style=\"text-align:right\"><div style=\"display:flex;gap:6px;justify-content:flex-end\">" + statusBadge + kindBadge + "</div>" + weightHtml + "</div>" +
       "</div>" +
       (r.code ? "<p style=\"font-size:12px;color:var(--nc-gray-500);margin-bottom:2px\">Code: " + escapeHtml(r.code) + "</p>" : "") +
       (r.desc ? "<p style=\"font-size:12px;color:var(--nc-gray-500);margin-bottom:8px\">" + escapeHtml(r.desc) + "</p>" : "") +
+      "</div>" +
       tabPanels +
       "</div>";
+  }
+
+  /** When comparing two recipes, a longer/wrapping name (or code/desc) on one card pushes that
+   * card's whole Recipe-tab table down relative to the other's, even though every row inside
+   * both tables now matches height-for-height — the offset was above the table, not within it.
+   * Pads the shorter card's header to match the taller one's real rendered height so both
+   * tables (and therefore both Total rows) start at the same Y position. */
+  function equalizeComparisonCardHeaders() {
+    var headerA = document.querySelector('[data-comp-card-header="0"]');
+    var headerB = document.querySelector('[data-comp-card-header="1"]');
+    if (!headerA || !headerB) return;
+    headerA.style.minHeight = "";
+    headerB.style.minHeight = "";
+    var hA = headerA.getBoundingClientRect().height;
+    var hB = headerB.getBoundingClientRect().height;
+    var max = Math.max(hA, hB);
+    headerA.style.minHeight = max + "px";
+    headerB.style.minHeight = max + "px";
+    // The Recipe tab's own <thead> can independently wrap its column labels differently between
+    // the two cards even with identical <colgroup> widths (confirmed by measurement — 66.5px vs
+    // 83px for the exact same header row), which re-introduces the same kind of offset the
+    // header-height equalization above just fixed. Same fix, same reason: force both to the
+    // taller of the two so both tbodys — and both Total rows — start at the same Y regardless.
+    document.querySelectorAll('[data-comp-pane="recipe"] thead tr').forEach(function (tr) { tr.style.height = ""; Array.from(tr.children).forEach(function (th) { th.style.height = ""; }); });
+    var theadRows = document.querySelectorAll('[data-comp-pane="recipe"] thead tr');
+    var maxTheadH = 0;
+    theadRows.forEach(function (tr) { maxTheadH = Math.max(maxTheadH, tr.getBoundingClientRect().height); });
+    theadRows.forEach(function (tr) { Array.from(tr.children).forEach(function (th) { th.style.height = maxTheadH + "px"; }); });
   }
 
   /** Drag a card's title across the midline onto the other card's title to swap which recipe
@@ -1080,6 +1327,7 @@
       if (htmlSingle) cardAEl.outerHTML = htmlSingle;
     }
     if (activeTabKey) switchComparisonRecipeTab(activeTabKey);
+    equalizeComparisonCardHeaders();
   }
 
   /** Qty edit on an in-development recipe's Recipe tab (see lineRowsHtml/locked in
@@ -1189,11 +1437,14 @@
     var totalCost = getRecipeTotalCost(r, ingredients, recipes);
     var costPerUnit = totalCost;
     var sellPrice = parseFloat(document.getElementById("comp-sell-price-" + cardIdx).value);
+    var annualVolume = parseFloat(document.getElementById("comp-annual-volume-" + cardIdx).value);
     var profitEl = document.getElementById("comp-margin-profit-" + cardIdx);
     var pctEl = document.getElementById("comp-margin-pct-" + cardIdx);
     var pctCardEl = document.getElementById("comp-margin-pct-card-" + cardIdx);
+    var annualProfitEl = document.getElementById("comp-margin-annual-profit-" + cardIdx);
+    var profit = null;
     if (sellPrice > 0) {
-      var profit = sellPrice - costPerUnit;
+      profit = sellPrice - costPerUnit;
       var marginPct = (profit / sellPrice) * 100;
       profitEl.textContent = "£" + profit.toFixed(2);
       pctEl.textContent = Data.round(marginPct) + "%";
@@ -1203,13 +1454,10 @@
       profitEl.textContent = "—";
       pctEl.textContent = "—";
     }
-    var targetMargin = parseFloat(document.getElementById("comp-target-margin-" + cardIdx).value);
-    var minPriceEl = document.getElementById("comp-margin-min-price-" + cardIdx);
-    if (targetMargin > 0 && targetMargin < 100) {
-      minPriceEl.textContent = "£" + (costPerUnit / (1 - targetMargin / 100)).toFixed(2);
-    } else {
-      minPriceEl.textContent = "—";
+    if (annualProfitEl) {
+      annualProfitEl.textContent = (profit != null && annualVolume > 0) ? "£" + (profit * annualVolume).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "—";
     }
+    updateAnnualProfitChangeCell();
   }
 
   function renderComparisonSelected() {
@@ -1259,8 +1507,11 @@
     var countEl = document.getElementById("comparison-search-count");
     if (!body) return;
     var qEl = document.getElementById("comparison-search-input");
-    var q = (qEl ? qEl.value : "").toLowerCase().trim();
-    if (!q) {
+    // Not trimmed here — searchWordsMatch needs to see a genuine trailing space (the user just
+    // finished typing a whole word) to rank whole-word matches above mid-word substring hits;
+    // it does its own trimming internally for the actual matching.
+    var q = (qEl ? qEl.value : "").toLowerCase();
+    if (!q.trim()) {
       body.innerHTML = "";
       if (countEl) countEl.textContent = "Type to search across every ingredient and recipe.";
       return;
@@ -1274,12 +1525,18 @@
       if (statusFilter === "development") return !approved;
       return true;
     }
-    function matches(name, code, altCodes) {
-      if ((name || "").toLowerCase().indexOf(q) !== -1) return true;
-      if ((code || "").toLowerCase().indexOf(q) !== -1) return true;
-      return (altCodes || []).some(function (c) { return (c || "").toLowerCase().indexOf(q) !== -1; });
+    // Shares searchWordsMatch with every other search box on the site (Ingredient/Recipe
+    // Centre, add-ingredient dropdowns, etc.) instead of a bespoke raw-substring check, so it
+    // gets the same word-order scoring and whole-word-on-trailing-space ranking as those —
+    // and, unlike the old boolean-only matches(), actually sorts by relevance now.
+    function bestMatch(name, code, altCodes) {
+      var nameR = searchWordsMatch(name, q);
+      var codeR = searchWordsMatch(code, q);
+      var altR = (altCodes || []).map(function (c) { return searchWordsMatch(c, q); }).reduce(function (a, b) { return a.score > b.score ? a : b; }, { match: false, score: 0 });
+      return [nameR, codeR, altR].reduce(function (a, b) { return a.score >= b.score ? a : b; }, { match: false, score: 0 });
     }
-    var ingRows = (typeFilter === "recipes" ? [] : ingredients).filter(function (i) { return matches(i.name, i.code, i.altCodes) && statusMatches(i.approved); })
+    var ingRows = (typeFilter === "recipes" ? [] : ingredients).filter(function (i) { return bestMatch(i.name, i.code, i.altCodes).match && statusMatches(i.approved); })
+      .sort(function (a, b) { return bestMatch(b.name, b.code, b.altCodes).score - bestMatch(a.name, a.code, a.altCodes).score; })
       .map(function (i) {
         var statusBadge = i.approved ? "<span class=\"badge badge-approved\" style=\"font-size:10px\">Approved</span>" : "<span class=\"badge badge-development\" style=\"font-size:10px\">In development</span>";
         var typeLabel = isPackagingItem(i) ? "Packaging" : "Ingredient";
@@ -1292,7 +1549,8 @@
           "<td style=\"font-size:12px;color:var(--nc-gray-600);font-family:var(--nc-mono)\">" + (i.code || "—") + "</td>" +
           "<td>" + statusBadge + "</td></tr>";
       });
-    var recRows = (typeFilter === "ingredients" ? [] : recipes).filter(function (r) { return matches(r.name, r.code, null) && statusMatches(r.approved); })
+    var recRows = (typeFilter === "ingredients" ? [] : recipes).filter(function (r) { return bestMatch(r.name, r.code, null).match && statusMatches(r.approved); })
+      .sort(function (a, b) { return bestMatch(b.name, b.code, null).score - bestMatch(a.name, a.code, null).score; })
       .map(function (r) {
         var statusBadge = r.approved ? "<span class=\"badge badge-approved\" style=\"font-size:10px\">Approved</span>" : "<span class=\"badge badge-development\" style=\"font-size:10px\">In development</span>";
         var typeLabel = isSingleIngredientRecipe(r) ? "Recipe (single-ingredient)" : ((r.recipeType || "finishedProduct") === "subRecipe" ? "Sub recipe" : "Recipe");
@@ -2667,7 +2925,9 @@
   }
 
   function filterIngredients() {
-    var q = (document.getElementById("ingredient-search").value || "").toLowerCase().trim();
+    // Not trimmed — see searchWordsMatch's own comment; a trailing space signals "whole word",
+    // which it needs to see to rank e.g. "New Beef Slice" above "Newlyweds Sack" for "new ".
+    var q = (document.getElementById("ingredient-search").value || "").toLowerCase();
     var tbody = document.getElementById("ingredients-body");
     if (tbody) tbody.querySelectorAll("tr").forEach(function (r) {
       var show = !q || searchTextMatches(r.textContent, q);
@@ -2676,7 +2936,7 @@
   }
 
   function searchIngredientLibrary() {
-    var q = (document.getElementById("ingredient-search").value || "").toLowerCase().trim();
+    var q = (document.getElementById("ingredient-search").value || "").toLowerCase();
     var dd = document.getElementById("ingredient-library-dropdown");
     if (!dd) return;
     filterIngredients();
@@ -3790,6 +4050,14 @@
   var recipeNavStack = [];
 
   function openRecipe(id, fromView, isBack) {
+    // Navigating straight from one recipe to another (e.g. drilling into a sub-recipe) never
+    // goes through switchView — it's the same "recipe-detail" view the whole time — so the
+    // unsaved-changes guard has to live here too, not just in switchView.
+    if (currentRecipeId && currentRecipeId !== id && typeof Recipes.hasUnsavedChanges === "function" && Recipes.hasUnsavedChanges()) {
+      recipeLeavePendingAction = function () { openRecipe(id, fromView, isBack); };
+      openModal("modal-recipe-leave");
+      return;
+    }
     if (!isBack) {
       var prevViewEl = document.querySelector(".view.active");
       var prevViewName = prevViewEl && prevViewEl.id ? prevViewEl.id.replace("view-", "") : "";
@@ -3889,6 +4157,12 @@
         }).join("");
       }
     }
+    // Ingredient edits on this recipe now hold in memory instead of autosaving (see
+    // recipes.js setHoldSave) — snapshot its current state so "Leave without saving" has
+    // something exact to revert to, and reset the dirty flag for this fresh open.
+    recipeSnapshotAtOpen = JSON.parse(JSON.stringify(r));
+    Recipes.setHoldSave(true);
+    updateRecipeSaveButton();
   }
 
   function toggleRecipeApproved() {
@@ -4351,7 +4625,7 @@
   }
 
   function filterRecipes() {
-    var q = (document.getElementById("recipe-search").value || "").toLowerCase().trim();
+    var q = (document.getElementById("recipe-search").value || "").toLowerCase();
     var body = document.getElementById("recipes-body");
     if (body) body.querySelectorAll("tr").forEach(function (row) {
       var show = !q || searchTextMatches(row.textContent, q);
@@ -4368,7 +4642,7 @@
   }
 
   function searchRecipeLibrary() {
-    var q = (document.getElementById("recipe-search").value || "").toLowerCase().trim();
+    var q = (document.getElementById("recipe-search").value || "").toLowerCase();
     var dd = document.getElementById("recipe-library-dropdown");
     if (!dd) return;
     filterRecipes();
@@ -4611,7 +4885,7 @@
   }
 
   function filterProjectRecipes() {
-    var q = (document.getElementById("project-recipes-search") && document.getElementById("project-recipes-search").value || "").toLowerCase().trim();
+    var q = (document.getElementById("project-recipes-search") && document.getElementById("project-recipes-search").value || "").toLowerCase();
     var body = document.getElementById("project-recipes-body");
     if (!body) return;
     body.querySelectorAll("tr").forEach(function (row) {
@@ -4675,7 +4949,7 @@
   }
 
   function searchIngredientForRecipe() {
-    var q = (document.getElementById("recipe-ing-search").value || "").toLowerCase().trim();
+    var q = (document.getElementById("recipe-ing-search").value || "").toLowerCase();
     var dd = document.getElementById("recipe-ing-dropdown");
     if (!q) { dd.classList.remove("open"); return; }
     var statusFilterEl = document.getElementById("recipe-ing-status-filter");
@@ -4822,7 +5096,38 @@
   }
   function updateRecipeUndoButton() {
     var btn = document.getElementById("recipe-undo-btn");
-    if (btn) btn.style.display = recipeUndoStack.length ? "" : "none";
+    if (btn) btn.disabled = !recipeUndoStack.length;
+  }
+
+  /** "Save" button next to Compare — ingredient edits (qty/uom/scrap/add/remove) no longer
+   * autosave; every mutator still calls Recipes.setRecipes() exactly as before, but that
+   * function now just holds the change in memory while hold mode is on (see recipes.js) rather
+   * than persisting it immediately. This button (and the leave-page prompt below) are the only
+   * two ways a held change actually reaches storage. */
+  function updateRecipeSaveButton() {
+    // Always visible and enabled, per user request — not conditioned on hasUnsavedChanges().
+  }
+
+  function saveCurrentRecipeChanges() {
+    Recipes.flushSave();
+    updateRecipeSaveButton();
+    showToast("Recipe saved");
+  }
+
+  /** Reverts the currently-open recipe back to exactly how it looked when openRecipe() last
+   * loaded it (see recipeSnapshotAtOpen) — used by "Leave without saving". Object.assign onto
+   * the live object (not replacing it) so anything else still holding a reference to this same
+   * recipe stays consistent, matching how every mutator above already mutates in place. */
+  function discardCurrentRecipeChanges() {
+    if (!recipeSnapshotAtOpen || !currentRecipeId) { Recipes.setHoldSave(true); updateRecipeSaveButton(); return; }
+    var recipes = Recipes.getRecipes();
+    var r = recipes.find(function (rec) { return rec.id === currentRecipeId; });
+    if (r) {
+      Object.keys(r).forEach(function (k) { delete r[k]; });
+      Object.assign(r, JSON.parse(JSON.stringify(recipeSnapshotAtOpen)));
+    }
+    Recipes.setHoldSave(true); // also resets the pending/dirty flag
+    updateRecipeSaveButton();
   }
   function undoRecipeChange() {
     var last = recipeUndoStack.pop();
@@ -4961,6 +5266,7 @@
     var ingredients = Ingredients.getIngredients();
     var r = recipes.find(function (rec) { return rec.id === currentRecipeId; });
     if (!r) return;
+    updateRecipeSaveButton();
     // Fix a line's UOM only when it's genuinely INCOMPATIBLE with the referenced item's own
     // cost UOM (e.g. a line stuck on "EACH" while the ingredient is costed in KG — a real
     // mismatch, usually from a bad import). A line using a different but freely-convertible
@@ -5870,28 +6176,31 @@
     var r = recipes.find(function (rec) { return rec.id === currentRecipeId; });
     if (!r) return;
     var totalWeight = (r.ingredients || []).reduce(function (s, ri) { return s + recipeLineWeightForTotal(ri); }, 0);
-    var totalCost = 0;
-    (r.ingredients || []).forEach(function (ri) {
-      var ing = ingredients.find(function (i) { return i.id === ri.ingredientId; });
-      if (ing) totalCost += (ing.cost || 0) * Data.qtyToCostBase(ri.qty, ri.uom, ing.costUOM || ing.costUom || ing.CostUom || ing.CostUOM || "KG");
-    });
+    // Same total-cost calculation as the "Total Recipe Cost" stat card above — summing only
+    // ri.ingredientId lines here (the old version) silently ignored every sub-recipe line,
+    // showing £0 cost (and therefore ~100% margin) for any recipe built from sub-recipes.
+    var totalCost = getRecipeTotalCost(r, ingredients, recipes);
     var yieldCount = parseFloat(document.getElementById("cost-yield").value) || 1;
     var costPerUnit = totalCost / yieldCount;
     var sellPrice = parseFloat(document.getElementById("cost-sell-price").value);
+    var annualVolume = parseFloat(document.getElementById("cost-annual-volume").value);
+    var profit;
     if (sellPrice > 0) {
-      var profit = sellPrice - costPerUnit;
+      profit = sellPrice - costPerUnit;
       var marginPct = (profit / sellPrice) * 100;
-      var markupPct = costPerUnit > 0 ? (profit / costPerUnit) * 100 : 0;
       document.getElementById("margin-profit").textContent = "£" + profit.toFixed(2);
       document.getElementById("margin-pct").textContent = Data.round(marginPct) + "%";
       var marginEl = document.getElementById("margin-pct").parentElement;
       marginEl.style.borderColor = marginPct >= 50 ? "var(--nc-green)" : marginPct >= 30 ? "var(--nc-amber)" : "var(--nc-red)";
       marginEl.style.background = marginPct >= 50 ? "var(--nc-green-light)" : marginPct >= 30 ? "var(--nc-amber-light)" : "var(--nc-red-light)";
-      document.getElementById("margin-markup").textContent = Data.round(markupPct) + "%";
     } else {
+      profit = null;
       document.getElementById("margin-profit").textContent = "—";
       document.getElementById("margin-pct").textContent = "—";
-      document.getElementById("margin-markup").textContent = "—";
+    }
+    var annualProfitEl = document.getElementById("margin-annual-profit");
+    if (annualProfitEl) {
+      annualProfitEl.textContent = (profit != null && annualVolume > 0) ? "£" + (profit * annualVolume).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "—";
     }
     var targetMargin = parseFloat(document.getElementById("cost-target-margin").value);
     if (targetMargin > 0 && targetMargin < 100) {
@@ -6796,6 +7105,10 @@ desc: "Imported from " + (fname || "spreadsheet"),
   window.comparisonLineDrop = comparisonLineDrop;
   window.comparisonLineDragEnd = comparisonLineDragEnd;
   window.comparisonRecalcMargins = comparisonRecalcMargins;
+  window.toggleAnnualComparisonCellMode = toggleAnnualComparisonCellMode;
+  window.comparisonSaveOverwriteConfirm = comparisonSaveOverwriteConfirm;
+  window.comparisonSaveOverwriteAsNew = comparisonSaveOverwriteAsNew;
+  window.comparisonSaveOverwriteCancel = comparisonSaveOverwriteCancel;
   window.goBack = goBack;
   window.goBackFromRecipeDetail = goBackFromRecipeDetail;
   window.topbarGoBack = topbarGoBack;
@@ -6946,6 +7259,10 @@ desc: "Imported from " + (fname || "spreadsheet"),
   window.updateSubRecipeUom = updateSubRecipeUom;
   window.updateIngredientQty = updateIngredientQty;
   window.undoRecipeChange = undoRecipeChange;
+  window.saveCurrentRecipeChanges = saveCurrentRecipeChanges;
+  window.recipeLeaveModalSave = recipeLeaveModalSave;
+  window.recipeLeaveModalDiscard = recipeLeaveModalDiscard;
+  window.recipeLeaveModalCancel = recipeLeaveModalCancel;
   window.updateIngredientUom = updateIngredientUom;
   window.recalcCurrentRecipe = recalcCurrentRecipe;
   window.switchRecipeTab = switchRecipeTab;

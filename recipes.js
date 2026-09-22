@@ -19,8 +19,30 @@ window.NutriCalcRecipes = (function () {
     return recipes;
   }
 
+  // "Hold" mode — while true, setRecipes() still updates the in-memory array immediately (so
+  // the UI keeps reflecting edits live) but skips the actual persist, and remembers that a save
+  // is pending. Used by the recipe detail page to turn per-keystroke autosave into an explicit
+  // Save button + leave-page prompt, without every individual editor function needing to know
+  // about it. Actions that are already an explicit, deliberate save in their own right (approve
+  // toggle, delete, duplicate, rename) call flushSave() right after, so they're never silently
+  // held back by whatever hold state happens to be active.
+  var holdSave = false;
+  var pendingSave = false;
+  function setHoldSave(v) {
+    holdSave = !!v;
+    if (holdSave) pendingSave = false;
+  }
+  function hasUnsavedChanges() {
+    return pendingSave;
+  }
+  function flushSave() {
+    pendingSave = false;
+    saveData();
+  }
+
   function setRecipes(arr) {
     recipes = arr || [];
+    if (holdSave) { pendingSave = true; return; }
     saveData();
   }
 
@@ -203,6 +225,9 @@ window.NutriCalcRecipes = (function () {
     deleteRecipe: deleteRecipe,
     calcRecipeNutrition: calcRecipeNutrition,
     updateRecipeYieldPct: updateRecipeYieldPct,
-    updateRecipeOwnCost: updateRecipeOwnCost
+    updateRecipeOwnCost: updateRecipeOwnCost,
+    setHoldSave: setHoldSave,
+    hasUnsavedChanges: hasUnsavedChanges,
+    flushSave: flushSave
   };
 })();

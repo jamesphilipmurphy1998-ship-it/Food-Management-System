@@ -544,7 +544,8 @@
           <span class="badge badge-status" id="recipe-detail-status-badge">In development</span>
           <span class="badge" id="recipe-detail-kind-badge">Finished product</span>
           <button class="btn btn-sm btn-primary" id="recipe-detail-edit-btn" onclick="openEditRecipeNameModal()">Edit</button>
-          <button class="btn btn-sm" id="recipe-undo-btn" style="display:none" onclick="undoRecipeChange()" title="Undo the last ingredient change">&#8630; Undo</button>
+          <button class="btn btn-sm" id="recipe-undo-btn" onclick="undoRecipeChange()" title="Undo the last ingredient change">&#8630; Undo</button>
+          <button class="btn btn-sm btn-primary" id="recipe-save-btn" onclick="saveCurrentRecipeChanges()" title="Save unsaved ingredient changes">Save</button>
           <button class="btn btn-sm" onclick="openCurrentRecipeInComparisons()">Compare</button>
           <!-- Nested dropdown: trigger row opens submenu (onmouseenter); other rows close submenu (onmouseenter); submenu closes on leave (onmouseleave). See app.js "Nested dropdown pattern". -->
           <div class="dropdown-wrap" style="position:relative;display:inline-block">
@@ -805,6 +806,10 @@
               <input class="form-input" type="number" id="cost-target-margin" step="any" min="0" max="100" value="" placeholder="e.g. 65" oninput="recalcMarginFromPct()">
             </div>
           </div>
+          <div class="form-group" style="max-width:calc(33.33% - 8px);margin-bottom:16px">
+            <label class="form-label">Annual Volume (units)</label>
+            <input class="form-input" type="number" id="cost-annual-volume" step="any" min="0" value="" placeholder="e.g. 50000" oninput="recalcMargins()">
+          </div>
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px" id="margin-results">
             <div class="stat-card" style="border-color:var(--nc-green);background:var(--nc-green-light)">
               <div class="stat-label" style="color:#059669">Gross Profit / Unit</div>
@@ -814,9 +819,9 @@
               <div class="stat-label" style="color:#059669">Gross Margin %</div>
               <div class="stat-value" style="font-size:20px;color:#065F46" id="margin-pct">—</div>
             </div>
-            <div class="stat-card" style="border-color:var(--nc-accent);background:var(--nc-accent-light)">
-              <div class="stat-label" style="color:#0284C7">Markup %</div>
-              <div class="stat-value" style="font-size:20px;color:#0284C7" id="margin-markup">—</div>
+            <div class="stat-card" style="border-color:var(--nc-green);background:var(--nc-green-light)">
+              <div class="stat-label" style="color:#059669">Annual Profit / Year</div>
+              <div class="stat-value" style="font-size:20px;color:#065F46" id="margin-annual-profit">—</div>
             </div>
             <div class="stat-card" style="border-color:var(--nc-amber);background:var(--nc-amber-light)">
               <div class="stat-label" style="color:#92400E">Min Sell Price for Target Margin</div>
@@ -1249,6 +1254,32 @@
   </div>
 </div>
 
+<!-- Recipe Save/Discard/Cancel Modal (leaving recipe-detail with unsaved ingredient edits) -->
+<div class="modal-overlay" id="modal-recipe-leave">
+  <div class="modal" style="width:420px">
+    <div class="modal-title">You have unsaved changes</div>
+    <p style="font-size:13px;color:var(--nc-gray-600)">Are you sure you want to leave? Changes you've made to this recipe haven't been saved yet.</p>
+    <div class="modal-actions">
+      <button class="btn" onclick="recipeLeaveModalCancel()">Cancel</button>
+      <button class="btn btn-danger" onclick="recipeLeaveModalDiscard()">Leave without saving</button>
+      <button class="btn btn-primary" onclick="recipeLeaveModalSave()">Save and leave</button>
+    </div>
+  </div>
+</div>
+
+<!-- Comparison Save Overwrite/New-Version/Cancel Modal -->
+<div class="modal-overlay" id="modal-comparison-save-overwrite">
+  <div class="modal" style="width:420px">
+    <div class="modal-title">Comparison already saved</div>
+    <p style="font-size:13px;color:var(--nc-gray-600)" id="comparison-save-overwrite-msg">This comparison is already saved. What would you like to do?</p>
+    <div class="modal-actions">
+      <button class="btn" onclick="comparisonSaveOverwriteCancel()">Cancel</button>
+      <button class="btn" onclick="comparisonSaveOverwriteAsNew()">Save a new Version</button>
+      <button class="btn btn-primary" onclick="comparisonSaveOverwriteConfirm()">Overwrite</button>
+    </div>
+  </div>
+</div>
+
 <!-- Comparison Save/Discard/Cancel Modal (leaving compare-result with unsaved qty edits) -->
 <div class="modal-overlay" id="modal-comparison-leave">
   <div class="modal" style="width:420px">
@@ -1617,7 +1648,7 @@
 <script src="hfss.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="app.js?v=20260921-recipe-deep-link"></script>
+<script src="app.js?v=20260922-save-always-visible"></script>
 <script src="excel-import.js?v=20260916-parentnoofportions-col-k"></script>
 <script src="reports.js"></script>
 </body>
