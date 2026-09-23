@@ -6,6 +6,52 @@ deploy/backup live in [SAVE-AND-DEPLOY.md](SAVE-AND-DEPLOY.md), [PI-RUNBOOK.md](
 and [PI-CONNECTION.md](PI-CONNECTION.md) — this file is the short version + git, which
 wasn't written down anywhere before.
 
+## 0. One-time machine setup (skip if already done)
+
+Everything below assumes these are already true on the machine running the commands.
+None of this is AI/session memory — it's state that lives on disk/in the OS, so a fresh AI
+session on an **already set-up** machine needs none of this; a genuinely new machine needs
+all of it before section 1 onward will work.
+
+**.NET SDK** — required for `dotnet run` / `dotnet publish`. Verify with:
+```powershell
+dotnet --version
+```
+This machine has `10.0.103`. If missing, install the .NET SDK from Microsoft.
+
+**SSH access to the Pi** (`dizziness7883@192.168.0.50`) — an SSH key must exist and be
+authorized on the Pi:
+```powershell
+ls ~/.ssh/
+# expect id_ed25519 / id_ed25519.pub, and 192.168.0.50 present in known_hosts
+```
+If there's no key pair, generate one (`ssh-keygen -t ed25519`) and get its **public** key
+added to `~/.ssh/authorized_keys` on the Pi (ask whoever manages the Pi, or do it directly
+if you already have another way in). Test with `ssh dizziness7883@192.168.0.50 "echo ok"` —
+it should return `ok` with no password prompt.
+
+**GitHub push access** — `git push` needs to already be authenticated as an account that's
+a collaborator on `jamesphilipmurphy1998-ship-it/Food-Management-System` (currently
+`Wasabi-Projects`; see the account-mismatch gotcha in section 4). This machine has no
+`.gitconfig`-level credential helper explicitly set, so it's relying on Windows' own Git
+Credential Manager having a cached token from a previous `git push`/login — the standard
+way to (re)establish this on a new machine is:
+```powershell
+gh auth login
+```
+(or triggering any `git push` to this remote, which will prompt a browser-based GitHub
+login the first time). There's no way to verify this is set up short of trying a push —
+if `git push` prompts for credentials instead of just working, it isn't done yet.
+
+**OneDrive sync** — the backup script writes into a synced OneDrive folder; if OneDrive
+isn't signed in yet on this Windows account, that folder won't exist and
+`backup-full.ps1 -ConfirmOneDrive` will fail with `OneDrive folder not found`. Sign into
+OneDrive with the Wasabi account first, and confirm the folder resolves:
+```powershell
+Test-Path "C:\Users\JamesMurphy\OneDrive - Wasabi\WASUK - Food Team - NPD\New Wasabi System Development\FMS System\2. Wasabi FMS Code & Database Backups"
+# expect True
+```
+
 ## 1. Running it locally (dev)
 
 > All commands in this file are **PowerShell**, not Bash/Git Bash — `.\static-server.ps1`
