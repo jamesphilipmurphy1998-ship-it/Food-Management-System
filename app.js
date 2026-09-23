@@ -1190,6 +1190,7 @@
         "<div style=\"display:flex;flex-wrap:wrap;gap:12px;margin-bottom:12px\">" +
         "<div class=\"form-group\" style=\"width:150px\"><label class=\"form-label\">RSP (£)</label><input class=\"form-input\" type=\"number\" step=\"any\" min=\"0\" placeholder=\"e.g. 3.50\" id=\"comp-sell-price-" + cardIdx + "\" oninput=\"comparisonRecalcMargins(" + cardIdx + ")\">" +
         "<label style=\"display:flex;align-items:center;gap:6px;margin-top:6px;font-size:12px;color:var(--nc-gray-600);cursor:pointer\"><input type=\"checkbox\" id=\"comp-vat-toggle-" + cardIdx + "\" checked onchange=\"toggleVatRateVisibility('comparison'," + cardIdx + ");comparisonRecalcMargins(" + cardIdx + ")\" style=\"margin:0\">VAT<input class=\"form-input\" type=\"number\" step=\"any\" min=\"0\" max=\"100\" value=\"20\" id=\"comp-vat-pct-" + cardIdx + "\" oninput=\"comparisonRecalcMargins(" + cardIdx + ")\" style=\"width:48px;padding:2px 6px;font-size:12px\" title=\"VAT rate (%)\">%</label>" +
+        "<div class=\"stat-card\" style=\"margin-top:8px;padding:8px 10px;width:fit-content\"><div class=\"stat-label\" style=\"font-size:11px\">RSP Ex VAT</div><div class=\"stat-value\" style=\"font-size:15px\" id=\"comp-rsp-ex-vat-" + cardIdx + "\">—</div></div>" +
         "</div>" +
         "<div class=\"form-group\" style=\"width:190px\"><label class=\"form-label\" style=\"white-space:nowrap\">Annual Volume (units)</label><input class=\"form-input\" type=\"number\" step=\"any\" min=\"0\" placeholder=\"e.g. 50000\" id=\"comp-annual-volume-" + cardIdx + "\" oninput=\"comparisonRecalcMargins(" + cardIdx + ")\"></div>" +
         "</div>" +
@@ -1494,6 +1495,8 @@
     var vatOn = vatToggle ? vatToggle.checked : false;
     var vatPct = parseFloat(document.getElementById("comp-vat-pct-" + cardIdx) ? document.getElementById("comp-vat-pct-" + cardIdx).value : 0) || 0;
     var netSellPrice = (vatOn && sellPrice > 0) ? sellPrice / (1 + vatPct / 100) : sellPrice;
+    var rspExVatEl = document.getElementById("comp-rsp-ex-vat-" + cardIdx);
+    if (rspExVatEl) rspExVatEl.textContent = netSellPrice > 0 ? "£" + netSellPrice.toFixed(2) : "—";
     var profit = null;
     if (netSellPrice > 0) {
       profit = netSellPrice - costPerUnit;
@@ -6321,6 +6324,8 @@
     var vatOn = vatToggle ? vatToggle.checked : false;
     var vatPct = parseFloat(document.getElementById("cost-vat-pct").value) || 0;
     var netSellPrice = (vatOn && sellPrice > 0) ? sellPrice / (1 + vatPct / 100) : sellPrice;
+    var rspExVatEl = document.getElementById("cost-rsp-ex-vat");
+    if (rspExVatEl) rspExVatEl.textContent = netSellPrice > 0 ? "£" + netSellPrice.toFixed(2) : "—";
     var profit;
     if (netSellPrice > 0) {
       profit = netSellPrice - costPerUnit;
