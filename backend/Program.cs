@@ -51,7 +51,18 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddSingleton<InMemoryStore>();
 builder.Services.AddSingleton<IImportService, ImportService>();
 
+// gzip the API's JSON responses and the static JS/CSS bundle — both were being served
+// uncompressed (recipes.js API response ~860KB, app.js ~400KB), which was a meaningful chunk
+// of page load time on anything less than a fast LAN connection.
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+    options.MimeTypes = Microsoft.AspNetCore.ResponseCompression.ResponseCompressionDefaults.MimeTypes
+        .Concat(["application/json", "application/javascript", "text/javascript"]);
+});
+
 var app = builder.Build();
+app.UseResponseCompression();
 app.UseCors();
 
 // ─── Wasabi auth: require login from homepage (JWT) to access NutriCost ───

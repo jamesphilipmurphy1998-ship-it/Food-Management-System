@@ -114,11 +114,16 @@ window.NutriCalcStorage = (function () {
   /** Set each recipe ingredient line's uom to match the ingredient's cost UOM when we have the ingredient. */
   function normalizeRecipeIngredientUoms(recipes, ingredients) {
     if (!Array.isArray(recipes) || !Array.isArray(ingredients)) return recipes;
+    // Map lookup instead of .find() per line — with ~1,100 recipes x several lines each
+    // against 400+ ingredients, the old linear scan meant roughly a million comparisons on
+    // every refresh; this makes each lookup O(1) instead.
+    var byId = new Map();
+    ingredients.forEach(function (i) { byId.set(i.id, i); });
     return recipes.map(function (r) {
       if (!r || !Array.isArray(r.ingredients)) return r;
       var lines = r.ingredients.map(function (ri) {
         if (!ri.ingredientId) return ri;
-        var ing = ingredients.find(function (i) { return i.id === ri.ingredientId; });
+        var ing = byId.get(ri.ingredientId);
         if (!ing) return ri;
         var costUom = (ing.costUOM || ing.costUom || ing.CostUom || ing.CostUOM || "").toString().trim().toUpperCase();
         if (!costUom) return ri;
