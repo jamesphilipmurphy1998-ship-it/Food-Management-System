@@ -7232,8 +7232,9 @@ desc: "Imported from " + (fname || "spreadsheet"),
     });
   }
   function openWasabiAppsHome() {
-    // Link to Wasabi Apps homepage (separate app on its own port)
-    var homepageUrl = (typeof window.WASABI_HOMEPAGE_URL !== "undefined" && window.WASABI_HOMEPAGE_URL) ? window.WASABI_HOMEPAGE_URL : "http://localhost:5000";
+    // Wasabi Functions homepage — separate static site on the Pi, port 5000 (see
+    // C:\Dev\wasabi-home). window.WASABI_HOMEPAGE_URL lets a non-Pi deployment override this.
+    var homepageUrl = (typeof window.WASABI_HOMEPAGE_URL !== "undefined" && window.WASABI_HOMEPAGE_URL) ? window.WASABI_HOMEPAGE_URL : "http://192.168.0.50:5000";
     window.location.href = homepageUrl;
   }
   function openTimelineApp() {
