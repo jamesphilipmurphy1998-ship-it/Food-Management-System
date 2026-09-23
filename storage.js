@@ -31,6 +31,15 @@ window.NutriCalcStorage = (function () {
   var ingredientsSaveQueued = false;
   var recipesSaveQueued = false;
   var refreshInFlight = false;
+  // See "Diffing has to compare..." comment below for why these exist. Declared here (not
+  // just where they're first used) so the boot-time seed call right after this can reach them —
+  // `var` hoists the name but not the assignment, so seeding any earlier than this throws.
+  var lastSyncedRecipesById = new Map();
+  var lastSyncedIngredientsById = new Map();
+  // Seed the diff baselines from whatever was in localStorage — refreshFromApi() reseeds them
+  // properly from the server a moment later; this just avoids every record looking "new" and
+  // getting needlessly re-POSTed if an edit somehow lands before that first refresh resolves.
+  seedSyncSnapshots(recipesCache, ingredientsCache);
 
   function emitStorageUpdated(key, data) {
     try {
@@ -45,10 +54,17 @@ window.NutriCalcStorage = (function () {
       headers: { "Content-Type": "application/json" },
       body: body != null ? JSON.stringify(body) : undefined
     });
-    if (!response.ok) throw new Error("HTTP " + response.status);
     var text = await response.text();
-    if (!text) return null;
-    return JSON.parse(text);
+    var parsed = text ? JSON.parse(text) : null;
+    if (!response.ok) {
+      // status/body surfaced on the error so callers (e.g. the 409-conflict handling in
+      // flushRecipeSaves/flushIngredientSaves) can react to *why* it failed, not just that it did.
+      var err = new Error("HTTP " + response.status);
+      err.status = response.status;
+      err.body = parsed;
+      throw err;
+    }
+    return parsed;
   }
 
   function queueSaveIngredients() {
@@ -56,7 +72,13 @@ window.NutriCalcStorage = (function () {
     ingredientsSaveQueued = true;
     setTimeout(function () {
       ingredientsSaveQueued = false;
-      apiRequestAsync("PUT", "/ingredients", ingredientsCache).catch(function () {
+      apiRequestAsync("PUT", "/ingredients", ingredientsCache).then(function () {
+        // Bulk PUT doesn't hand back real per-record UpdatedAt stamps (its response is just a
+        // count), so this can't set a perfectly accurate baseline — but it at least re-syncs the
+        // CONTENT, so a routine per-record edit right after a bulk import diffs correctly instead
+        // of comparing against a now-stale pre-import snapshot.
+        ingredientsCache.forEach(function (r) { if (r && r.id) lastSyncedIngredientsById.set(r.id, snapshotRecord(r)); });
+      }).catch(function () {
         localSetIngredients(ingredientsCache);
       });
     }, 0);
@@ -67,10 +89,137 @@ window.NutriCalcStorage = (function () {
     recipesSaveQueued = true;
     setTimeout(function () {
       recipesSaveQueued = false;
-      apiRequestAsync("PUT", "/recipes", recipesCache).catch(function () {
+      apiRequestAsync("PUT", "/recipes", recipesCache).then(function () {
+        recipesCache.forEach(function (r) { if (r && r.id) lastSyncedRecipesById.set(r.id, snapshotRecord(r)); });
+      }).catch(function () {
         localSetRecipes(recipesCache);
       });
     }, 0);
+  }
+
+  // ─── Per-record saves with optimistic concurrency (multi-user save rework, step 2) ───
+  // Routine interactive edits (a qty change, an approve toggle, etc.) now save just the one
+  // record that changed, via PUT /api/{recipes|ingredients}/{id} with the UpdatedAt stamp the
+  // client last saw for it — the server rejects with 409 if someone else saved that record in
+  // the meantime, instead of this silently overwriting their change (see backend Program.cs
+  // for the server-side half of this). The bulk PUT above is kept for genuinely bulk operations
+  // (Excel/BOM import, "clear all", etc.) — setRecipes/setIngredients fall back to it when a
+  // single call changes more than BULK_THRESHOLD records, since firing that many individual
+  // requests would be slower and spammier than one bulk upsert for a deliberate mass-sync.
+  var BULK_THRESHOLD = 5;
+  var pendingRecipeSaves = new Map(); // id -> { record, baseUpdatedAt, isNew }
+  var pendingIngredientSaves = new Map();
+  var recipeFlushQueued = false;
+  var ingredientFlushQueued = false;
+
+  // Diffing has to compare against an INDEPENDENT copy of "what the server last confirmed",
+  // not against ingredientsCache/recipesCache directly — ingredients.js/recipes.js load their
+  // arrays from Storage.getIngredients()/getRecipes() by reference (not a copy) and mutate
+  // records in place before calling setIngredients/setRecipes. If the diff baseline were the
+  // same live array, a record already mutated in place would show "no change" against itself,
+  // and the save would silently never fire. These maps hold cloned snapshots instead, updated
+  // only when we actually know the server's state (after a successful save, a conflict
+  // response, or a fresh refreshFromApi) — never aliased to what the rest of the app is editing.
+  // (declared up near ingredientsCache/recipesCache so the boot-time seed call can reach them)
+
+  function snapshotRecord(r) { return JSON.parse(JSON.stringify(r)); }
+  function seedSyncSnapshots(recipesArr, ingredientsArr) {
+    lastSyncedRecipesById.clear();
+    (recipesArr || []).forEach(function (r) { if (r && r.id) lastSyncedRecipesById.set(r.id, snapshotRecord(r)); });
+    lastSyncedIngredientsById.clear();
+    (ingredientsArr || []).forEach(function (r) { if (r && r.id) lastSyncedIngredientsById.set(r.id, snapshotRecord(r)); });
+  }
+
+  /** True if the meaningful fields of a record changed — ignores updatedAt (the server's own
+   * concurrency stamp, never something client code intentionally mutates). */
+  function recordChanged(a, b) {
+    if (!b) return true;
+    var strip = function (r) { var c = Object.assign({}, r); delete c.updatedAt; return c; };
+    return JSON.stringify(strip(a)) !== JSON.stringify(strip(b));
+  }
+
+  function diffChangedRecords(newArr, lastSyncedById) {
+    var changed = [];
+    newArr.forEach(function (r) {
+      if (!r || !r.id) return;
+      var old = lastSyncedById.get(r.id);
+      if (recordChanged(r, old)) changed.push({ record: r, old: old });
+    });
+    return changed;
+  }
+
+  function queueRecipeSave(record, old) {
+    pendingRecipeSaves.set(record.id, { record: record, baseUpdatedAt: old ? old.updatedAt : null, isNew: !old });
+    if (recipeFlushQueued) return;
+    recipeFlushQueued = true;
+    setTimeout(flushRecipeSaves, 0);
+  }
+  function queueIngredientSave(record, old) {
+    pendingIngredientSaves.set(record.id, { record: record, baseUpdatedAt: old ? old.updatedAt : null, isNew: !old });
+    if (ingredientFlushQueued) return;
+    ingredientFlushQueued = true;
+    setTimeout(flushIngredientSaves, 0);
+  }
+
+  function applySavedRecord(cacheArr, snapshotMap, record) {
+    var idx = cacheArr.findIndex(function (r) { return r.id === record.id; });
+    if (idx >= 0) cacheArr[idx] = record; else cacheArr.push(record);
+    snapshotMap.set(record.id, snapshotRecord(record));
+  }
+
+  function notifyConflict(kind, name) {
+    if (typeof window.showToast === "function") {
+      window.showToast((name || "A record") + " was changed by someone else — refreshed with their version");
+    }
+    console.warn("[storage] save conflict on " + kind + ": " + (name || ""));
+  }
+
+  function flushRecipeSaves() {
+    recipeFlushQueued = false;
+    if (!useApiMode || !API_BASE_URL || pendingRecipeSaves.size === 0) return;
+    var batch = Array.from(pendingRecipeSaves.values());
+    pendingRecipeSaves.clear();
+    Promise.all(batch.map(function (entry) {
+      var record = Object.assign({}, entry.record, { updatedAt: entry.baseUpdatedAt });
+      var path = entry.isNew ? "/recipes" : "/recipes/" + encodeURIComponent(record.id);
+      var method = entry.isNew ? "POST" : "PUT";
+      return apiRequestAsync(method, path, record).then(function (saved) {
+        if (saved) applySavedRecord(recipesCache, lastSyncedRecipesById, saved);
+      }).catch(function (err) {
+        if (err && err.status === 409 && err.body) {
+          applySavedRecord(recipesCache, lastSyncedRecipesById, err.body);
+          notifyConflict("recipe", err.body.name);
+        }
+        // Other errors: local cache already reflects the attempted edit; best-effort, no retry
+        // loop, same tolerance as the rest of this module.
+      });
+    })).then(function () {
+      localSetRecipes(recipesCache);
+      emitStorageUpdated("recipes", recipesCache);
+    });
+  }
+
+  function flushIngredientSaves() {
+    ingredientFlushQueued = false;
+    if (!useApiMode || !API_BASE_URL || pendingIngredientSaves.size === 0) return;
+    var batch = Array.from(pendingIngredientSaves.values());
+    pendingIngredientSaves.clear();
+    Promise.all(batch.map(function (entry) {
+      var record = Object.assign({}, entry.record, { updatedAt: entry.baseUpdatedAt });
+      var path = entry.isNew ? "/ingredients" : "/ingredients/" + encodeURIComponent(record.id);
+      var method = entry.isNew ? "POST" : "PUT";
+      return apiRequestAsync(method, path, record).then(function (saved) {
+        if (saved) applySavedRecord(ingredientsCache, lastSyncedIngredientsById, saved);
+      }).catch(function (err) {
+        if (err && err.status === 409 && err.body) {
+          applySavedRecord(ingredientsCache, lastSyncedIngredientsById, err.body);
+          notifyConflict("ingredient", err.body.name);
+        }
+      });
+    })).then(function () {
+      localSetIngredients(ingredientsCache);
+      emitStorageUpdated("ingredients", ingredientsCache);
+    });
   }
 
   async function refreshFromApi() {
@@ -104,6 +253,8 @@ window.NutriCalcStorage = (function () {
         localSetRecipes(recipesCache);
         emitStorageUpdated("recipes", recipesCache);
       }
+      // Server is the ground truth right after a fetch — reseed both diff baselines from it.
+      seedSyncSnapshots(recipesCache, ingredientsCache);
     } catch (e) {
       // Keep local cache on network/API errors.
     } finally {
@@ -135,17 +286,32 @@ window.NutriCalcStorage = (function () {
 
   function getIngredients() { return ingredientsCache; }
   function setIngredients(arr) {
-    ingredientsCache = Array.isArray(arr) ? arr : [];
+    var list = Array.isArray(arr) ? arr : [];
+    var changed = diffChangedRecords(list, lastSyncedIngredientsById);
+    ingredientsCache = list;
     localSetIngredients(ingredientsCache);
-    queueSaveIngredients();
+    if (changed.length === 0) return;
+    if (changed.length > BULK_THRESHOLD) {
+      // A big batch (import, "clear all", etc.) — one bulk upsert beats firing dozens+ of
+      // individual concurrency-checked requests for what's really one deliberate sync operation.
+      queueSaveIngredients();
+    } else {
+      changed.forEach(function (c) { queueIngredientSave(c.record, c.old); });
+    }
   }
   function getRecipes() { return recipesCache; }
   function setRecipes(arr) {
     var list = Array.isArray(arr) ? arr : [];
     list = normalizeRecipeIngredientUoms(list, ingredientsCache);
+    var changed = diffChangedRecords(list, lastSyncedRecipesById);
     recipesCache = list;
     localSetRecipes(recipesCache);
-    queueSaveRecipes();
+    if (changed.length === 0) return;
+    if (changed.length > BULK_THRESHOLD) {
+      queueSaveRecipes();
+    } else {
+      changed.forEach(function (c) { queueRecipeSave(c.record, c.old); });
+    }
   }
 
   // Real deletes, separate from setIngredients/setRecipes — the PUT endpoints are upserts and

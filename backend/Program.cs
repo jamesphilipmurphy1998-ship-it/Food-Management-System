@@ -208,17 +208,22 @@ app.MapGet("/api/recipes", async (AppDbContext db) =>
 app.MapPost("/api/ingredients", async (AppDbContext db, Ingredient ingredient) =>
 {
     ingredient.Id = string.IsNullOrWhiteSpace(ingredient.Id) ? "id_" + Guid.NewGuid().ToString("N")[..9] : ingredient.Id;
-    db.Ingredients.Add(ingredient.ToEntity());
+    var entity = ingredient.ToEntity();
+    db.Ingredients.Add(entity);
     await db.SaveChangesAsync();
-    return Results.Created($"/api/ingredients/{ingredient.Id}", ingredient);
+    // Return the saved entity, not the input model — the input has no real UpdatedAt yet, and
+    // callers doing per-record concurrency-checked saves (storage.js) need the server's actual
+    // stamp back so the record's very next edit has something real to check against.
+    return Results.Created($"/api/ingredients/{ingredient.Id}", entity.ToModel());
 });
 
 app.MapPost("/api/recipes", async (AppDbContext db, Recipe recipe) =>
 {
     recipe.Id = string.IsNullOrWhiteSpace(recipe.Id) ? "id_" + Guid.NewGuid().ToString("N")[..9] : recipe.Id;
-    db.Recipes.Add(recipe.ToEntity());
+    var entity = recipe.ToEntity();
+    db.Recipes.Add(entity);
     await db.SaveChangesAsync();
-    return Results.Created($"/api/recipes/{recipe.Id}", recipe);
+    return Results.Created($"/api/recipes/{recipe.Id}", entity.ToModel());
 });
 
 // Single-record save with optimistic concurrency — this is what the interactive UI uses for
