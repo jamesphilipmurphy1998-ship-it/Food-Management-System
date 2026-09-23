@@ -596,20 +596,33 @@ using (var seedScope = app.Services.CreateScope())
     try
     {
         var seedDb = seedScope.ServiceProvider.GetRequiredService<AppDbContext>();
-        var existingIds = (await seedDb.ProjectFolders.Select(f => f.Id).ToListAsync()).ToHashSet();
+        var existing = await seedDb.ProjectFolders.ToDictionaryAsync(f => f.Id);
         var structural = new[]
         {
-            new ProjectFolderEntity { Id = "technical", Name = "Technical", ParentId = null, Locked = true },
+            new ProjectFolderEntity { Id = "technical", Name = "Technical Team", ParentId = null, Locked = true },
             new ProjectFolderEntity { Id = "food-team", Name = "Food Team", ParentId = null, Locked = true },
             new ProjectFolderEntity { Id = "restaurant", Name = "Restaurant", ParentId = "food-team", Locked = true },
             new ProjectFolderEntity { Id = "grocery", Name = "Grocery", ParentId = "food-team", Locked = true },
+            new ProjectFolderEntity { Id = "process-team", Name = "Process Team", ParentId = null, Locked = true },
         };
-        var toAdd = structural.Where(f => !existingIds.Contains(f.Id)).ToList();
-        if (toAdd.Count > 0)
+        var changed = false;
+        foreach (var f in structural)
         {
-            seedDb.ProjectFolders.AddRange(toAdd);
-            await seedDb.SaveChangesAsync();
+            if (!existing.TryGetValue(f.Id, out var row))
+            {
+                seedDb.ProjectFolders.Add(f);
+                changed = true;
+            }
+            else if (row.Name != f.Name)
+            {
+                // Keeps a locked folder's name in sync with this list if it's ever renamed here —
+                // the rename API endpoint refuses to touch locked rows, so this is the only way
+                // a structural folder's name actually changes.
+                row.Name = f.Name;
+                changed = true;
+            }
         }
+        if (changed) await seedDb.SaveChangesAsync();
     }
     catch
     {
