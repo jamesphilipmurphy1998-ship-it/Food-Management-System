@@ -95,6 +95,12 @@ public sealed class ProjectFolderEntity
     public string Name { get; set; } = "";
     public string? ParentId { get; set; }
     public bool Locked { get; set; }
+    /// <summary>Explicit, chosen-at-creation-time folder type — not inferred from whether it
+    /// currently has children, which broke for a freshly-created, still-empty layer folder.
+    /// true = a "layer" folder that holds other folders (never recipes directly); false = a
+    /// "recipe" folder, a leaf that holds recipes (never sub-folders). All locked structural
+    /// folders are layers.</summary>
+    public bool IsLayer { get; set; }
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 }
 

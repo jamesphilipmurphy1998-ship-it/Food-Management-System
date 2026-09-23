@@ -160,6 +160,9 @@ public sealed class ProjectFolderCreateRequest
     /// <summary>Only meaningful for the one-time structural seed (Technical/Food Team/etc) — the
     /// UI never lets a user create a locked folder.</summary>
     public bool Locked { get; set; }
+    /// <summary>true = "Layer folder" (holds other folders), false = "Recipe folder" (holds
+    /// recipes) — chosen explicitly by whoever clicks "Add folder", not inferred later.</summary>
+    public bool IsLayer { get; set; }
     /// <summary>Lets the one-time client-side localStorage migration keep each folder's existing
     /// slug (so already-tagged recipes' "Project:{slug}" tags keep matching) instead of always
     /// generating a fresh one from the name.</summary>

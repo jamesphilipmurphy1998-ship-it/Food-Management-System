@@ -62,12 +62,11 @@
   function getProjectFolderById(id) {
     return projectFoldersCache.find(function (f) { return f.id === id; });
   }
-  /** Only unlocked leaf folders can hold recipes — used to populate the recipe "Project"
-   * dropdown, so a container like Restaurant never shows up as something to directly tag.
-   * Locked folders are excluded even when currently childless (e.g. a freshly-seeded, still-
-   * empty Grocery) — they're structural by design, not "just happens to have no kids yet". */
+  /** Only recipe folders (isLayer false, explicitly chosen at creation) can hold recipes — used
+   * to populate the recipe "Project" dropdown, so a layer folder like Restaurant never shows up
+   * as something to directly tag. */
   function getLeafProjectFolders() {
-    return projectFoldersCache.filter(function (f) { return !f.locked && !projectFolderHasChildren(f.id); });
+    return projectFoldersCache.filter(function (f) { return !f.locked && !f.isLayer; });
   }
 
   /** One-time upgrade from the old localStorage-only flat list: whatever folders were sitting in
@@ -4861,15 +4860,12 @@
       var idEsc = f.id.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
       var labelEsc = (f.name || f.id).replace(/\\/g, "\\\\").replace(/'/g, "\\'");
       var labelAttr = (f.name || f.id).replace(/"/g, "&quot;");
-      // Locked folders are always containers, even before they have any children yet (e.g. a
-      // freshly-seeded, still-empty Technical) — same reasoning as getLeafProjectFolders above.
-      var hasKids = projectFolderHasChildren(f.id) || f.locked;
-      var clickAction = hasKids ? "openProjectFolder('" + idEsc + "')" : "openProjectRecipes('" + idEsc + "','" + labelEsc + "')";
+      var clickAction = f.isLayer ? "openProjectFolder('" + idEsc + "')" : "openProjectRecipes('" + idEsc + "','" + labelEsc + "')";
       var menuBtn = f.locked ? "" :
         "<button type=\"button\" class=\"project-folder-menu-btn\" onclick=\"event.stopPropagation(); openProjectFolderDropdown(event, '" + idEsc + "', '" + labelEsc + "')\" title=\"Options\">" +
         "<svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" fill=\"currentColor\"><path d=\"M3 9.5a1.5 1.5 0 110-3 1.5 1.5 0 010 3zM6.5 9.5a1.5 1.5 0 110-3 1.5 1.5 0 010 3zM10 9.5a1.5 1.5 0 110-3 1.5 1.5 0 010 3z\"/></svg></button>";
       return "<div class=\"project-folder-box\" data-slug=\"" + f.id.replace(/"/g, "&quot;") + "\" data-label=\"" + labelAttr + "\">" +
-        "<div class=\"project-folder-label\" onclick=\"" + clickAction + "\">" + (hasKids ? FOLDER_ICON : "") + escapeHtml(f.name || f.id) + "</div>" +
+        "<div class=\"project-folder-label\" onclick=\"" + clickAction + "\">" + (f.isLayer ? FOLDER_ICON : "") + escapeHtml(f.name || f.id) + "</div>" +
         menuBtn +
         "</div>";
     }).join("") +
@@ -4878,20 +4874,26 @@
       "<span>Add folder</span></button>";
   }
 
-  async function addProjectFolder() {
-    var name = prompt("New project folder name:", "");
+  function addProjectFolder() {
+    openModal("modal-new-project-folder");
+  }
+  window.addProjectFolder = addProjectFolder;
+
+  async function newProjectFolderTypeChosen(isLayer) {
+    closeModal("modal-new-project-folder");
+    var name = prompt((isLayer ? "New layer folder name:" : "New recipe folder name:"), "");
     if (name == null || (name = (name || "").trim()) === "") return;
     try {
-      var created = await projectFoldersApiFetch("", { method: "POST", body: JSON.stringify({ name: name, parentId: currentProjectFolderId }) });
+      var created = await projectFoldersApiFetch("", { method: "POST", body: JSON.stringify({ name: name, parentId: currentProjectFolderId, isLayer: isLayer }) });
       projectFoldersCache.push(created);
       renderProjectFolders();
       populateProjectSelects();
       if (typeof showToast === "function") showToast("Project folder added");
     } catch (e) {
-      if (typeof showToast === "function") showToast("Couldn't add folder — try again");
+      if (typeof showToast === "function") showToast((e && e.body) || "Couldn't add folder — try again");
     }
   }
-  window.addProjectFolder = addProjectFolder;
+  window.newProjectFolderTypeChosen = newProjectFolderTypeChosen;
 
   var projectFolderDropdownEl = null;
   function openProjectFolderDropdown(event, slug, label) {

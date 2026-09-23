@@ -127,6 +127,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             e.Property(x => x.Name).HasColumnName("name").IsRequired();
             e.Property(x => x.ParentId).HasColumnName("parent_id");
             e.Property(x => x.Locked).HasColumnName("locked").HasDefaultValue(false);
+            e.Property(x => x.IsLayer).HasColumnName("is_layer").HasDefaultValue(false);
             e.Property(x => x.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now()");
             e.HasIndex(x => x.ParentId);
         });

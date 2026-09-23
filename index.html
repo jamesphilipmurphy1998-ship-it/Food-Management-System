@@ -1273,6 +1273,27 @@
   </div>
 </div>
 
+<!-- New Project Folder — choose type -->
+<div class="modal-overlay" id="modal-new-project-folder">
+  <div class="modal" style="width:420px">
+    <div class="modal-title">New folder</div>
+    <p style="font-size:13px;color:var(--nc-gray-600);margin-bottom:16px">What kind of folder is this?</p>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
+      <button type="button" class="btn" style="text-align:left;padding:12px" onclick="newProjectFolderTypeChosen(true)">
+        <div style="font-weight:700">Layer folder</div>
+        <div style="font-size:12px;color:var(--nc-gray-500);font-weight:400">Contains other folders — you'll navigate into it.</div>
+      </button>
+      <button type="button" class="btn" style="text-align:left;padding:12px" onclick="newProjectFolderTypeChosen(false)">
+        <div style="font-weight:700">Recipe folder</div>
+        <div style="font-size:12px;color:var(--nc-gray-500);font-weight:400">Contains recipes — click it to see the recipes tagged to it.</div>
+      </button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('modal-new-project-folder')">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <!-- Comparison Save Overwrite/New-Version/Cancel Modal -->
 <div class="modal-overlay" id="modal-comparison-save-overwrite">
   <div class="modal" style="width:420px">
@@ -1654,7 +1675,7 @@
 <script src="hfss.js?v=20260923-cache-buster"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="app.js?v=20260923-project-folder-back-nav"></script>
+<script src="app.js?v=20260923-folder-type-choice"></script>
 <script src="excel-import.js?v=20260916-parentnoofportions-col-k"></script>
 <script src="reports.js?v=20260923-cache-buster"></script>
 </body>

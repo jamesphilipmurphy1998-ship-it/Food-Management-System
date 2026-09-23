@@ -532,15 +532,19 @@ app.MapDelete("/api/export-templates/{id}", async (AppDbContext db, string id) =
 app.MapGet("/api/project-folders", async (AppDbContext db) =>
 {
     var folders = await db.ProjectFolders.AsNoTracking().ToListAsync();
-    return Results.Ok(folders.Select(f => new { f.Id, f.Name, f.ParentId, f.Locked }));
+    return Results.Ok(folders.Select(f => new { f.Id, f.Name, f.ParentId, f.Locked, f.IsLayer }));
 });
 
 app.MapPost("/api/project-folders", async (AppDbContext db, ProjectFolderCreateRequest req) =>
 {
     var name = (req.Name ?? "").Trim();
     if (name.Length == 0) return Results.BadRequest("Name is required.");
-    if (!string.IsNullOrWhiteSpace(req.ParentId) && !await db.ProjectFolders.AnyAsync(f => f.Id == req.ParentId))
-        return Results.BadRequest("Parent folder not found.");
+    if (!string.IsNullOrWhiteSpace(req.ParentId))
+    {
+        var parent = await db.ProjectFolders.FirstOrDefaultAsync(f => f.Id == req.ParentId);
+        if (parent == null) return Results.BadRequest("Parent folder not found.");
+        if (!parent.IsLayer) return Results.BadRequest("A recipe folder can't contain sub-folders.");
+    }
     // Slug the same way the old client-side addProjectFolder() did, so a folder created here
     // keeps generating ids in the same style existing "Project:{slug}" recipe tags already use.
     var baseSlug = System.Text.RegularExpressions.Regex.Replace(name.ToLowerInvariant(), "[^a-z0-9]+", "-").Trim('-');
@@ -549,7 +553,7 @@ app.MapPost("/api/project-folders", async (AppDbContext db, ProjectFolderCreateR
     var n = 1;
     var existingIds = (await db.ProjectFolders.Select(f => f.Id).ToListAsync()).ToHashSet();
     while (existingIds.Contains(id)) id = baseSlug + "-" + (++n);
-    var entity = new ProjectFolderEntity { Id = id, Name = name, ParentId = string.IsNullOrWhiteSpace(req.ParentId) ? null : req.ParentId, Locked = req.Locked };
+    var entity = new ProjectFolderEntity { Id = id, Name = name, ParentId = string.IsNullOrWhiteSpace(req.ParentId) ? null : req.ParentId, Locked = req.Locked, IsLayer = req.IsLayer };
     db.ProjectFolders.Add(entity);
     await db.SaveChangesAsync();
     return Results.Created($"/api/project-folders/{entity.Id}", entity);
@@ -599,11 +603,11 @@ using (var seedScope = app.Services.CreateScope())
         var existing = await seedDb.ProjectFolders.ToDictionaryAsync(f => f.Id);
         var structural = new[]
         {
-            new ProjectFolderEntity { Id = "technical", Name = "Technical Team", ParentId = null, Locked = true },
-            new ProjectFolderEntity { Id = "food-team", Name = "Food Team", ParentId = null, Locked = true },
-            new ProjectFolderEntity { Id = "restaurant", Name = "Restaurant", ParentId = "food-team", Locked = true },
-            new ProjectFolderEntity { Id = "grocery", Name = "Grocery", ParentId = "food-team", Locked = true },
-            new ProjectFolderEntity { Id = "process-team", Name = "Process Team", ParentId = null, Locked = true },
+            new ProjectFolderEntity { Id = "technical", Name = "Technical Team", ParentId = null, Locked = true, IsLayer = true },
+            new ProjectFolderEntity { Id = "food-team", Name = "Food Team", ParentId = null, Locked = true, IsLayer = true },
+            new ProjectFolderEntity { Id = "restaurant", Name = "Restaurant", ParentId = "food-team", Locked = true, IsLayer = true },
+            new ProjectFolderEntity { Id = "grocery", Name = "Grocery", ParentId = "food-team", Locked = true, IsLayer = true },
+            new ProjectFolderEntity { Id = "process-team", Name = "Process Team", ParentId = null, Locked = true, IsLayer = true },
         };
         var changed = false;
         foreach (var f in structural)
@@ -613,12 +617,14 @@ using (var seedScope = app.Services.CreateScope())
                 seedDb.ProjectFolders.Add(f);
                 changed = true;
             }
-            else if (row.Name != f.Name)
+            else if (row.Name != f.Name || row.IsLayer != f.IsLayer)
             {
-                // Keeps a locked folder's name in sync with this list if it's ever renamed here —
-                // the rename API endpoint refuses to touch locked rows, so this is the only way
-                // a structural folder's name actually changes.
+                // Keeps a locked folder's name/type in sync with this list if either is ever
+                // changed here — the rename API endpoint refuses to touch locked rows, so this
+                // is the only way a structural folder's name/type actually changes. Also fixes
+                // up rows created before IsLayer existed (defaulted to false on that column).
                 row.Name = f.Name;
+                row.IsLayer = f.IsLayer;
                 changed = true;
             }
         }
