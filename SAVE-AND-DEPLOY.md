@@ -9,7 +9,7 @@ and what to run — no need to ask the user for paths/credentials, they're all b
 **Where it goes:**
 
 ```
-C:\Users\JamesMurphy\OneDrive - Wasabi\WASUK - Food Team - NPD\Wasabi AI Development Projects Saves\NutriCost\Wasabi FMS
+C:\Users\JamesMurphy\OneDrive - Wasabi\WASUK - Food Team - NPD\New Wasabi System Development\FMS System\2. Wasabi FMS Code & Database Backups
 ```
 
 **What gets saved, as two dated files:**
