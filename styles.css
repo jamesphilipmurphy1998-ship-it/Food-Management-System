@@ -478,6 +478,13 @@ body.login-page-active .main-area #view-login .card {
 }
 
 /* Project folder box (with three-dots menu) */
+.project-breadcrumb-link {
+  cursor: pointer;
+  color: var(--nc-green);
+}
+.project-breadcrumb-link:hover {
+  text-decoration: underline;
+}
 .project-folder-box {
   width: 236px;
   height: 236px;

@@ -9,6 +9,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<RecipeEntity> Recipes => Set<RecipeEntity>();
     public DbSet<RecipeLineEntity> RecipeLines => Set<RecipeLineEntity>();
     public DbSet<ExportTemplateEntity> ExportTemplates => Set<ExportTemplateEntity>();
+    public DbSet<ProjectFolderEntity> ProjectFolders => Set<ProjectFolderEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -116,6 +117,18 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             e.Property(x => x.Preview).HasColumnName("preview");
             e.Property(x => x.CreatedAt).HasColumnName("created_at");
             e.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+        });
+
+        modelBuilder.Entity<ProjectFolderEntity>(e =>
+        {
+            e.ToTable("project_folders");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.Name).HasColumnName("name").IsRequired();
+            e.Property(x => x.ParentId).HasColumnName("parent_id");
+            e.Property(x => x.Locked).HasColumnName("locked").HasDefaultValue(false);
+            e.Property(x => x.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now()");
+            e.HasIndex(x => x.ParentId);
         });
     }
 }

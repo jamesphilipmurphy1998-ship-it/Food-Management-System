@@ -83,6 +83,21 @@ public sealed class RecipeLineEntity
     public RecipeEntity? Recipe { get; set; }
 }
 
+/// <summary>A folder in the Projects page's tree (Projects → Technical/Food Team → ... → a
+/// folder that actually holds recipes). Shared across all users, unlike the old localStorage-only
+/// flat list. Id doubles as the "Project:{id}" descriptionTag slug a recipe is tagged with —
+/// unchanged mechanism, folders just now form a tree instead of a flat list. Locked folders
+/// (the fixed Technical/Food Team/Restaurant/Grocery structure) can't be renamed or deleted from
+/// the UI, so the hierarchy the business actually asked for can't be accidentally torn down.</summary>
+public sealed class ProjectFolderEntity
+{
+    public string Id { get; set; } = "";
+    public string Name { get; set; } = "";
+    public string? ParentId { get; set; }
+    public bool Locked { get; set; }
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+}
+
 /// <summary>Shared export template (e.g. BC Form). Stored in backend so all users see the same templates.</summary>
 public sealed class ExportTemplateEntity
 {

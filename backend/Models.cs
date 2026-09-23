@@ -152,3 +152,21 @@ public sealed class RecipeStructureImportResult
     public int RecipesCreated { get; set; }
     public int SingleComponentCreated { get; set; }
 }
+
+public sealed class ProjectFolderCreateRequest
+{
+    public string Name { get; set; } = "";
+    public string? ParentId { get; set; }
+    /// <summary>Only meaningful for the one-time structural seed (Technical/Food Team/etc) — the
+    /// UI never lets a user create a locked folder.</summary>
+    public bool Locked { get; set; }
+    /// <summary>Lets the one-time client-side localStorage migration keep each folder's existing
+    /// slug (so already-tagged recipes' "Project:{slug}" tags keep matching) instead of always
+    /// generating a fresh one from the name.</summary>
+    public string? Id { get; set; }
+}
+
+public sealed class ProjectFolderUpdateRequest
+{
+    public string Name { get; set; } = "";
+}

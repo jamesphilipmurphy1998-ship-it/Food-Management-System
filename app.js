@@ -34,29 +34,75 @@
     });
   }
 
-  var DEFAULT_PROJECT_FOLDERS = [
-    { slug: "restaurant-winter-launch", label: "Winter 2026" },
-    { slug: "one", label: "Project 2" },
-    { slug: "two", label: "Project 3" },
-    { slug: "three", label: "Project 4" }
-  ];
+  // ─── Project folders — shared server-side tree (Projects page). Replaces the old flat,
+  // localStorage-only list. A folder either holds sub-folders (a pure container, e.g. Technical/
+  // Food Team/Restaurant/Grocery) or holds recipes (a leaf — determined by whether it currently
+  // has any children, not a stored flag), never both. Each folder's `id` is what a recipe's
+  // "Project:{id}" descriptionTag names, exactly as the old flat `slug` did — only the storage
+  // and the tree shape changed, not the tagging mechanism itself. ───
+  var PROJECT_FOLDERS_API = (typeof window !== "undefined" && window.location) ? (window.location.origin + "/api/project-folders") : "/api/project-folders";
+  var PROJECT_FOLDERS_MIGRATED_KEY = "nutricalc_project_folders_migrated_v1";
+  var projectFoldersCache = [];
+  var currentProjectFolderId = null; // null = root
 
-  function getProjectFolders() {
-    try {
-      var raw = localStorage.getItem(PROJECT_FOLDERS_STORAGE_KEY);
-      if (raw) {
-        var arr = JSON.parse(raw);
-        if (Array.isArray(arr) && arr.length > 0) return arr;
-      }
-    } catch (e) {}
-    return DEFAULT_PROJECT_FOLDERS.slice();
+  function projectFoldersApiFetch(path, options) {
+    var url = PROJECT_FOLDERS_API + (path || "");
+    return fetch(url, { headers: { "Content-Type": "application/json" }, method: (options && options.method) || "GET", body: options && options.body }).then(function (r) {
+      if (!r.ok) return r.json().catch(function () { return null; }).then(function (body) { var e = new Error("HTTP " + r.status); e.status = r.status; e.body = body; throw e; });
+      return r.status === 204 ? null : r.json();
+    });
   }
 
-  function setProjectFolders(folders) {
-    if (!Array.isArray(folders)) folders = [];
+  function getProjectFolderChildren(parentId) {
+    return projectFoldersCache.filter(function (f) { return (f.parentId || null) === (parentId || null); });
+  }
+  function projectFolderHasChildren(id) {
+    return projectFoldersCache.some(function (f) { return f.parentId === id; });
+  }
+  function getProjectFolderById(id) {
+    return projectFoldersCache.find(function (f) { return f.id === id; });
+  }
+  /** Only unlocked leaf folders can hold recipes — used to populate the recipe "Project"
+   * dropdown, so a container like Restaurant never shows up as something to directly tag.
+   * Locked folders are excluded even when currently childless (e.g. a freshly-seeded, still-
+   * empty Grocery) — they're structural by design, not "just happens to have no kids yet". */
+  function getLeafProjectFolders() {
+    return projectFoldersCache.filter(function (f) { return !f.locked && !projectFolderHasChildren(f.id); });
+  }
+
+  /** One-time upgrade from the old localStorage-only flat list: whatever folders were sitting in
+   * this browser's localStorage get created on the server, nested under Restaurant, so existing
+   * "Project:{slug}" recipe tags keep matching (same id/slug carried across) instead of orphaning. */
+  async function migrateLocalProjectFoldersOnce() {
     try {
-      localStorage.setItem(PROJECT_FOLDERS_STORAGE_KEY, JSON.stringify(folders));
-    } catch (e) {}
+      if (localStorage.getItem(PROJECT_FOLDERS_MIGRATED_KEY)) return;
+      var raw = localStorage.getItem(PROJECT_FOLDERS_STORAGE_KEY);
+      var localFolders = raw ? JSON.parse(raw) : null;
+      if (Array.isArray(localFolders) && localFolders.length > 0) {
+        for (var i = 0; i < localFolders.length; i++) {
+          var f = localFolders[i];
+          var slug = (f && f.slug || "").trim();
+          var label = (f && (f.label || f.slug) || "").trim();
+          if (!slug || !label) continue;
+          if (projectFoldersCache.some(function (sf) { return sf.id === slug; })) continue;
+          try {
+            var created = await projectFoldersApiFetch("", { method: "POST", body: JSON.stringify({ id: slug, name: label, parentId: "restaurant" }) });
+            if (created) projectFoldersCache.push(created);
+          } catch (e) { /* best-effort — a failed one just stays local-only until next load */ }
+        }
+      }
+      localStorage.setItem(PROJECT_FOLDERS_MIGRATED_KEY, "1");
+    } catch (e) { /* migration is best-effort, never block the Projects page over it */ }
+  }
+
+  async function loadProjectFolders() {
+    try {
+      projectFoldersCache = await projectFoldersApiFetch("") || [];
+    } catch (e) {
+      projectFoldersCache = [];
+    }
+    await migrateLocalProjectFoldersOnce();
+    renderProjectFolders();
   }
 
   function getRecipeProjectSlug(recipe) {
@@ -506,7 +552,7 @@
       if (b.textContent.toLowerCase().indexOf(name === "recipe-detail" ? "recipe" : name.split("-")[0]) !== -1) b.classList.add("active");
     });
     if (name === "reports") window.populateReportSelect();
-    if (name === "projects") window.renderProjectFolders();
+    if (name === "projects") { currentProjectFolderId = null; window.loadProjectFolders(); }
     if (name === "export-templates") loadExcelSavesIntoCache(function () { renderExportTemplates(); });
     if (name === "recipes") window.renderRecipesList();
     if (name === "project-recipes") window.renderProjectRecipesList();
@@ -1143,7 +1189,9 @@
         "<div style=\"margin-top:16px\">" +
         "<h3 style=\"font-size:14px;margin-bottom:8px\">Pricing &amp; Margin Calculator</h3>" +
         "<div style=\"display:flex;flex-wrap:wrap;gap:12px;margin-bottom:12px\">" +
-        "<div class=\"form-group\" style=\"width:150px\"><label class=\"form-label\">Target Sell Price (£)</label><input class=\"form-input\" type=\"number\" step=\"any\" min=\"0\" placeholder=\"e.g. 3.50\" id=\"comp-sell-price-" + cardIdx + "\" oninput=\"comparisonRecalcMargins(" + cardIdx + ")\"></div>" +
+        "<div class=\"form-group\" style=\"width:150px\"><label class=\"form-label\">Target Sell Price (£)</label><input class=\"form-input\" type=\"number\" step=\"any\" min=\"0\" placeholder=\"e.g. 3.50\" id=\"comp-sell-price-" + cardIdx + "\" oninput=\"comparisonRecalcMargins(" + cardIdx + ")\">" +
+        "<label style=\"display:flex;align-items:center;gap:6px;margin-top:6px;font-size:12px;color:var(--nc-gray-600);cursor:pointer\"><input type=\"checkbox\" id=\"comp-vat-toggle-" + cardIdx + "\" checked onchange=\"toggleVatRateVisibility('comparison'," + cardIdx + ");comparisonRecalcMargins(" + cardIdx + ")\" style=\"margin:0\">VAT<input class=\"form-input\" type=\"number\" step=\"any\" min=\"0\" max=\"100\" value=\"20\" id=\"comp-vat-pct-" + cardIdx + "\" oninput=\"comparisonRecalcMargins(" + cardIdx + ")\" style=\"width:48px;padding:2px 6px;font-size:12px\" title=\"VAT rate (%)\">%</label>" +
+        "</div>" +
         "<div class=\"form-group\" style=\"width:190px\"><label class=\"form-label\" style=\"white-space:nowrap\">Annual Volume (units)</label><input class=\"form-input\" type=\"number\" step=\"any\" min=\"0\" placeholder=\"e.g. 50000\" id=\"comp-annual-volume-" + cardIdx + "\" oninput=\"comparisonRecalcMargins(" + cardIdx + ")\"></div>" +
         "</div>" +
         "<div style=\"display:flex;flex-wrap:wrap;gap:12px\">" +
@@ -1442,10 +1490,15 @@
     var pctEl = document.getElementById("comp-margin-pct-" + cardIdx);
     var pctCardEl = document.getElementById("comp-margin-pct-card-" + cardIdx);
     var annualProfitEl = document.getElementById("comp-margin-annual-profit-" + cardIdx);
+    // Same VAT handling as the real recipe page's Costing tab — see recalcMargins for the why.
+    var vatToggle = document.getElementById("comp-vat-toggle-" + cardIdx);
+    var vatOn = vatToggle ? vatToggle.checked : false;
+    var vatPct = parseFloat(document.getElementById("comp-vat-pct-" + cardIdx) ? document.getElementById("comp-vat-pct-" + cardIdx).value : 0) || 0;
+    var netSellPrice = (vatOn && sellPrice > 0) ? sellPrice / (1 + vatPct / 100) : sellPrice;
     var profit = null;
-    if (sellPrice > 0) {
-      profit = sellPrice - costPerUnit;
-      var marginPct = (profit / sellPrice) * 100;
+    if (netSellPrice > 0) {
+      profit = netSellPrice - costPerUnit;
+      var marginPct = (profit / netSellPrice) * 100;
       profitEl.textContent = "£" + profit.toFixed(2);
       pctEl.textContent = Data.round(marginPct) + "%";
       pctCardEl.style.borderColor = marginPct >= 50 ? "var(--nc-green)" : marginPct >= 30 ? "var(--nc-amber)" : "var(--nc-red)";
@@ -4768,18 +4821,46 @@
     switchView("project-recipes");
   }
 
+  function renderProjectBreadcrumb() {
+    var el = document.getElementById("projects-breadcrumb");
+    if (!el) return;
+    var chain = [];
+    var cur = currentProjectFolderId;
+    while (cur) {
+      var f = getProjectFolderById(cur);
+      if (!f) break;
+      chain.unshift(f);
+      cur = f.parentId;
+    }
+    el.innerHTML = "<span class=\"project-breadcrumb-link\" onclick=\"openProjectFolder(null)\">Projects</span>" +
+      chain.map(function (f) { return " / <span class=\"project-breadcrumb-link\" onclick=\"openProjectFolder('" + f.id.replace(/'/g, "\\'") + "')\">" + escapeHtml(f.name) + "</span>"; }).join("");
+  }
+
+  function openProjectFolder(id) {
+    currentProjectFolderId = id || null;
+    renderProjectFolders();
+  }
+  window.openProjectFolder = openProjectFolder;
+
+  var FOLDER_ICON = "<svg width=\"14\" height=\"14\" viewBox=\"0 0 16 16\" fill=\"currentColor\" style=\"margin-right:6px;vertical-align:-2px\"><path d=\"M1.5 3A1.5 1.5 0 013 1.5h3.4a1.5 1.5 0 011.06.44l1 1H13A1.5 1.5 0 0114.5 4.44V12A1.5 1.5 0 0113 13.5H3A1.5 1.5 0 011.5 12V3z\"/></svg>";
+
   function renderProjectFolders() {
     var row = document.getElementById("projects-folders-row");
     if (!row) return;
-    var folders = getProjectFolders();
-    row.innerHTML = folders.map(function (f) {
-      var slug = (f.slug || "").replace(/\\/g, "\\\\").replace(/'/g, "\\'");
-      var labelEsc = (f.label || f.slug || "Project").replace(/\\/g, "\\\\").replace(/'/g, "\\'");
-      var labelAttr = (f.label || f.slug || "Project").replace(/"/g, "&quot;");
-      return "<div class=\"project-folder-box\" data-slug=\"" + (f.slug || "").replace(/"/g, "&quot;") + "\" data-label=\"" + labelAttr + "\">" +
-        "<div class=\"project-folder-label\" onclick=\"openProjectRecipes('" + (f.slug || "").replace(/\\/g, "\\\\").replace(/'/g, "\\'") + "','" + labelEsc + "')\">" + escapeHtml(f.label || f.slug || "Project") + "</div>" +
-        "<button type=\"button\" class=\"project-folder-menu-btn\" onclick=\"event.stopPropagation(); openProjectFolderDropdown(event, '" + (f.slug || "").replace(/\\/g, "\\\\").replace(/'/g, "\\'") + "', '" + labelEsc + "')\" title=\"Options\">" +
-        "<svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" fill=\"currentColor\"><path d=\"M3 9.5a1.5 1.5 0 110-3 1.5 1.5 0 010 3zM6.5 9.5a1.5 1.5 0 110-3 1.5 1.5 0 010 3zM10 9.5a1.5 1.5 0 110-3 1.5 1.5 0 010 3z\"/></svg></button>" +
+    renderProjectBreadcrumb();
+    var children = getProjectFolderChildren(currentProjectFolderId);
+    row.innerHTML = children.map(function (f) {
+      var idEsc = f.id.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+      var labelEsc = (f.name || f.id).replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+      var labelAttr = (f.name || f.id).replace(/"/g, "&quot;");
+      var hasKids = projectFolderHasChildren(f.id);
+      var clickAction = hasKids ? "openProjectFolder('" + idEsc + "')" : "openProjectRecipes('" + idEsc + "','" + labelEsc + "')";
+      var menuBtn = f.locked ? "" :
+        "<button type=\"button\" class=\"project-folder-menu-btn\" onclick=\"event.stopPropagation(); openProjectFolderDropdown(event, '" + idEsc + "', '" + labelEsc + "')\" title=\"Options\">" +
+        "<svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" fill=\"currentColor\"><path d=\"M3 9.5a1.5 1.5 0 110-3 1.5 1.5 0 010 3zM6.5 9.5a1.5 1.5 0 110-3 1.5 1.5 0 010 3zM10 9.5a1.5 1.5 0 110-3 1.5 1.5 0 010 3z\"/></svg></button>";
+      return "<div class=\"project-folder-box\" data-slug=\"" + f.id.replace(/"/g, "&quot;") + "\" data-label=\"" + labelAttr + "\">" +
+        "<div class=\"project-folder-label\" onclick=\"" + clickAction + "\">" + (hasKids ? FOLDER_ICON : "") + escapeHtml(f.name || f.id) + "</div>" +
+        menuBtn +
         "</div>";
     }).join("") +
       "<button type=\"button\" class=\"project-folder-add-box\" onclick=\"addProjectFolder()\" title=\"Add project folder\">" +
@@ -4787,22 +4868,20 @@
       "<span>Add folder</span></button>";
   }
 
-  function addProjectFolder() {
+  async function addProjectFolder() {
     var name = prompt("New project folder name:", "");
     if (name == null || (name = (name || "").trim()) === "") return;
-    var baseSlug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "project";
-    var folders = getProjectFolders();
-    var slug = baseSlug;
-    var n = 1;
-    while (folders.some(function (f) { return (f.slug || "").toLowerCase() === slug.toLowerCase(); })) {
-      slug = baseSlug + "-" + (++n);
+    try {
+      var created = await projectFoldersApiFetch("", { method: "POST", body: JSON.stringify({ name: name, parentId: currentProjectFolderId }) });
+      projectFoldersCache.push(created);
+      renderProjectFolders();
+      populateProjectSelects();
+      if (typeof showToast === "function") showToast("Project folder added");
+    } catch (e) {
+      if (typeof showToast === "function") showToast("Couldn't add folder — try again");
     }
-    folders.push({ slug: slug, label: name });
-    setProjectFolders(folders);
-    renderProjectFolders();
-    populateProjectSelects();
-    if (typeof showToast === "function") showToast("Project folder added");
   }
+  window.addProjectFolder = addProjectFolder;
 
   var projectFolderDropdownEl = null;
   function openProjectFolderDropdown(event, slug, label) {
@@ -4842,40 +4921,62 @@
     }
   }
 
-  function renameProjectFolder(slug) {
+  async function renameProjectFolder(id) {
     closeProjectFolderDropdown();
-    var folders = getProjectFolders();
-    var f = folders.find(function (x) { return (x.slug || "").toLowerCase() === (slug || "").toLowerCase(); });
+    var f = getProjectFolderById(id);
     if (!f) return;
-    var newLabel = prompt("Rename project folder:", f.label || f.slug || "");
-    if (newLabel == null || (newLabel = (newLabel || "").trim()) === "") return;
-    f.label = newLabel;
-    setProjectFolders(folders);
-    renderProjectFolders();
-    populateProjectSelects();
-    if (typeof showToast === "function") showToast("Project folder renamed");
+    var newName = prompt("Rename project folder:", f.name || f.id || "");
+    if (newName == null || (newName = (newName || "").trim()) === "") return;
+    try {
+      await projectFoldersApiFetch("/" + encodeURIComponent(id), { method: "PUT", body: JSON.stringify({ name: newName }) });
+      f.name = newName;
+      renderProjectFolders();
+      populateProjectSelects();
+      if (typeof showToast === "function") showToast("Project folder renamed");
+    } catch (e) {
+      if (typeof showToast === "function") showToast((e && e.body) || "Couldn't rename folder");
+    }
   }
+  window.renameProjectFolder = renameProjectFolder;
 
-  function deleteProjectFolder(slug) {
+  async function deleteProjectFolder(id) {
     closeProjectFolderDropdown();
-    if (!confirm("Delete this project folder? Recipes tagged with it will keep the tag but the folder will be removed.")) return;
-    var folders = getProjectFolders().filter(function (f) { return (f.slug || "").toLowerCase() !== (slug || "").toLowerCase(); });
-    setProjectFolders(folders);
-    renderProjectFolders();
-    populateProjectSelects();
-    if (typeof showToast === "function") showToast("Project folder deleted");
+    var hasKids = projectFolderHasChildren(id);
+    var msg = hasKids
+      ? "Delete this folder and everything inside it (including sub-folders)? Recipes tagged with any of them will keep their tag, but the folders will be gone."
+      : "Delete this project folder? Recipes tagged with it will keep the tag but the folder will be removed.";
+    if (!confirm(msg)) return;
+    try {
+      await projectFoldersApiFetch("/" + encodeURIComponent(id), { method: "DELETE" });
+      // Server cascades the whole subtree — drop it from the local cache the same way rather
+      // than re-fetching, since we already know exactly what just disappeared.
+      var toRemove = new Set([id]);
+      var frontier = [id];
+      while (frontier.length) {
+        var kids = projectFoldersCache.filter(function (f) { return frontier.indexOf(f.parentId) !== -1; }).map(function (f) { return f.id; });
+        kids.forEach(function (k) { toRemove.add(k); });
+        frontier = kids;
+      }
+      projectFoldersCache = projectFoldersCache.filter(function (f) { return !toRemove.has(f.id); });
+      renderProjectFolders();
+      populateProjectSelects();
+      if (typeof showToast === "function") showToast("Project folder deleted");
+    } catch (e) {
+      if (typeof showToast === "function") showToast((e && e.body) || "Couldn't delete folder");
+    }
   }
+  window.deleteProjectFolder = deleteProjectFolder;
 
   function populateProjectSelects() {
-    var folders = getProjectFolders();
+    var folders = getLeafProjectFolders();
     ["new-rec-project", "edit-rec-project", "duplicate-rec-project"].forEach(function (id) {
       var sel = document.getElementById(id);
       if (!sel) return;
       var currentVal = sel.value;
       sel.innerHTML = "<option value=\"\">— None —</option>" + folders.map(function (f) {
-        return "<option value=\"" + escapeHtml(f.slug) + "\">" + escapeHtml(f.label || f.slug) + "</option>";
+        return "<option value=\"" + escapeHtml(f.id) + "\">" + escapeHtml(f.name || f.id) + "</option>";
       }).join("");
-      if (currentVal && folders.some(function (f) { return f.slug === currentVal; })) sel.value = currentVal;
+      if (currentVal && folders.some(function (f) { return f.id === currentVal; })) sel.value = currentVal;
     });
   }
 
@@ -6174,6 +6275,17 @@
     }).join("");
   }
 
+  /** Show/hide the VAT-rate input next to its toggle. scope is "recipe" (single set of ids) or
+   * "comparison" (per-card ids, cardIdx required). */
+  function toggleVatRateVisibility(scope, cardIdx) {
+    var toggleId = scope === "recipe" ? "cost-vat-toggle" : "comp-vat-toggle-" + cardIdx;
+    var pctId = scope === "recipe" ? "cost-vat-pct" : "comp-vat-pct-" + cardIdx;
+    var toggle = document.getElementById(toggleId);
+    var pct = document.getElementById(pctId);
+    if (toggle && pct) pct.style.display = toggle.checked ? "" : "none";
+  }
+  window.toggleVatRateVisibility = toggleVatRateVisibility;
+
   function recalcMargins() {
     var recipes = Recipes.getRecipes();
     var ingredients = Ingredients.getIngredients();
@@ -6188,10 +6300,19 @@
     var costPerUnit = totalCost / yieldCount;
     var sellPrice = parseFloat(document.getElementById("cost-sell-price").value);
     var annualVolume = parseFloat(document.getElementById("cost-annual-volume").value);
+    // VAT collected on a sale isn't revenue to the business — margin/profit must be measured
+    // against the sell price with VAT stripped back out, not the VAT-inclusive price the
+    // customer actually pays. Target Sell Price is always entered VAT-inclusive when the
+    // toggle is on (that's the real shelf/menu price); "net sell price" below is what's left
+    // after HMRC's share, and that's what every downstream margin figure is based on.
+    var vatToggle = document.getElementById("cost-vat-toggle");
+    var vatOn = vatToggle ? vatToggle.checked : false;
+    var vatPct = parseFloat(document.getElementById("cost-vat-pct").value) || 0;
+    var netSellPrice = (vatOn && sellPrice > 0) ? sellPrice / (1 + vatPct / 100) : sellPrice;
     var profit;
-    if (sellPrice > 0) {
-      profit = sellPrice - costPerUnit;
-      var marginPct = (profit / sellPrice) * 100;
+    if (netSellPrice > 0) {
+      profit = netSellPrice - costPerUnit;
+      var marginPct = (profit / netSellPrice) * 100;
       document.getElementById("margin-profit").textContent = "£" + profit.toFixed(2);
       document.getElementById("margin-pct").textContent = Data.round(marginPct) + "%";
       var marginEl = document.getElementById("margin-pct").parentElement;
@@ -6209,6 +6330,10 @@
     var targetMargin = parseFloat(document.getElementById("cost-target-margin").value);
     if (targetMargin > 0 && targetMargin < 100) {
       var minPrice = costPerUnit / (1 - targetMargin / 100);
+      // Gross this back up to a VAT-inclusive price when VAT's on, so it's directly comparable
+      // to Target Sell Price (also always VAT-inclusive) rather than a net figure someone could
+      // mistake for the real number to charge.
+      if (vatOn) minPrice = minPrice * (1 + vatPct / 100);
       document.getElementById("margin-min-price").textContent = "£" + minPrice.toFixed(2);
     } else {
       document.getElementById("margin-min-price").textContent = "—";
@@ -7209,6 +7334,7 @@ desc: "Imported from " + (fname || "spreadsheet"),
   window.filterProjectRecipes = filterProjectRecipes;
   window.setProjectRecipeFilter = setProjectRecipeFilter;
   window.renderProjectFolders = renderProjectFolders;
+  window.loadProjectFolders = loadProjectFolders;
   window.renderExportTemplates = renderExportTemplates;
   window.openNewExportTemplate = openNewExportTemplate;
   window.openEditExportTemplate = openEditExportTemplate;
@@ -7348,7 +7474,10 @@ desc: "Imported from " + (fname || "spreadsheet"),
   try {
     renderAll();
     renderAllergenCheckboxes([]);
-    if (typeof populateProjectSelects === "function") populateProjectSelects();
+    // Fetch the shared project-folder tree once at startup (not just when the Projects page is
+    // opened) so the recipe-edit "Project" dropdown has real options from the start, not an
+    // empty list until someone happens to visit Projects first.
+    loadProjectFolders().then(function () { if (typeof populateProjectSelects === "function") populateProjectSelects(); });
     bindExportExcelDropzone();
     // Deep link: ?recipe=<code> opens that recipe directly on load, taking priority over the
     // normal last-view restore — lets an external list (e.g. a review checklist) link straight

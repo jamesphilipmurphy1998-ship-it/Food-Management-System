@@ -528,6 +528,115 @@ app.MapDelete("/api/export-templates/{id}", async (AppDbContext db, string id) =
     return Results.NoContent();
 });
 
+// ─── Project folders (Projects page tree) — shared across all users ───
+app.MapGet("/api/project-folders", async (AppDbContext db) =>
+{
+    var folders = await db.ProjectFolders.AsNoTracking().ToListAsync();
+    return Results.Ok(folders.Select(f => new { f.Id, f.Name, f.ParentId, f.Locked }));
+});
+
+app.MapPost("/api/project-folders", async (AppDbContext db, ProjectFolderCreateRequest req) =>
+{
+    var name = (req.Name ?? "").Trim();
+    if (name.Length == 0) return Results.BadRequest("Name is required.");
+    if (!string.IsNullOrWhiteSpace(req.ParentId) && !await db.ProjectFolders.AnyAsync(f => f.Id == req.ParentId))
+        return Results.BadRequest("Parent folder not found.");
+    // Slug the same way the old client-side addProjectFolder() did, so a folder created here
+    // keeps generating ids in the same style existing "Project:{slug}" recipe tags already use.
+    var baseSlug = System.Text.RegularExpressions.Regex.Replace(name.ToLowerInvariant(), "[^a-z0-9]+", "-").Trim('-');
+    if (baseSlug.Length == 0) baseSlug = "project";
+    var id = string.IsNullOrWhiteSpace(req.Id) ? baseSlug : req.Id!;
+    var n = 1;
+    var existingIds = (await db.ProjectFolders.Select(f => f.Id).ToListAsync()).ToHashSet();
+    while (existingIds.Contains(id)) id = baseSlug + "-" + (++n);
+    var entity = new ProjectFolderEntity { Id = id, Name = name, ParentId = string.IsNullOrWhiteSpace(req.ParentId) ? null : req.ParentId, Locked = req.Locked };
+    db.ProjectFolders.Add(entity);
+    await db.SaveChangesAsync();
+    return Results.Created($"/api/project-folders/{entity.Id}", entity);
+});
+
+app.MapPut("/api/project-folders/{id}", async (AppDbContext db, string id, ProjectFolderUpdateRequest req) =>
+{
+    var f = await db.ProjectFolders.FindAsync(id);
+    if (f == null) return Results.NotFound();
+    if (f.Locked) return Results.BadRequest("This folder is part of the fixed structure and can't be renamed.");
+    var name = (req.Name ?? "").Trim();
+    if (name.Length == 0) return Results.BadRequest("Name is required.");
+    f.Name = name;
+    await db.SaveChangesAsync();
+    return Results.Ok(f);
+});
+
+app.MapDelete("/api/project-folders/{id}", async (AppDbContext db, string id) =>
+{
+    var f = await db.ProjectFolders.FindAsync(id);
+    if (f == null) return Results.NotFound();
+    if (f.Locked) return Results.BadRequest("This folder is part of the fixed structure and can't be deleted.");
+    // Deleting a folder that has sub-folders removes the whole subtree under it — there's no FK
+    // cascade configured (kept simple deliberately), so walk it manually.
+    var toDelete = new List<string> { id };
+    var frontier = new List<string> { id };
+    while (frontier.Count > 0)
+    {
+        var children = await db.ProjectFolders.Where(x => x.ParentId != null && frontier.Contains(x.ParentId)).Select(x => x.Id).ToListAsync();
+        if (children.Count == 0) break;
+        toDelete.AddRange(children);
+        frontier = children;
+    }
+    db.ProjectFolders.RemoveRange(db.ProjectFolders.Where(x => toDelete.Contains(x.Id)));
+    await db.SaveChangesAsync();
+    return Results.NoContent();
+});
+
+// Seed the fixed Projects page structure once — idempotent (checks by id first), safe to run
+// on every startup. Technical and Food Team are pure containers (they hold sub-folders, never
+// recipes directly); Restaurant and Grocery sit under Food Team the same way.
+using (var seedScope = app.Services.CreateScope())
+{
+    try
+    {
+        var seedDb = seedScope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var existingIds = (await seedDb.ProjectFolders.Select(f => f.Id).ToListAsync()).ToHashSet();
+        var structural = new[]
+        {
+            new ProjectFolderEntity { Id = "technical", Name = "Technical", ParentId = null, Locked = true },
+            new ProjectFolderEntity { Id = "food-team", Name = "Food Team", ParentId = null, Locked = true },
+            new ProjectFolderEntity { Id = "restaurant", Name = "Restaurant", ParentId = "food-team", Locked = true },
+            new ProjectFolderEntity { Id = "grocery", Name = "Grocery", ParentId = "food-team", Locked = true },
+        };
+        var toAdd = structural.Where(f => !existingIds.Contains(f.Id)).ToList();
+        if (toAdd.Count > 0)
+        {
+            seedDb.ProjectFolders.AddRange(toAdd);
+            await seedDb.SaveChangesAsync();
+        }
+    }
+    catch
+    {
+        // DB not reachable yet — not fatal, matches the warm-up block's tolerance below.
+    }
+}
+
+// The very first /api/recipes or /api/ingredients request after a (re)start was taking ~5s —
+// measured, not assumed — vs ~0.6-0.9s for every request after. That's .NET JIT + EF Core query
+// plan compilation happening lazily on first use, not anything actually slow at runtime. Running
+// the same shape of query here, once, during startup pays that cost before any real user can hit
+// it, instead of whoever's unlucky enough to be first after a deploy.
+using (var warmupScope = app.Services.CreateScope())
+{
+    try
+    {
+        var warmupDb = warmupScope.ServiceProvider.GetRequiredService<AppDbContext>();
+        await warmupDb.Ingredients.AsNoTracking().Take(1).ToListAsync();
+        await warmupDb.Recipes.AsNoTracking().Include(r => r.Lines).Take(1).ToListAsync();
+    }
+    catch
+    {
+        // DB not reachable yet at startup — not fatal, just means the first real request pays
+        // the warm-up cost instead. Don't block the app from starting over this.
+    }
+}
+
 Console.WriteLine(">>> NutriCost app: http://localhost:5001 (NOT the homepage - open 5000 first to log in)");
 app.Run();
 
