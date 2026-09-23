@@ -5490,7 +5490,11 @@
     // declared cost over summing those bogus lines is what fixes that class of item. Only
     // falls through to the derived sum while own cost is unset (e.g. a development item with
     // no cost feed yet) or forceTally explicitly asked for the live-recomputed figure instead.
-    if (!forceTally && subRec.ownCost && subRec.ownCost > 0) {
+    // ownCost is only trusted for approved recipes — for one still in development, the
+    // ingredient lines are what's actively being edited, so the live tally must win even when
+    // an old ownCost from a BOM import is still sitting on the record (see getSubRecipeCostPerUom's
+    // matching guard just below its own ownCost check).
+    if (!forceTally && subRec.ownCost && subRec.ownCost > 0 && subRec.approved) {
       // ownCost is already defined as "cost per 1 unit of THIS recipe's own declared UOM"
       // (verified against the source sheet: ParentCost / ParentNoofPortions) — it needs no
       // weight-based derivation at all, for any UOM. Both callers of this function
@@ -5665,7 +5669,7 @@
     if (recipeUom === "EACH" || recipeUom === "M") return totalCost;
     // ownCost is already per-unit — no weight division needed or wanted (matches
     // getSubRecipeTotalCost's own early return for this same case).
-    if (!forceTally && subRec.ownCost && subRec.ownCost > 0) return totalCost;
+    if (!forceTally && subRec.ownCost && subRec.ownCost > 0 && subRec.approved) return totalCost;
     // Packaging lines (trays, film, labels) must not count toward the weight denominator of a
     // per-kg cost — otherwise mixing food (KG) with packaging in one recipe wrongly dilutes its
     // cost-per-kg using packaging's arbitrary placeholder pseudo-weight.
@@ -5691,7 +5695,7 @@
   }
 
   function calcSubRecipeCost(subRec, ingredients, visited) {
-    if (subRec.ownCost && subRec.ownCost > 0) return subRec.ownCost;
+    if (subRec.ownCost && subRec.ownCost > 0 && subRec.approved) return subRec.ownCost;
     var totalG = (subRec.ingredients || []).reduce(function (s, ri) { return s + costWeightForLine(ri, ingredients); }, 0);
     if (totalG <= 0) return 0;
     var totalCost = getSubRecipeTotalCost(subRec, ingredients, visited);
