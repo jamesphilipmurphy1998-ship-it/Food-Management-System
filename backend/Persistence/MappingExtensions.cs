@@ -29,7 +29,8 @@ public static class MappingExtensions
         Fvn = entity.Fvn,
         Approved = entity.Approved,
         Created = entity.Created,
-        VersionHistory = entity.VersionHistory.ToList()
+        VersionHistory = entity.VersionHistory.ToList(),
+        UpdatedAt = entity.UpdatedAt
     };
 
     public static IngredientEntity ToEntity(this Ingredient model) => new()
@@ -82,7 +83,8 @@ public static class MappingExtensions
         YieldPct = entity.YieldPct,
         OwnCost = entity.OwnCost,
         SheetCost = entity.SheetCost,
-        UnitWeightG = entity.UnitWeightG
+        UnitWeightG = entity.UnitWeightG,
+        UpdatedAt = entity.UpdatedAt
     };
 
     public static RecipeEntity ToEntity(this Recipe model) => new()

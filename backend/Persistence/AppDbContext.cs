@@ -44,6 +44,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             e.Property(x => x.Approved).HasColumnName("approved");
             e.Property(x => x.Created).HasColumnName("created");
             e.Property(x => x.VersionHistory).HasColumnName("version_history");
+            e.Property(x => x.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now()");
         });
 
         modelBuilder.Entity<IngredientVersionEntity>(e =>
@@ -79,6 +80,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             e.Property(x => x.OwnCost).HasColumnName("own_cost").HasDefaultValue(0m);
             e.Property(x => x.SheetCost).HasColumnName("sheet_cost").HasDefaultValue(0m);
             e.Property(x => x.UnitWeightG).HasColumnName("unit_weight_g").HasDefaultValue(0m);
+            e.Property(x => x.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now()");
             e.HasMany(x => x.Lines)
                 .WithOne(x => x.Recipe)
                 .HasForeignKey(x => x.RecipeId)

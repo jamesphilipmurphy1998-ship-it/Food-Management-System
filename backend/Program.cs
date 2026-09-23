@@ -221,6 +221,27 @@ app.MapPost("/api/recipes", async (AppDbContext db, Recipe recipe) =>
     return Results.Created($"/api/recipes/{recipe.Id}", recipe);
 });
 
+// Single-record save with optimistic concurrency — this is what the interactive UI uses for
+// routine edits (a qty change, an approve toggle, etc.), instead of the bulk PUT below re-sending
+// every row in the table on every keystroke. The client sends back whatever UpdatedAt it last
+// fetched for this row; if the row has moved on since (someone else saved it in between), this
+// rejects with 409 and returns the current server copy rather than silently overwriting it — the
+// bulk PUT has no such check, which is exactly the multi-user data-loss risk this exists to close.
+app.MapPut("/api/ingredients/{id}", async (AppDbContext db, string id, Ingredient ingredient) =>
+{
+    var entity = await db.Ingredients.FirstOrDefaultAsync(x => x.Id == id);
+    if (entity == null) return Results.NotFound();
+    if (ingredient.UpdatedAt.HasValue && ingredient.UpdatedAt.Value != entity.UpdatedAt)
+    {
+        return Results.Conflict(entity.ToModel());
+    }
+    ingredient.Id = id;
+    db.Entry(entity).CurrentValues.SetValues(ingredient.ToEntity());
+    entity.UpdatedAt = DateTimeOffset.UtcNow;
+    await db.SaveChangesAsync();
+    return Results.Ok(entity.ToModel());
+});
+
 app.MapPut("/api/ingredients", async (AppDbContext db, List<Ingredient> ingredients) =>
 {
     if (ingredients == null) ingredients = [];
@@ -320,6 +341,28 @@ app.MapPost("/api/ingredients/{id}/latest-version-comment", async (AppDbContext 
     latest.Comment = string.IsNullOrWhiteSpace(req.Comment) ? null : req.Comment.Trim();
     await db.SaveChangesAsync();
     return Results.Ok(new { latest.VersionNumber, latest.Comment });
+});
+
+// Single-record save with optimistic concurrency — see the matching /api/ingredients/{id}
+// endpoint above for the full rationale. Same deal here: the interactive UI should be saving
+// one recipe at a time through this, not re-sending the whole 1,000+ recipe table via the bulk
+// PUT below on every edit.
+app.MapPut("/api/recipes/{id}", async (AppDbContext db, string id, Recipe recipe) =>
+{
+    var entity = await db.Recipes.Include(r => r.Lines).FirstOrDefaultAsync(r => r.Id == id);
+    if (entity == null) return Results.NotFound();
+    if (recipe.UpdatedAt.HasValue && recipe.UpdatedAt.Value != entity.UpdatedAt)
+    {
+        return Results.Conflict(entity.ToModel());
+    }
+    recipe.Id = id;
+    var incoming = recipe.ToEntity();
+    db.Entry(entity).CurrentValues.SetValues(incoming);
+    db.RecipeLines.RemoveRange(entity.Lines);
+    entity.Lines = incoming.Lines.Select(l => { l.RecipeId = entity.Id; return l; }).ToList();
+    entity.UpdatedAt = DateTimeOffset.UtcNow;
+    await db.SaveChangesAsync();
+    return Results.Ok(entity.ToModel());
 });
 
 app.MapPut("/api/recipes", async (AppDbContext db, List<Recipe> recipes) =>

@@ -39,6 +39,11 @@ public sealed class Ingredient
     public bool Approved { get; set; }
     public string Created { get; set; } = DateTimeOffset.UtcNow.ToString("O");
     public List<string> VersionHistory { get; set; } = [];
+    /// <summary>Optimistic-concurrency stamp — the server's last-saved time for this row. A
+    /// client sends back whatever value it last fetched; the single-record PUT endpoint
+    /// rejects the save with 409 if this doesn't match the row's current value (someone else
+    /// saved in between). Null/default on a client's initial in-memory copy before first save.</summary>
+    public DateTimeOffset? UpdatedAt { get; set; }
 }
 
 public sealed class RecipeLine
@@ -89,6 +94,8 @@ public sealed class Recipe
     /// piece). 0 = not known. Recorded alongside the UOM without changing it — not yet used in
     /// any cost/weight calculation.</summary>
     public decimal UnitWeightG { get; set; }
+    /// <summary>Optimistic-concurrency stamp — see Ingredient.UpdatedAt for the full explanation.</summary>
+    public DateTimeOffset? UpdatedAt { get; set; }
 }
 
 public sealed class BomRow

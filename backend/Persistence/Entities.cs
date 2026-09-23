@@ -28,6 +28,7 @@ public sealed class IngredientEntity
     public bool Approved { get; set; }
     public string Created { get; set; } = "";
     public List<string> VersionHistory { get; set; } = [];
+    public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
 }
 
 /// <summary>Append-only snapshot history for an ingredient. A new row is written only when the
@@ -63,6 +64,7 @@ public sealed class RecipeEntity
     public decimal OwnCost { get; set; } = 0;
     public decimal SheetCost { get; set; } = 0;
     public decimal UnitWeightG { get; set; }
+    public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
 
     public List<RecipeLineEntity> Lines { get; set; } = [];
 }
