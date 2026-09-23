@@ -1666,6 +1666,14 @@
     var activeView = document.querySelector(".view.active");
     var name = activeView && activeView.id ? activeView.id.replace("view-", "") : "";
     if (name === "recipe-detail") { goBackFromRecipeDetail(); return; }
+    // Inside the Projects folder tree, Back steps up one folder level at a time (matching how
+    // breadcrumb navigation already works) instead of leaving the Projects page entirely — only
+    // falls through to the normal view-history Back once already at the root.
+    if (name === "projects" && currentProjectFolderId) {
+      var f = getProjectFolderById(currentProjectFolderId);
+      openProjectFolder(f ? f.parentId : null);
+      return;
+    }
     goBack();
   }
 
@@ -4853,7 +4861,9 @@
       var idEsc = f.id.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
       var labelEsc = (f.name || f.id).replace(/\\/g, "\\\\").replace(/'/g, "\\'");
       var labelAttr = (f.name || f.id).replace(/"/g, "&quot;");
-      var hasKids = projectFolderHasChildren(f.id);
+      // Locked folders are always containers, even before they have any children yet (e.g. a
+      // freshly-seeded, still-empty Technical) — same reasoning as getLeafProjectFolders above.
+      var hasKids = projectFolderHasChildren(f.id) || f.locked;
       var clickAction = hasKids ? "openProjectFolder('" + idEsc + "')" : "openProjectRecipes('" + idEsc + "','" + labelEsc + "')";
       var menuBtn = f.locked ? "" :
         "<button type=\"button\" class=\"project-folder-menu-btn\" onclick=\"event.stopPropagation(); openProjectFolderDropdown(event, '" + idEsc + "', '" + labelEsc + "')\" title=\"Options\">" +
