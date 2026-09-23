@@ -795,7 +795,7 @@
           <div class="card-header"><h2>Pricing &amp; Margin Calculator</h2></div>
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">
             <div class="form-group">
-              <label class="form-label">Target Sell Price (£)</label>
+              <label class="form-label">RSP (£)</label>
               <input class="form-input" type="number" id="cost-sell-price" step="any" min="0" value="" placeholder="e.g. 3.50" oninput="recalcMargins()">
               <label style="display:flex;align-items:center;gap:6px;margin-top:6px;font-size:12px;color:var(--nc-gray-600);cursor:pointer">
                 <input type="checkbox" id="cost-vat-toggle" checked onchange="toggleVatRateVisibility('recipe');recalcMargins()" style="margin:0">
@@ -1675,7 +1675,7 @@
 <script src="hfss.js?v=20260923-cache-buster"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="app.js?v=20260923-folder-type-choice"></script>
+<script src="app.js?v=20260923-rsp-label"></script>
 <script src="excel-import.js?v=20260916-parentnoofportions-col-k"></script>
 <script src="reports.js?v=20260923-cache-buster"></script>
 </body>
