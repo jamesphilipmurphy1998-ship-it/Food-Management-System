@@ -103,6 +103,7 @@ public sealed class Recipe
     /// Recipe Centre and the matching column in the separate Approval Process app.</summary>
     public bool PendingApproval { get; set; }
     public string? PendingApprovalReviewerName { get; set; }
+    public string? PendingApprovalSubmittedByName { get; set; }
     public DateTimeOffset? PendingApprovalAt { get; set; }
 }
 

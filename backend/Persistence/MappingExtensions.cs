@@ -87,6 +87,7 @@ public static class MappingExtensions
         UpdatedAt = entity.UpdatedAt,
         PendingApproval = entity.PendingApproval,
         PendingApprovalReviewerName = entity.PendingApprovalReviewerName,
+        PendingApprovalSubmittedByName = entity.PendingApprovalSubmittedByName,
         PendingApprovalAt = entity.PendingApprovalAt
     };
 
@@ -110,6 +111,7 @@ public static class MappingExtensions
         UnitWeightG = model.UnitWeightG,
         PendingApproval = model.PendingApproval,
         PendingApprovalReviewerName = model.PendingApprovalReviewerName,
+        PendingApprovalSubmittedByName = model.PendingApprovalSubmittedByName,
         PendingApprovalAt = model.PendingApprovalAt,
         Lines = model.Ingredients.Select(l => l.ToEntity(model.Id)).ToList()
     };

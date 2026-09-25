@@ -67,6 +67,7 @@ public sealed class RecipeEntity
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
     public bool PendingApproval { get; set; }
     public string? PendingApprovalReviewerName { get; set; }
+    public string? PendingApprovalSubmittedByName { get; set; }
     public DateTimeOffset? PendingApprovalAt { get; set; }
 
     public List<RecipeLineEntity> Lines { get; set; } = [];

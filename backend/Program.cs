@@ -607,6 +607,7 @@ document.getElementById('f').addEventListener('submit', async (ev) => {
         // or the app restarted — see toggleRecipeApproved on the frontend for where this clears.
         recipe.PendingApproval = true;
         recipe.PendingApprovalReviewerName = reviewerName;
+        recipe.PendingApprovalSubmittedByName = submitterName;
         recipe.PendingApprovalAt = DateTimeOffset.UtcNow;
 
         db.Notifications.Add(new NotificationEntity
@@ -619,6 +620,28 @@ document.getElementById('f').addEventListener('submit', async (ev) => {
         });
         await db.SaveChangesAsync();
         return Results.Ok(new { ok = true });
+    });
+
+    // Lightweight one-click approve for the separate Approval Process app — that app only
+    // ever shows name/code/who-it's-with, never the recipe's ingredients/method, so it has no
+    // business sending a full recipe payload the way the main recipe PUT endpoint expects.
+    // Technical-only (same rule as the approved-field guard on the main PUT), and it's the only
+    // place clearing PendingApproval on the way to Approved rather than back to development —
+    // toggleRecipeApproved handles that direction from inside NutriCost itself.
+    app.MapPost("/api/recipes/{id}/approve", async (AppDbContext db, HttpContext ctx, string id) =>
+    {
+        if (!(ctx.User?.Identity?.IsAuthenticated ?? false)) return Results.Unauthorized();
+        if ((ctx.User.FindFirstValue("site_role") ?? "user") != "admin") return Results.Json(new { error = "Only Technical can approve a recipe" }, statusCode: 403);
+        var recipe = await db.Recipes.FirstOrDefaultAsync(r => r.Id == id);
+        if (recipe == null) return Results.NotFound();
+        recipe.Approved = true;
+        recipe.PendingApproval = false;
+        recipe.PendingApprovalReviewerName = null;
+        recipe.PendingApprovalSubmittedByName = null;
+        recipe.PendingApprovalAt = null;
+        recipe.UpdatedAt = DateTimeOffset.UtcNow;
+        await db.SaveChangesAsync();
+        return Results.Ok(recipe.ToModel());
     });
 }
 
