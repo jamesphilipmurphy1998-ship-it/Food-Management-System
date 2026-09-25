@@ -4334,8 +4334,16 @@
     var badge = document.getElementById("recipe-detail-status-badge");
     var toggleBtn = document.getElementById("recipe-detail-toggle-approved");
     if (badge) {
-      badge.textContent = r.approved ? "Approved for code creation" : "In development";
-      badge.className = "badge badge-status " + (r.approved ? "badge-approved" : "badge-development");
+      if (r.approved) {
+        badge.textContent = "Approved for code creation";
+        badge.className = "badge badge-status badge-approved";
+      } else if (r.pendingApproval) {
+        badge.textContent = "Pending Technical Approval" + (r.pendingApprovalReviewerName ? " (" + r.pendingApprovalReviewerName + ")" : "");
+        badge.className = "badge badge-status badge-pending";
+      } else {
+        badge.textContent = "In development";
+        badge.className = "badge badge-status badge-development";
+      }
     }
     if (toggleBtn) {
       toggleBtn.textContent = r.approved ? "Mark as in development" : "Approve for code creation";
@@ -4344,7 +4352,9 @@
     var mergeBtn = document.getElementById("recipe-detail-merge-btn");
     if (mergeBtn) mergeBtn.style.display = (canApproveRecipes() && r.approved) ? "" : "none";
     var submitApprovalBtn = document.getElementById("recipe-detail-submit-approval");
-    if (submitApprovalBtn) submitApprovalBtn.style.display = (!canApproveRecipes() && !r.approved) ? "" : "none";
+    if (submitApprovalBtn) {
+      submitApprovalBtn.style.display = (!canApproveRecipes() && !r.approved && !r.pendingApproval) ? "" : "none";
+    }
     // Approved recipes are locked: the Edit modal (name/code/type/UOM/weight) must not be
     // reachable until someone explicitly unlocks the recipe via toggleRecipeApproved().
     var editBtn = document.getElementById("recipe-detail-edit-btn");
@@ -4427,6 +4437,11 @@
       if (!confirm("This recipe is approved for code creation and currently locked. Mark it as in development so it can be edited again?")) return;
     }
     r.approved = !r.approved;
+    // Acting on it either way (approve, or send back to development) resolves whatever
+    // submission was pending — Technical has now actually looked at it.
+    r.pendingApproval = false;
+    r.pendingApprovalReviewerName = null;
+    r.pendingApprovalAt = null;
     Recipes.saveRecipe(r);
     showToast(r.approved ? "Recipe approved for code creation" : "Recipe marked as in development — now editable");
     openRecipe(currentRecipeId);
@@ -4525,12 +4540,24 @@
   function submitForApprovalConfirm() {
     var select = document.getElementById("submit-approval-user-select");
     var targetId = select ? select.value : "";
+    var reviewerName = select && select.selectedOptions.length ? select.selectedOptions[0].textContent : "Technical";
     if (!targetId || !currentRecipeId) { closeModal("modal-submit-approval"); return; }
-    fetch("/api/recipes/" + currentRecipeId + "/submit-for-approval", {
+    var recipeId = currentRecipeId;
+    fetch("/api/recipes/" + recipeId + "/submit-for-approval", {
       method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ userId: targetId })
     }).then(function (r) {
       if (!r.ok) return r.json().then(function (j) { throw new Error(j.error || "Failed"); });
+      // Server persisted the pending state on the recipe row — mirror it into the local cache
+      // right away so the badge/button update without waiting on a full refetch.
+      var r2 = Recipes.getRecipes().find(function (rec) { return rec.id === recipeId; });
+      if (r2) {
+        r2.pendingApproval = true;
+        r2.pendingApprovalReviewerName = reviewerName;
+        r2.pendingApprovalAt = new Date().toISOString();
+      }
       closeModal("modal-submit-approval");
+      if (currentRecipeId === recipeId) openRecipe(recipeId);
+      renderAll();
       showToast("Submitted for approval");
     }).catch(function (e) { showToast(e.message || "Could not submit for approval"); });
   }
@@ -5065,7 +5092,11 @@
     fromView = fromView || "recipes";
     var nut = Recipes.calcRecipeNutrition(r, ingredients);
     var hfss = HFSS.calcHFSS(r, ingredients);
-    var statusBadge = r.approved ? "<span class=\"badge badge-approved\" style=\"font-size:10px;margin-right:6px\">Approved</span>" : "<span class=\"badge badge-development\" style=\"font-size:10px;margin-right:6px\">In development</span>";
+    var statusBadge = r.approved
+      ? "<span class=\"badge badge-approved\" style=\"font-size:10px;margin-right:6px\">Approved</span>"
+      : (r.pendingApproval
+          ? "<span class=\"badge badge-pending\" style=\"font-size:10px;margin-right:6px\" title=\"Sent to " + escapeHtml(r.pendingApprovalReviewerName || "Technical") + "\">Pending Technical Approval</span>"
+          : "<span class=\"badge badge-development\" style=\"font-size:10px;margin-right:6px\">In development</span>");
     var kindBadge = (r.recipeType || "finishedProduct") === "subRecipe"
       ? "<span class=\"badge badge-subrecipe\" style=\"font-size:10px;margin-right:6px\">Sub</span>"
       : "<span class=\"badge badge-finishedproduct\" style=\"font-size:10px;margin-right:6px\">Finished</span>";

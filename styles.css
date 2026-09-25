@@ -694,9 +694,10 @@ body.login-page-active .main-area #view-login .card {
 .badge-amber { background: var(--nc-amber-light); color: #B45309; }
 .badge-blue { background: var(--nc-accent-light); color: #0284C7; }
 
-/* Approved / In development: tag-style chips (pill shape + border) */
+/* Approved / In development / Pending Technical Approval: tag-style chips (pill shape + border) */
 .badge-approved,
-.badge-development {
+.badge-development,
+.badge-pending {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -718,6 +719,11 @@ body.login-page-active .main-area #view-login .card {
   background: var(--nc-amber-light);
   color: #92400E;
   border: 1px solid rgba(180, 83, 9, 0.4);
+}
+.badge-pending {
+  background: #E0E7FF;
+  color: #3730A3;
+  border: 1px solid rgba(67, 56, 202, 0.35);
 }
 .badge-subrecipe,
 .badge-finishedproduct,

@@ -65,6 +65,9 @@ public sealed class RecipeEntity
     public decimal SheetCost { get; set; } = 0;
     public decimal UnitWeightG { get; set; }
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
+    public bool PendingApproval { get; set; }
+    public string? PendingApprovalReviewerName { get; set; }
+    public DateTimeOffset? PendingApprovalAt { get; set; }
 
     public List<RecipeLineEntity> Lines { get; set; } = [];
 }

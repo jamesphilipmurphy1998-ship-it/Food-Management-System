@@ -84,7 +84,10 @@ public static class MappingExtensions
         OwnCost = entity.OwnCost,
         SheetCost = entity.SheetCost,
         UnitWeightG = entity.UnitWeightG,
-        UpdatedAt = entity.UpdatedAt
+        UpdatedAt = entity.UpdatedAt,
+        PendingApproval = entity.PendingApproval,
+        PendingApprovalReviewerName = entity.PendingApprovalReviewerName,
+        PendingApprovalAt = entity.PendingApprovalAt
     };
 
     public static RecipeEntity ToEntity(this Recipe model) => new()
@@ -105,6 +108,9 @@ public static class MappingExtensions
         OwnCost = model.OwnCost,
         SheetCost = model.SheetCost,
         UnitWeightG = model.UnitWeightG,
+        PendingApproval = model.PendingApproval,
+        PendingApprovalReviewerName = model.PendingApprovalReviewerName,
+        PendingApprovalAt = model.PendingApprovalAt,
         Lines = model.Ingredients.Select(l => l.ToEntity(model.Id)).ToList()
     };
 

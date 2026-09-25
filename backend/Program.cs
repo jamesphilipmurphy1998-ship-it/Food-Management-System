@@ -43,7 +43,12 @@ builder.Services.AddCors(options =>
     options.AddDefaultPolicy(policy => policy
         .SetIsOriginAllowed(origin => true) // Allow file:// (origin null) and any other origin
         .AllowAnyHeader()
-        .AllowAnyMethod());
+        .AllowAnyMethod()
+        // Lets the separate "Approval Process" app (another port on the same host) read
+        // /api/recipes with the visitor's existing NutriCost sign-in cookie via
+        // fetch(..., {credentials:"include"}) — SetIsOriginAllowed above echoes the exact
+        // origin per-request rather than "*", which is what AllowCredentials requires.
+        .AllowCredentials());
 });
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
@@ -584,7 +589,7 @@ document.getElementById('f').addEventListener('submit', async (ev) => {
     {
         var userId = ctx.User?.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userId)) return Results.Unauthorized();
-        var recipe = await db.Recipes.AsNoTracking().FirstOrDefaultAsync(r => r.Id == id);
+        var recipe = await db.Recipes.FirstOrDefaultAsync(r => r.Id == id);
         if (recipe == null) return Results.NotFound();
         var targetUserId = body.TryGetProperty("userId", out var uEl) ? uEl.GetString() : null;
         if (string.IsNullOrWhiteSpace(targetUserId)) return Results.BadRequest(new { error = "Pick who to submit to" });
@@ -592,8 +597,17 @@ document.getElementById('f').addEventListener('submit', async (ev) => {
         if (targetRoleRows.Count == 0) return Results.NotFound(new { error = "Account not found" });
         if (targetRoleRows[0] != "admin") return Results.BadRequest(new { error = "Pick a Technical team member" });
 
+        var reviewerNameRows = await db.Database.SqlQueryRaw<string>("SELECT display_name AS \"Value\" FROM nutri_users WHERE id = {0} LIMIT 1", targetUserId).ToListAsync();
+        var reviewerName = reviewerNameRows.Count > 0 && !string.IsNullOrWhiteSpace(reviewerNameRows[0]) ? reviewerNameRows[0] : "Technical";
         var submitterNameRows = await db.Database.SqlQueryRaw<string>("SELECT display_name AS \"Value\" FROM nutri_users WHERE id = {0} LIMIT 1", userId).ToListAsync();
         var submitterName = submitterNameRows.Count > 0 && !string.IsNullOrWhiteSpace(submitterNameRows[0]) ? submitterNameRows[0] : "Someone";
+
+        // Persisted (not just the notification) so the Recipe Centre badge and the separate
+        // Approval Process app both reflect "pending" even after the notification's been read
+        // or the app restarted — see toggleRecipeApproved on the frontend for where this clears.
+        recipe.PendingApproval = true;
+        recipe.PendingApprovalReviewerName = reviewerName;
+        recipe.PendingApprovalAt = DateTimeOffset.UtcNow;
 
         db.Notifications.Add(new NotificationEntity
         {

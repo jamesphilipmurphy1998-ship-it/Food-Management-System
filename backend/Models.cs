@@ -96,6 +96,14 @@ public sealed class Recipe
     public decimal UnitWeightG { get; set; }
     /// <summary>Optimistic-concurrency stamp — see Ingredient.UpdatedAt for the full explanation.</summary>
     public DateTimeOffset? UpdatedAt { get; set; }
+    /// <summary>Set by POST /api/recipes/{id}/submit-for-approval — a Food Team account asked a
+    /// specific Technical account to review this recipe. Cleared whenever the recipe's Approved
+    /// value is actually changed (see toggleRecipeApproved on the frontend), since that's
+    /// Technical acting on it either way. Drives the "Pending Technical Approval" badge in the
+    /// Recipe Centre and the matching column in the separate Approval Process app.</summary>
+    public bool PendingApproval { get; set; }
+    public string? PendingApprovalReviewerName { get; set; }
+    public DateTimeOffset? PendingApprovalAt { get; set; }
 }
 
 public sealed class BomRow
