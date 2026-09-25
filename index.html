@@ -7,7 +7,7 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect fill='%235d8c3e' width='32' height='32' rx='4'/><text x='16' y='22' font-size='18' font-weight='bold' fill='white' text-anchor='middle' font-family='system-ui,sans-serif'>W</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=20260923-project-breadcrumb">
+<link rel="stylesheet" href="styles.css?v=20260925-notifications">
 </head>
 <body>
 
@@ -22,6 +22,7 @@
     <button onclick="switchView('projects')">Projects</button>
     <button onclick="openWasabiAppsHome()">Return to Wasabi Functions</button>
     <button type="button" class="topbar-nav-loading-test" onclick="testSushiLoading()">Loading test</button>
+    <button type="button" id="nav-user-settings-btn" onclick="switchView('user-settings')" style="display:none">User Settings</button>
     <a href="#" onclick="window.location.href=window.location.origin+'/api/auth/logout';return false;" class="topbar-nav-signout">Sign out</a>
   </nav>
   <div class="topbar-right" style="position:relative">
@@ -114,6 +115,11 @@
       <button class="sidebar-item" onclick="switchView('comparisons')" data-view="comparisons">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M3 13V6h3v7H3zm4 0V2h3v11H7zm4 0V9h3v4h-3z" opacity=".8"/></svg>
         Comparisons
+      </button>
+      <button class="sidebar-item" id="nav-notifications-btn" onclick="openNotifPanel()" style="display:none">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a1 1 0 011 1v.5a4.5 4.5 0 013.5 4.39v2.4l1.2 2.02a1 1 0 01-.86 1.5H4.16a1 1 0 01-.86-1.5L4.5 9.29v-2.4A4.5 4.5 0 018 2.5V2a1 1 0 011-1H8zm-2 12.5a2 2 0 004 0H6z" opacity=".8"/></svg>
+        Notifications
+        <span class="nc-notif-badge" id="nc-notif-badge" style="display:none">0</span>
       </button>
     </div>
     <div class="sidebar-divider"></div>
@@ -272,6 +278,79 @@
               <!-- Plus and all template cards (text + Excel) are rendered here by renderExportTemplates() -->
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════ USER SETTINGS ═══════ -->
+    <div class="view us-page" id="view-user-settings">
+      <div class="us-header">
+        <div class="us-header-icon">⚙</div>
+        <div>
+          <h1>User settings</h1>
+          <p>Review who has an account, manage roles, and reset passwords.</p>
+        </div>
+      </div>
+
+      <div class="us-card">
+        <div class="us-card-header">
+          <div class="us-card-header-icon" style="background:var(--nc-accent-light);color:var(--nc-green)">◆</div>
+          <div>
+            <h2>My account</h2>
+            <p>Your own sign-in details.</p>
+          </div>
+        </div>
+        <div class="us-card-body" id="user-settings-me">
+          <!-- rendered by loadUserSettings() -->
+        </div>
+      </div>
+
+      <div class="us-card" id="user-settings-permissions-card" style="display:none">
+        <div class="us-card-header">
+          <div class="us-card-header-icon" style="background:var(--nc-accent-light);color:var(--nc-green)">🛡</div>
+          <div>
+            <h2>Site permissions — full reference</h2>
+            <p>What each tier can do. There are two tiers today (Technical, Food Team) — built so more tiers can be added later without changing this structure.</p>
+          </div>
+        </div>
+        <div class="us-card-body">
+          <details class="us-accordion-item">
+            <summary>Technical</summary>
+            <div class="us-accordion-body">Everything Food Team can do, plus: approve/un-approve recipes, promote/demote other accounts, reset anyone's password, and remove accounts. Technical manages the roster on this page.</div>
+          </details>
+          <details class="us-accordion-item">
+            <summary>Food Team</summary>
+            <div class="us-accordion-body">Full read/write access to shared data — Ingredients, Recipes, Projects, Reports, Export Templates. Create, edit, save and duplicate your own recipes freely. Saved Comparisons are personal: only you ever see comparisons you saved. Cannot approve/un-approve a recipe, and cannot manage other accounts.</div>
+          </details>
+          <table class="us-people-table" style="margin-top:16px">
+            <thead><tr><th>Action</th><th style="width:110px">Technical</th><th style="width:110px">Food Team</th></tr></thead>
+            <tbody>
+              <tr><td>View every Ingredient &amp; Recipe</td><td>Yes</td><td>Yes</td></tr>
+              <tr><td>Create, edit, save &amp; duplicate recipes</td><td>Yes</td><td>Yes</td></tr>
+              <tr><td>Save &amp; view your own Comparisons</td><td>Yes</td><td>Yes</td></tr>
+              <tr><td>View another account's saved Comparisons</td><td>No</td><td>No</td></tr>
+              <tr><td>Approve / un-approve a recipe</td><td>Yes</td><td>No</td></tr>
+              <tr><td>Change another account's role</td><td>Yes</td><td>No</td></tr>
+              <tr><td>Reset another account's password</td><td>Yes</td><td>No</td></tr>
+              <tr><td>Remove an account</td><td>Yes</td><td>No</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="us-card" id="user-settings-admin-card" style="display:none">
+        <div class="us-card-header">
+          <div class="us-card-header-icon" style="background:var(--nc-accent-light);color:var(--nc-green)">👤</div>
+          <div>
+            <h2>People</h2>
+            <p>Everyone with an account. Technical can change roles, reset a forgotten password, or remove someone.</p>
+          </div>
+        </div>
+        <div class="us-card-body">
+          <table class="us-people-table">
+            <thead><tr><th>Name</th><th>Email</th><th>Site permissions</th><th></th></tr></thead>
+            <tbody id="user-settings-table-body"><!-- rendered by loadUserSettings() --></tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -1298,6 +1377,22 @@
   </div>
 </div>
 
+<!-- Notifications panel (slide-out, styled after Wasabi Timeline's inbox) -->
+<div class="nc-notif-overlay" id="nc-notif-overlay" onclick="closeNotifPanel()"></div>
+<div class="nc-notif-panel" id="nc-notif-panel">
+  <div class="nc-notif-hdr">
+    <span class="nc-notif-title">🔔 Notifications</span>
+    <span class="nc-notif-count" id="nc-notif-count">0</span>
+    <button type="button" class="btn btn-sm" onclick="markAllNotifsRead()">Mark all read</button>
+    <button type="button" class="btn btn-icon" onclick="closeNotifPanel()" title="Close" style="padding:4px 8px">✕</button>
+  </div>
+  <div class="nc-notif-filters">
+    <button type="button" class="nc-notif-fbtn active" id="nc-notif-filter-all" onclick="setNotifFilter('all')">All</button>
+    <button type="button" class="nc-notif-fbtn" id="nc-notif-filter-unread" onclick="setNotifFilter('unread')">Unread</button>
+  </div>
+  <div class="nc-notif-list" id="nc-notif-list"></div>
+</div>
+
 <!-- Comparison Save Overwrite/New-Version/Cancel Modal -->
 <div class="modal-overlay" id="modal-comparison-save-overwrite">
   <div class="modal" style="width:420px">
@@ -1679,7 +1774,7 @@
 <script src="hfss.js?v=20260923-cache-buster"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="app.js?v=20260923-rsp-ex-vat-box"></script>
+<script src="app.js?v=20260925-notifications"></script>
 <script src="excel-import.js?v=20260916-parentnoofportions-col-k"></script>
 <script src="reports.js?v=20260923-cache-buster"></script>
 </body>

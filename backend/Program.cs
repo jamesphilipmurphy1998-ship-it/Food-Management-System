@@ -1,6 +1,9 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.IdentityModel.Tokens;
 using NutriCost.Api;
 using Microsoft.EntityFrameworkCore;
@@ -61,6 +64,35 @@ builder.Services.AddResponseCompression(options =>
         .Concat(["application/json", "application/javascript", "text/javascript"]);
 });
 
+// ─── Auth modes ─────────────────────────────────────────────────────────────
+// disabled: no auth (dev)
+// homepage: require login from the Wasabi homepage (JWT) — the original NutriCost behaviour
+// local: username/password accounts stored in Postgres, same pattern as Wasabi Timeline's
+//        `timeline_users` — a framework this can later be switched to Entra ID from, the same
+//        way Timeline was, without changing anything else about how "signed in" is checked.
+var authMode = (Environment.GetEnvironmentVariable("NUTRICOST_AUTH_MODE") ?? "homepage").Trim().ToLowerInvariant();
+if (authMode is not ("disabled" or "homepage" or "local"))
+    throw new InvalidOperationException($"Unsupported NUTRICOST_AUTH_MODE '{authMode}'. Allowed: disabled, homepage, local.");
+var authDisabled = authMode == "disabled";
+var authHomepage = authMode == "homepage";
+var authLocal = authMode == "local";
+
+if (authLocal)
+{
+    builder.Services
+        .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+        .AddCookie(o =>
+        {
+            o.Cookie.Name = "nutricost_auth";
+            o.LoginPath = "/login";
+            o.LogoutPath = "/api/auth/logout";
+            o.ExpireTimeSpan = TimeSpan.FromDays(30);
+            o.SlidingExpiration = true;
+            o.Events.OnRedirectToLogin = ctx => { ctx.Response.StatusCode = 401; return Task.CompletedTask; };
+        });
+    builder.Services.AddAuthorization();
+}
+
 var app = builder.Build();
 app.UseResponseCompression();
 app.UseCors();
@@ -68,71 +100,427 @@ app.UseCors();
 // ─── Wasabi auth: require login from homepage (JWT) to access NutriCost ───
 var authSecret = builder.Configuration["WasabiAuth:Secret"] ?? "default-secret-change-in-production-min-32-chars";
 var homepageUrl = builder.Configuration["WasabiAuth:HomepageUrl"] ?? "http://localhost:5000";
-var authDisabled = string.Equals(Environment.GetEnvironmentVariable("NUTRICOST_AUTH_MODE"), "disabled", StringComparison.OrdinalIgnoreCase);
 const string cookieName = "wasabi_auth";
 
-app.Use(async (ctx, next) =>
+if (authHomepage)
 {
-    if (authDisabled) { await next(); return; }
-
-    var path = ctx.Request.Path.Value ?? "";
-    // Sign out: clear cookie and redirect to homepage (no auth required)
-    if (path.Equals("/api/auth/logout", StringComparison.OrdinalIgnoreCase))
+    app.Use(async (ctx, next) =>
     {
-        ctx.Response.Cookies.Delete(cookieName, new CookieOptions { Path = "/" });
-        ctx.Response.Redirect(homepageUrl);
-        return;
-    }
+        var path = ctx.Request.Path.Value ?? "";
+        // Sign out: clear cookie and redirect to homepage (no auth required)
+        if (path.Equals("/api/auth/logout", StringComparison.OrdinalIgnoreCase))
+        {
+            ctx.Response.Cookies.Delete(cookieName, new CookieOptions { Path = "/" });
+            ctx.Response.Redirect(homepageUrl);
+            return;
+        }
 
-    string? token = null;
-    if (ctx.Request.Query.TryGetValue("jwt", out var qjwt)) token = qjwt.FirstOrDefault();
-    if (string.IsNullOrEmpty(token) && ctx.Request.Cookies.TryGetValue(cookieName, out var c)) token = c;
-    if (string.IsNullOrEmpty(token) && ctx.Request.Headers.Authorization.FirstOrDefault() is { } auth && auth.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
-        token = auth["Bearer ".Length..].Trim();
+        string? token = null;
+        if (ctx.Request.Query.TryGetValue("jwt", out var qjwt)) token = qjwt.FirstOrDefault();
+        if (string.IsNullOrEmpty(token) && ctx.Request.Cookies.TryGetValue(cookieName, out var c)) token = c;
+        if (string.IsNullOrEmpty(token) && ctx.Request.Headers.Authorization.FirstOrDefault() is { } auth && auth.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+            token = auth["Bearer ".Length..].Trim();
 
-    var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(authSecret));
-    var valid = false;
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(authSecret));
+        var valid = false;
+        try
+        {
+            var handler = new JwtSecurityTokenHandler();
+            var principal = handler.ValidateToken(token, new TokenValidationParameters
+            {
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = key,
+                ValidIssuer = "WasabiApps",
+                ValidAudience = "WasabiApps",
+                ValidateLifetime = true,
+                ClockSkew = TimeSpan.FromMinutes(1)
+            }, out _);
+            valid = principal != null;
+        }
+        catch { /* invalid */ }
+
+        var isEntry = path == "/" || path.Equals("/index.html", StringComparison.OrdinalIgnoreCase);
+        if (isEntry && ctx.Request.Query.ContainsKey("jwt"))
+        {
+            if (valid)
+            {
+                ctx.Response.Cookies.Append(cookieName, token!, new CookieOptions { Path = "/", MaxAge = TimeSpan.FromHours(1), HttpOnly = true, SameSite = SameSiteMode.Lax });
+                ctx.Response.Redirect(path);
+                return;
+            }
+            ctx.Response.Redirect($"{homepageUrl}?returnUrl={Uri.EscapeDataString(ctx.Request.Scheme + "://" + ctx.Request.Host + path)}");
+            return;
+        }
+        if (!valid)
+        {
+            if (path.StartsWith("/api", StringComparison.OrdinalIgnoreCase))
+            {
+                ctx.Response.StatusCode = 401;
+                await ctx.Response.WriteAsJsonAsync(new { error = "Unauthorized. Sign in at the Wasabi Apps homepage first." });
+                return;
+            }
+            ctx.Response.Redirect($"{homepageUrl}?returnUrl={Uri.EscapeDataString(ctx.Request.Scheme + "://" + ctx.Request.Host + path)}");
+            return;
+        }
+        await next();
+    });
+}
+
+static string HashPassword(string password)
+{
+    var salt = RandomNumberGenerator.GetBytes(16);
+    const int iter = 100_000;
+    var key = Rfc2898DeriveBytes.Pbkdf2(password, salt, iter, HashAlgorithmName.SHA256, 32);
+    return $"{iter}.{Convert.ToBase64String(salt)}.{Convert.ToBase64String(key)}";
+}
+
+static bool VerifyPassword(string password, string stored)
+{
+    var parts = stored.Split('.');
+    if (parts.Length != 3) return false;
     try
     {
-        var handler = new JwtSecurityTokenHandler();
-        var principal = handler.ValidateToken(token, new TokenValidationParameters
-        {
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = key,
-            ValidIssuer = "WasabiApps",
-            ValidAudience = "WasabiApps",
-            ValidateLifetime = true,
-            ClockSkew = TimeSpan.FromMinutes(1)
-        }, out _);
-        valid = principal != null;
+        var iter = int.Parse(parts[0]);
+        var salt = Convert.FromBase64String(parts[1]);
+        var key = Convert.FromBase64String(parts[2]);
+        var test = Rfc2898DeriveBytes.Pbkdf2(password, salt, iter, HashAlgorithmName.SHA256, key.Length);
+        return CryptographicOperations.FixedTimeEquals(test, key);
     }
-    catch { /* invalid */ }
+    catch { return false; }
+}
 
-    var isEntry = path == "/" || path.Equals("/index.html", StringComparison.OrdinalIgnoreCase);
-    if (isEntry && ctx.Request.Query.ContainsKey("jwt"))
+static bool LooksLikeEmail(string? s) => !string.IsNullOrWhiteSpace(s) && s.Contains('@') && s.Contains('.');
+
+if (authLocal)
+{
+    app.UseAuthentication();
+    app.UseAuthorization();
+
+    // Ensure the accounts table exists / has the columns this version expects.
+    using (var scope = app.Services.CreateScope())
     {
-        if (valid)
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        await db.Database.ExecuteSqlRawAsync(@"
+            CREATE TABLE IF NOT EXISTS nutri_users (
+                id text PRIMARY KEY,
+                username text NOT NULL,
+                email text NOT NULL DEFAULT '',
+                display_name text NOT NULL DEFAULT '',
+                pass_hash text NOT NULL,
+                site_role text NOT NULL DEFAULT 'user',
+                created_at timestamptz NOT NULL DEFAULT now()
+            );");
+        await db.Database.ExecuteSqlRawAsync(@"CREATE UNIQUE INDEX IF NOT EXISTS nutri_users_username_lower_uq ON nutri_users (lower(username));");
+    }
+
+    app.Use(async (ctx, next) =>
+    {
+        var path = ctx.Request.Path.Value ?? "";
+
+        if (path.Equals("/api/auth/logout", StringComparison.OrdinalIgnoreCase))
         {
-            ctx.Response.Cookies.Append(cookieName, token!, new CookieOptions { Path = "/", MaxAge = TimeSpan.FromHours(1), HttpOnly = true, SameSite = SameSiteMode.Lax });
-            ctx.Response.Redirect(path);
+            await ctx.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            ctx.Response.Redirect("/login");
             return;
         }
-        ctx.Response.Redirect($"{homepageUrl}?returnUrl={Uri.EscapeDataString(ctx.Request.Scheme + "://" + ctx.Request.Host + path)}");
-        return;
-    }
-    if (!valid)
-    {
-        if (path.StartsWith("/api", StringComparison.OrdinalIgnoreCase))
+
+        var isAuthPage = path.Equals("/login", StringComparison.OrdinalIgnoreCase)
+                          || path.Equals("/signup", StringComparison.OrdinalIgnoreCase)
+                          || path.StartsWith("/api/auth/local", StringComparison.OrdinalIgnoreCase);
+        if (isAuthPage) { await next(); return; }
+
+        var isEntry = path == "/" || path.Equals("/index.html", StringComparison.OrdinalIgnoreCase);
+        var authed = ctx.User?.Identity?.IsAuthenticated ?? false;
+
+        if (isEntry && !authed) { ctx.Response.Redirect("/login"); return; }
+        if (path.StartsWith("/api", StringComparison.OrdinalIgnoreCase) && !authed)
         {
             ctx.Response.StatusCode = 401;
-            await ctx.Response.WriteAsJsonAsync(new { error = "Unauthorized. Sign in at the Wasabi Apps homepage first." });
+            await ctx.Response.WriteAsJsonAsync(new { error = "Unauthorized" });
             return;
         }
-        ctx.Response.Redirect($"{homepageUrl}?returnUrl={Uri.EscapeDataString(ctx.Request.Scheme + "://" + ctx.Request.Host + path)}");
-        return;
-    }
-    await next();
+        if (!authed && !path.StartsWith("/images", StringComparison.OrdinalIgnoreCase)
+                    && !path.Equals("/styles.css", StringComparison.OrdinalIgnoreCase)
+                    && !path.EndsWith(".js", StringComparison.OrdinalIgnoreCase))
+        {
+            ctx.Response.Redirect("/login");
+            return;
+        }
+        await next();
+    });
+
+    app.MapGet("/login", () => Results.Text($$"""
+<!doctype html><html><head><meta charset="utf-8"><title>NutriCost — Log in</title>
+<style>body{font-family:system-ui,sans-serif;background:#f4f6f5;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}
+.box{background:#fff;padding:32px;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.08);width:320px}
+h1{font-size:18px;margin:0 0 18px}label{display:block;font-size:13px;margin:12px 0 4px;color:#374151}
+input{width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:14px}
+button{margin-top:18px;width:100%;padding:9px;background:#2f7a4d;color:#fff;border:none;border-radius:6px;font-size:14px;cursor:pointer}
+.err{color:#b91c1c;font-size:13px;margin-top:10px;min-height:16px}
+.link{font-size:13px;margin-top:14px;text-align:center}a{color:#2f7a4d}</style></head>
+<body><form class="box" id="f"><h1>Sign in to NutriCost</h1>
+<label>Email</label><input id="u" type="email" autocomplete="username" required/>
+<label>Password</label><input id="p" type="password" autocomplete="current-password" required/>
+<button type="submit">Sign in</button><div class="err" id="e"></div>
+<div class="link">No account yet? <a href="/signup">Create one</a></div>
+</form><script>
+document.getElementById('f').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  const u = document.getElementById('u').value.trim();
+  const p = document.getElementById('p').value;
+  const r = await fetch('/api/auth/local/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email:u,password:p})});
+  if (r.ok) { location.href = '/'; return; }
+  document.getElementById('e').textContent = 'Login failed — check your email and password.';
 });
+</script></body></html>
+""", "text/html"));
+
+    app.MapGet("/signup", () => Results.Text($$"""
+<!doctype html><html><head><meta charset="utf-8"><title>NutriCost — Create account</title>
+<style>body{font-family:system-ui,sans-serif;background:#f4f6f5;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}
+.box{background:#fff;padding:32px;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.08);width:320px}
+h1{font-size:18px;margin:0 0 6px}.sub{font-size:12px;color:#6b7280;margin:0 0 14px}
+label{display:block;font-size:13px;margin:12px 0 4px;color:#374151}
+input{width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:14px}
+button{margin-top:18px;width:100%;padding:9px;background:#2f7a4d;color:#fff;border:none;border-radius:6px;font-size:14px;cursor:pointer}
+.err{color:#b91c1c;font-size:13px;margin-top:10px;min-height:16px}
+.link{font-size:13px;margin-top:14px;text-align:center}a{color:#2f7a4d}</style></head>
+<body><form class="box" id="f"><h1>Create account</h1><p class="sub">The first account created becomes Technical (full access).</p>
+<label>Name</label><input id="d" type="text" required/>
+<label>Email</label><input id="u" type="email" autocomplete="username" required/>
+<label>Password</label><input id="p" type="password" autocomplete="new-password" minlength="6" required/>
+<button type="submit">Create account</button><div class="err" id="e"></div>
+<div class="link">Already have an account? <a href="/login">Log in</a></div>
+</form><script>
+document.getElementById('f').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  const d = document.getElementById('d').value.trim();
+  const u = document.getElementById('u').value.trim();
+  const p = document.getElementById('p').value;
+  const r = await fetch('/api/auth/local/signup',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({displayName:d,email:u,password:p})});
+  if (r.ok) { location.href = '/'; return; }
+  const j = await r.json().catch(() => ({}));
+  document.getElementById('e').textContent = j.error || 'Could not create account.';
+});
+</script></body></html>
+""", "text/html"));
+
+    app.MapPost("/api/auth/local/signup", async (AppDbContext db, HttpContext ctx, JsonElement body) =>
+    {
+        var email = (body.TryGetProperty("email", out var eEl) ? eEl.GetString() : "")?.Trim().ToLowerInvariant() ?? "";
+        var displayName = (body.TryGetProperty("displayName", out var dEl) ? dEl.GetString() : "")?.Trim() ?? "";
+        var password = body.TryGetProperty("password", out var pEl) ? pEl.GetString() : "";
+        if (!LooksLikeEmail(email)) return Results.BadRequest(new { error = "Enter a valid email" });
+        if (string.IsNullOrEmpty(password) || password.Length < 6) return Results.BadRequest(new { error = "Password must be at least 6 characters" });
+
+        var exists = await db.Database.SqlQueryRaw<int>("SELECT 1 AS \"Value\" FROM nutri_users WHERE lower(username) = {0} LIMIT 1", email).FirstOrDefaultAsync();
+        if (exists == 1) return Results.BadRequest(new { error = "An account with that email already exists" });
+
+        var anyUsers = await db.Database.SqlQueryRaw<int>("SELECT 1 AS \"Value\" FROM nutri_users LIMIT 1").FirstOrDefaultAsync();
+        var siteRole = anyUsers == 1 ? "user" : "admin"; // first ever sign-up bootstraps admin
+
+        var id = Guid.NewGuid().ToString("N");
+        var hash = HashPassword(password!);
+        await db.Database.ExecuteSqlRawAsync(@"
+            INSERT INTO nutri_users (id, username, email, display_name, site_role, pass_hash)
+            VALUES ({0}, {1}, {1}, {2}, {3}, {4});", id, email, displayName, siteRole, hash);
+
+        var claims = new List<Claim> { new(ClaimTypes.NameIdentifier, id), new(ClaimTypes.Name, displayName), new(ClaimTypes.Email, email), new("site_role", siteRole) };
+        var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+        await ctx.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity),
+            new AuthenticationProperties { IsPersistent = true });
+        return Results.Ok(new { id, email, displayName, siteRole });
+    });
+
+    app.MapPost("/api/auth/local/login", async (AppDbContext db, HttpContext ctx, JsonElement body) =>
+    {
+        var email = (body.TryGetProperty("email", out var eEl) ? eEl.GetString() : "")?.Trim().ToLowerInvariant() ?? "";
+        var password = body.TryGetProperty("password", out var pEl) ? pEl.GetString() : "";
+        if (!LooksLikeEmail(email) || string.IsNullOrEmpty(password)) return Results.BadRequest(new { error = "Enter email and password" });
+
+        var rows = await db.Database.SqlQueryRaw<string>(@"
+            SELECT (id || '|' || display_name || '|' || site_role || '|' || pass_hash) AS ""Value""
+            FROM nutri_users WHERE lower(username) = {0} LIMIT 1;", email).ToListAsync();
+        if (rows.Count == 0) return Results.Unauthorized();
+        var parts = rows[0].Split('|');
+        if (parts.Length < 4) return Results.Unauthorized();
+        var (id, displayName, siteRole) = (parts[0], parts[1], parts[2]);
+        var hash = string.Join('|', parts.Skip(3));
+        if (!VerifyPassword(password!, hash)) return Results.Unauthorized();
+
+        var claims = new List<Claim> { new(ClaimTypes.NameIdentifier, id), new(ClaimTypes.Name, displayName), new(ClaimTypes.Email, email), new("site_role", siteRole) };
+        var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+        await ctx.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity),
+            new AuthenticationProperties { IsPersistent = true });
+        return Results.Ok(new { id, email, displayName, siteRole });
+    });
+
+    // Current signed-in user (for the frontend to show name/role and gate the User Settings link).
+    app.MapGet("/api/auth/me", (HttpContext ctx) =>
+    {
+        if (!(ctx.User?.Identity?.IsAuthenticated ?? false)) return Results.Unauthorized();
+        return Results.Ok(new
+        {
+            id = ctx.User.FindFirstValue(ClaimTypes.NameIdentifier),
+            email = ctx.User.FindFirstValue(ClaimTypes.Email),
+            displayName = ctx.User.FindFirstValue(ClaimTypes.Name),
+            siteRole = ctx.User.FindFirstValue("site_role") ?? "user"
+        });
+    });
+
+    // ─── User Settings admin endpoints (site_role = admin only) ───────────────
+    app.MapGet("/api/site/users", async (AppDbContext db, HttpContext ctx) =>
+    {
+        if (!(ctx.User?.Identity?.IsAuthenticated ?? false)) return Results.Unauthorized();
+        var rows = await db.Database.SqlQueryRaw<string>(@"
+            SELECT (id || '|' || username || '|' || display_name || '|' || site_role || '|' || created_at::text) AS ""Value""
+            FROM nutri_users ORDER BY created_at;").ToListAsync();
+        var users = rows.Select(r =>
+        {
+            var p = r.Split('|');
+            return new { id = p[0], email = p[1], displayName = p[2], siteRole = p[3] };
+        });
+        return Results.Ok(users);
+    });
+
+    app.MapPut("/api/site/users/{id}/role", async (AppDbContext db, HttpContext ctx, string id, JsonElement body) =>
+    {
+        if (!(ctx.User?.Identity?.IsAuthenticated ?? false)) return Results.Unauthorized();
+        if ((ctx.User.FindFirstValue("site_role") ?? "user") != "admin") return Results.Forbid();
+        var role = body.TryGetProperty("siteRole", out var rEl) ? rEl.GetString() : null;
+        if (role is not ("admin" or "user")) return Results.BadRequest(new { error = "siteRole must be 'admin' or 'user'" });
+
+        if (role == "user")
+        {
+            var adminCount = await db.Database.SqlQueryRaw<int>("SELECT COUNT(*) AS \"Value\" FROM nutri_users WHERE site_role = 'admin'").FirstOrDefaultAsync();
+            var targetIsAdmin = await db.Database.SqlQueryRaw<int>("SELECT 1 AS \"Value\" FROM nutri_users WHERE id = {0} AND site_role = 'admin' LIMIT 1", id).FirstOrDefaultAsync();
+            if (targetIsAdmin == 1 && adminCount <= 1) return Results.BadRequest(new { error = "Can't remove the last admin" });
+        }
+
+        var updated = await db.Database.ExecuteSqlRawAsync(@"UPDATE nutri_users SET site_role = {0} WHERE id = {1};", role, id);
+        if (updated == 0) return Results.NotFound(new { error = "User not found" });
+        return Results.Ok(new { ok = true });
+    });
+
+    app.MapPut("/api/site/users/{id}/reset-password", async (AppDbContext db, HttpContext ctx, string id, JsonElement body) =>
+    {
+        if (!(ctx.User?.Identity?.IsAuthenticated ?? false)) return Results.Unauthorized();
+        if ((ctx.User.FindFirstValue("site_role") ?? "user") != "admin") return Results.Forbid();
+        var newPassword = body.TryGetProperty("password", out var pw) ? pw.GetString() : "";
+        if (string.IsNullOrWhiteSpace(newPassword) || newPassword!.Length < 6)
+            return Results.BadRequest(new { error = "Password must be at least 6 characters" });
+        var hash = HashPassword(newPassword);
+        var updated = await db.Database.ExecuteSqlRawAsync(@"UPDATE nutri_users SET pass_hash = {0} WHERE id = {1};", hash, id);
+        if (updated == 0) return Results.NotFound(new { error = "User not found" });
+        return Results.Ok(new { ok = true });
+    });
+
+    app.MapDelete("/api/site/users/{id}", async (AppDbContext db, HttpContext ctx, string id) =>
+    {
+        if (!(ctx.User?.Identity?.IsAuthenticated ?? false)) return Results.Unauthorized();
+        if ((ctx.User.FindFirstValue("site_role") ?? "user") != "admin") return Results.Forbid();
+        var targetRoleRows = await db.Database.SqlQueryRaw<string>(@"SELECT site_role AS ""Value"" FROM nutri_users WHERE id = {0} LIMIT 1;", id).ToListAsync();
+        if (targetRoleRows.Count == 0) return Results.NotFound(new { error = "User not found" });
+        if (targetRoleRows[0] == "admin")
+        {
+            var adminCount = await db.Database.SqlQueryRaw<int>("SELECT COUNT(*) AS \"Value\" FROM nutri_users WHERE site_role = 'admin'").FirstOrDefaultAsync();
+            if (adminCount <= 1) return Results.BadRequest(new { error = "Can't remove the last admin" });
+        }
+        await db.Database.ExecuteSqlRawAsync(@"DELETE FROM nutri_users WHERE id = {0};", id);
+        return Results.Ok(new { ok = true });
+    });
+
+    // ─── Personal saved comparisons ────────────────────────────────────────────
+    // Scoped to the caller's own account — every query/mutation below filters or checks
+    // ownership by UserId = the caller's NameIdentifier claim, so one account can never see or
+    // touch another's saves via the API, not just via what the UI happens to show.
+    app.MapGet("/api/comparison-saves", async (AppDbContext db, HttpContext ctx) =>
+    {
+        var userId = ctx.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId)) return Results.Unauthorized();
+        var saves = await db.ComparisonSaves.AsNoTracking()
+            .Where(c => c.UserId == userId)
+            .OrderByDescending(c => c.UpdatedAt)
+            .Select(c => new { c.Id, c.Name, items = JsonSerializer.Deserialize<JsonElement>(c.ItemsJson, (JsonSerializerOptions?)null), savedAt = c.UpdatedAt })
+            .ToListAsync();
+        return Results.Ok(saves);
+    });
+
+    app.MapPost("/api/comparison-saves", async (AppDbContext db, HttpContext ctx, JsonElement body) =>
+    {
+        var userId = ctx.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId)) return Results.Unauthorized();
+        var name = body.TryGetProperty("name", out var nEl) ? nEl.GetString() : null;
+        if (string.IsNullOrWhiteSpace(name)) return Results.BadRequest(new { error = "Name is required" });
+        var itemsJson = body.TryGetProperty("items", out var iEl) ? iEl.GetRawText() : "[]";
+        var entity = new ComparisonSaveEntity { Id = Guid.NewGuid().ToString("N"), UserId = userId, Name = name!, ItemsJson = itemsJson };
+        db.ComparisonSaves.Add(entity);
+        await db.SaveChangesAsync();
+        return Results.Ok(new { entity.Id, entity.Name, items = JsonSerializer.Deserialize<JsonElement>(entity.ItemsJson, (JsonSerializerOptions?)null), savedAt = entity.UpdatedAt });
+    });
+
+    app.MapPut("/api/comparison-saves/{id}", async (AppDbContext db, HttpContext ctx, string id, JsonElement body) =>
+    {
+        var userId = ctx.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId)) return Results.Unauthorized();
+        var entity = await db.ComparisonSaves.FirstOrDefaultAsync(c => c.Id == id);
+        if (entity == null) return Results.NotFound();
+        if (entity.UserId != userId) return Results.Forbid();
+        if (body.TryGetProperty("name", out var nEl) && nEl.GetString() is { } newName && !string.IsNullOrWhiteSpace(newName)) entity.Name = newName;
+        if (body.TryGetProperty("items", out var iEl)) entity.ItemsJson = iEl.GetRawText();
+        entity.UpdatedAt = DateTimeOffset.UtcNow;
+        await db.SaveChangesAsync();
+        return Results.Ok(new { entity.Id, entity.Name, items = JsonSerializer.Deserialize<JsonElement>(entity.ItemsJson, (JsonSerializerOptions?)null), savedAt = entity.UpdatedAt });
+    });
+
+    app.MapDelete("/api/comparison-saves/{id}", async (AppDbContext db, HttpContext ctx, string id) =>
+    {
+        var userId = ctx.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId)) return Results.Unauthorized();
+        var entity = await db.ComparisonSaves.FirstOrDefaultAsync(c => c.Id == id);
+        if (entity == null) return Results.NotFound();
+        if (entity.UserId != userId) return Results.Forbid();
+        db.ComparisonSaves.Remove(entity);
+        await db.SaveChangesAsync();
+        return Results.Ok(new { ok = true });
+    });
+
+    // ─── Personal notifications ─────────────────────────────────────────────────
+    // Nothing writes rows here yet — this is the read side of the inbox panel, ready for
+    // "share a saved comparison" (and anything else personal) to start producing notifications
+    // without needing a schema change first. Scoped by UserId same as comparison-saves.
+    app.MapGet("/api/notifications", async (AppDbContext db, HttpContext ctx) =>
+    {
+        var userId = ctx.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId)) return Results.Unauthorized();
+        var rows = await db.Notifications.AsNoTracking()
+            .Where(n => n.UserId == userId)
+            .OrderByDescending(n => n.CreatedAt)
+            .Select(n => new { n.Id, n.Title, n.Body, n.Link, n.Read, createdAt = n.CreatedAt })
+            .ToListAsync();
+        return Results.Ok(rows);
+    });
+
+    app.MapPost("/api/notifications/{id}/read", async (AppDbContext db, HttpContext ctx, string id) =>
+    {
+        var userId = ctx.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId)) return Results.Unauthorized();
+        var entity = await db.Notifications.FirstOrDefaultAsync(n => n.Id == id);
+        if (entity == null) return Results.NotFound();
+        if (entity.UserId != userId) return Results.Forbid();
+        entity.Read = true;
+        await db.SaveChangesAsync();
+        return Results.Ok(new { ok = true });
+    });
+
+    app.MapPost("/api/notifications/mark-all-read", async (AppDbContext db, HttpContext ctx) =>
+    {
+        var userId = ctx.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId)) return Results.Unauthorized();
+        await db.Notifications.Where(n => n.UserId == userId && !n.Read).ExecuteUpdateAsync(s => s.SetProperty(n => n.Read, true));
+        return Results.Ok(new { ok = true });
+    });
+}
 
 // Ensure DB has latest schema
 using (var scope = app.Services.CreateScope())
@@ -352,13 +740,22 @@ app.MapPost("/api/ingredients/{id}/latest-version-comment", async (AppDbContext 
 // endpoint above for the full rationale. Same deal here: the interactive UI should be saving
 // one recipe at a time through this, not re-sending the whole 1,000+ recipe table via the bulk
 // PUT below on every edit.
-app.MapPut("/api/recipes/{id}", async (AppDbContext db, string id, Recipe recipe) =>
+app.MapPut("/api/recipes/{id}", async (AppDbContext db, HttpContext ctx, string id, Recipe recipe) =>
 {
     var entity = await db.Recipes.Include(r => r.Lines).FirstOrDefaultAsync(r => r.Id == id);
     if (entity == null) return Results.NotFound();
     if (recipe.UpdatedAt.HasValue && recipe.UpdatedAt.Value != entity.UpdatedAt)
     {
         return Results.Conflict(entity.ToModel());
+    }
+    // Approving/un-approving is an authority action, not a routine edit — un-approving in
+    // particular re-opens an otherwise-locked recipe for editing. Only enforceable where we have
+    // real accounts (local auth mode); homepage-JWT/disabled modes have no site_role concept, so
+    // this only blocks the change once IsAuthenticated is actually true.
+    if (recipe.Approved != entity.Approved && (ctx.User?.Identity?.IsAuthenticated ?? false)
+        && (ctx.User.FindFirstValue("site_role") ?? "user") != "admin")
+    {
+        return Results.Json(new { error = "Only an admin can approve or un-approve a recipe." }, statusCode: 403);
     }
     recipe.Id = id;
     var incoming = recipe.ToEntity();
@@ -370,7 +767,7 @@ app.MapPut("/api/recipes/{id}", async (AppDbContext db, string id, Recipe recipe
     return Results.Ok(entity.ToModel());
 });
 
-app.MapPut("/api/recipes", async (AppDbContext db, List<Recipe> recipes) =>
+app.MapPut("/api/recipes", async (AppDbContext db, HttpContext ctx, List<Recipe> recipes) =>
 {
     if (recipes == null) recipes = [];
     // Upsert by id — never deletes a recipe the caller didn't send (see the ingredients PUT
@@ -378,6 +775,9 @@ app.MapPut("/api/recipes", async (AppDbContext db, List<Recipe> recipes) =>
     // Deletion now only happens via the dedicated DELETE endpoint below.
     var idsToUpsert = recipes.Select(r => r.Id).Where(id => !string.IsNullOrWhiteSpace(id)).ToHashSet();
     var trackedExisting = await db.Recipes.Include(r => r.Lines).Where(r => idsToUpsert.Contains(r.Id)).ToDictionaryAsync(r => r.Id);
+    var isAdmin = !(ctx.User?.Identity?.IsAuthenticated ?? false) || (ctx.User.FindFirstValue("site_role") ?? "user") == "admin";
+    if (!isAdmin && recipes.Any(r => trackedExisting.TryGetValue(r.Id, out var existing) && r.Approved != existing.Approved))
+        return Results.Json(new { error = "Only an admin can approve or un-approve a recipe." }, statusCode: 403);
     foreach (var recipe in recipes)
     {
         if (string.IsNullOrWhiteSpace(recipe.Id)) recipe.Id = "id_" + Guid.NewGuid().ToString("N")[..9];

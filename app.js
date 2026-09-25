@@ -556,7 +556,8 @@
     if (name === "recipes") window.renderRecipesList();
     if (name === "project-recipes") window.renderProjectRecipesList();
     if (name === "comparisons") filterComparisonSearch();
-    if (name === "comparison-saves") renderComparisonSaves();
+    if (name === "comparison-saves") loadComparisonSaves(renderComparisonSaves);
+    if (name === "user-settings") loadUserSettings();
     persistLastView(name);
   }
 
@@ -583,10 +584,28 @@
     filterComparisonSearch();
   }
 
-  // Named, reusable comparisons — {id, name, savedAt, items: [{kind,id,name,code}]} — kept
-  // client-side only (like Export Templates), since they're just a personal shortcut back to a
-  // particular set of items, not shared/authoritative data.
+  // Named, reusable comparisons — {id, name, savedAt, items: [{kind,id,name,code}]}. Personal to
+  // whoever saved them: when signed in (NUTRICOST_AUTH_MODE=local), these live server-side under
+  // the account's own id (see /api/comparison-saves — the server itself rejects any attempt to
+  // read/edit someone else's, this isn't just a client-side filter). Signed out / homepage-JWT /
+  // auth-disabled mode has no reliable per-user id to scope by, so it falls back to the old
+  // localStorage-only behaviour (shared with whoever else uses that browser profile).
+  var comparisonSavesCache = [];
+  var comparisonSavesLoaded = false;
+
+  function comparisonSavesUseServer() { return !!currentAuthUser; }
+
+  function loadComparisonSaves(cb) {
+    if (!comparisonSavesUseServer()) { comparisonSavesLoaded = true; if (cb) cb(); return; }
+    fetch("/api/comparison-saves").then(function (r) { return r.ok ? r.json() : []; }).then(function (rows) {
+      comparisonSavesCache = rows.map(function (r) { return { id: r.id, name: r.name, savedAt: r.savedAt, items: r.items || [] }; });
+      comparisonSavesLoaded = true;
+      if (cb) cb();
+    }).catch(function () { comparisonSavesLoaded = true; if (cb) cb(); });
+  }
+
   function getComparisonSaves() {
+    if (comparisonSavesUseServer()) return comparisonSavesCache;
     try {
       var raw = localStorage.getItem(COMPARISON_SAVES_STORAGE_KEY);
       if (raw) {
@@ -599,6 +618,7 @@
 
   function setComparisonSaves(saves) {
     if (!Array.isArray(saves)) saves = [];
+    if (comparisonSavesUseServer()) { comparisonSavesCache = saves; return; }
     try {
       localStorage.setItem(COMPARISON_SAVES_STORAGE_KEY, JSON.stringify(saves));
     } catch (e) {}
@@ -648,9 +668,7 @@
     var defaultName = comparisonSelected.map(function (s) { return s.name; }).join(" vs ");
     var name = prompt("Name this comparison:", defaultName);
     if (!name) return;
-    saves.unshift({ id: Data.genId(), name: name, savedAt: new Date().toISOString(), items: buildComparisonSaveItems() });
-    setComparisonSaves(saves);
-    showToast("Comparison saved");
+    createComparisonSave(name, buildComparisonSaveItems(), "Comparison saved");
   }
 
   function comparisonSaveOverwriteConfirm() {
@@ -658,12 +676,7 @@
     comparisonSaveOverwriteTarget = null;
     closeModal("modal-comparison-save-overwrite");
     if (!existing) return;
-    existing.savedAt = new Date().toISOString();
-    existing.items = buildComparisonSaveItems();
-    var saves = getComparisonSaves().filter(function (sv) { return sv.id !== existing.id; });
-    saves.unshift(existing);
-    setComparisonSaves(saves);
-    showToast("Comparison updated");
+    updateComparisonSave(existing.id, existing.name, buildComparisonSaveItems(), "Comparison updated");
   }
 
   function comparisonSaveOverwriteAsNew() {
@@ -673,10 +686,41 @@
     var defaultName = existing ? existing.name + " (2)" : comparisonSelected.map(function (s) { return s.name; }).join(" vs ");
     var name = prompt("Name this new version:", defaultName);
     if (!name) return;
+    createComparisonSave(name, buildComparisonSaveItems(), "Saved as a new version");
+  }
+
+  // Server mode: POST/PUT/DELETE against /api/comparison-saves (personal, account-scoped),
+  // then re-pull the list so comparisonSavesCache and the server can never drift apart.
+  // localStorage mode: same shape, just synchronous — wrapped in a resolved-immediately promise
+  // so callers don't need two code paths.
+  function createComparisonSave(name, items, toastMsg) {
+    if (comparisonSavesUseServer()) {
+      fetch("/api/comparison-saves", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: name, items: items }) })
+        .then(function (r) { if (!r.ok) throw new Error("Failed"); return r.json(); })
+        .then(function () { loadComparisonSaves(function () { renderComparisonSaves(); showToast(toastMsg); }); })
+        .catch(function () { showToast("Could not save comparison"); });
+      return;
+    }
     var saves = getComparisonSaves();
-    saves.unshift({ id: Data.genId(), name: name, savedAt: new Date().toISOString(), items: buildComparisonSaveItems() });
+    saves.unshift({ id: Data.genId(), name: name, savedAt: new Date().toISOString(), items: items });
     setComparisonSaves(saves);
-    showToast("Saved as a new version");
+    renderComparisonSaves();
+    showToast(toastMsg);
+  }
+
+  function updateComparisonSave(id, name, items, toastMsg) {
+    if (comparisonSavesUseServer()) {
+      fetch("/api/comparison-saves/" + id, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: name, items: items }) })
+        .then(function (r) { if (!r.ok) throw new Error("Failed"); return r.json(); })
+        .then(function () { loadComparisonSaves(function () { renderComparisonSaves(); showToast(toastMsg); }); })
+        .catch(function () { showToast("Could not update comparison"); });
+      return;
+    }
+    var saves = getComparisonSaves().filter(function (sv) { return sv.id !== id; });
+    saves.unshift({ id: id, name: name, savedAt: new Date().toISOString(), items: items });
+    setComparisonSaves(saves);
+    renderComparisonSaves();
+    showToast(toastMsg);
   }
 
   function comparisonSaveOverwriteCancel() {
@@ -724,6 +768,13 @@
   }
 
   function deleteComparisonSave(id) {
+    if (comparisonSavesUseServer()) {
+      fetch("/api/comparison-saves/" + id, { method: "DELETE" })
+        .then(function (r) { if (!r.ok) throw new Error("Failed"); })
+        .then(function () { loadComparisonSaves(function () { renderComparisonSaves(); }); })
+        .catch(function () { showToast("Could not delete comparison"); });
+      return;
+    }
     setComparisonSaves(getComparisonSaves().filter(function (s) { return s.id !== id; }));
     renderComparisonSaves();
   }
@@ -4163,7 +4214,7 @@
     }
     if (toggleBtn) {
       toggleBtn.textContent = r.approved ? "Mark as in development" : "Mark as approved";
-      toggleBtn.style.display = "";
+      toggleBtn.style.display = canApproveRecipes() ? "" : "none";
     }
     // Approved recipes are locked: the Edit modal (name/code/type/UOM/weight) must not be
     // reachable until someone explicitly unlocks the recipe via toggleRecipeApproved().
@@ -4228,8 +4279,15 @@
     updateRecipeSaveButton();
   }
 
+  // Approving/un-approving is a Technical-only action (the server enforces this too — see
+  // PUT /api/recipes/{id} — this is just the UI reflecting it so Food Team accounts aren't
+  // offered a button that will only 403). Signed-out / homepage-JWT / auth-disabled sessions
+  // have no role concept at all, so the restriction only applies once we actually know a role.
+  function canApproveRecipes() { return !currentAuthUser || currentAuthUser.siteRole === "admin"; }
+
   function toggleRecipeApproved() {
     if (!currentRecipeId) return;
+    if (!canApproveRecipes()) { showToast("Only Technical can approve or un-approve a recipe"); return; }
     var recipes = Recipes.getRecipes();
     var r = recipes.find(function (rec) { return rec.id === currentRecipeId; });
     if (!r) return;
@@ -7297,6 +7355,224 @@ desc: "Imported from " + (fname || "spreadsheet"),
   window.applyRecipeSearch = applyRecipeSearch;
   window.setRecipeFilter = setRecipeFilter;
   window.handleIngredientRowClick = handleIngredientRowClick;
+  // ─── User Settings (NUTRICOST_AUTH_MODE=local only) ────────────────────────
+  // Mirrors Wasabi Timeline's local-accounts pattern: a signed-in user's own info always
+  // shows; the "People" admin table only renders for site_role=admin. In homepage-JWT mode
+  // (or auth disabled) /api/auth/me simply 404s/401s and this quietly does nothing.
+  var currentAuthUser = null;
+
+  function fetchCurrentAuthUser() {
+    fetch("/api/auth/me").then(function (r) { return r.ok ? r.json() : null; }).then(function (u) {
+      currentAuthUser = u;
+      var btn = document.getElementById("nav-user-settings-btn");
+      if (btn) btn.style.display = u ? "" : "none";
+      var notifBtn = document.getElementById("nav-notifications-btn");
+      if (notifBtn) notifBtn.style.display = u ? "" : "none";
+      if (u) loadNotifications();
+      // Personal comparisons live server-side once we know who's signed in — load them now so
+      // saveCurrentComparison's "already saved?" check has real data even if the user hits Save
+      // before ever visiting the Saved Comparisons page.
+      loadComparisonSaves();
+      // This fetch can still be in flight if the user clicks User Settings right after page
+      // load — loadUserSettings() would have already rendered "Not signed in" from the stale
+      // null and never re-checked. Re-render now that we actually know who's signed in, but
+      // only if that page is still the one showing.
+      var activeView = document.querySelector(".view.active");
+      if (activeView && activeView.id === "view-user-settings") loadUserSettings();
+    }).catch(function () { /* homepage-JWT mode / auth disabled — no such endpoint */ });
+  }
+
+  // Deterministic avatar color from a string (name/email) — same person always gets the same
+  // color across a page render, without storing a color per account.
+  var US_AVATAR_COLORS = ["#2E7D32", "#1976D2", "#7B1FA2", "#C2185B", "#EF6C00", "#00838F", "#5D4037", "#455A64"];
+  function usAvatarColor(seed) {
+    var h = 0;
+    for (var i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+    return US_AVATAR_COLORS[h % US_AVATAR_COLORS.length];
+  }
+  function usInitials(name, email) {
+    var src = (name || "").trim();
+    if (src) {
+      var parts = src.split(/\s+/);
+      return (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : "")).toUpperCase();
+    }
+    return (email || "?").slice(0, 2).toUpperCase();
+  }
+
+  // Display labels only — the stored siteRole values ("admin"/"user") and every server-side
+  // permission check stay as-is; this just renames what the tiers are called in the UI to match
+  // how the team actually refers to them (same pairing as the Projects folders).
+  var US_ROLE_LABELS = { admin: "Technical", user: "Food Team" };
+  function usRoleLabel(role) { return US_ROLE_LABELS[role] || role; }
+
+  function loadUserSettings() {
+    var meEl = document.getElementById("user-settings-me");
+    if (meEl) {
+      meEl.innerHTML = currentAuthUser
+        ? "<div class='us-me-row'>" +
+            "<div class='us-avatar' style='background:" + usAvatarColor(currentAuthUser.email) + ";width:44px;height:44px;font-size:14px'>" + usInitials(currentAuthUser.displayName, currentAuthUser.email) + "</div>" +
+            "<div><div style='font-weight:600;font-size:14px'>" + escapeHtml(currentAuthUser.displayName || currentAuthUser.email) + "</div>" +
+            "<div style='color:var(--nc-gray-500);font-size:12.5px;margin-top:2px'>" + escapeHtml(currentAuthUser.email) +
+            "<span class='us-role-pill " + currentAuthUser.siteRole + "'>" + escapeHtml(usRoleLabel(currentAuthUser.siteRole)) + "</span></div></div>" +
+          "</div>"
+        : "<div style='color:var(--nc-gray-500)'>Not signed in.</div>";
+    }
+    var adminCard = document.getElementById("user-settings-admin-card");
+    var permissionsCard = document.getElementById("user-settings-permissions-card");
+    if (!currentAuthUser || currentAuthUser.siteRole !== "admin") {
+      if (adminCard) adminCard.style.display = "none";
+      if (permissionsCard) permissionsCard.style.display = "none";
+      return;
+    }
+    if (adminCard) adminCard.style.display = "";
+    if (permissionsCard) permissionsCard.style.display = "";
+    fetch("/api/site/users").then(function (r) { return r.json(); }).then(function (users) {
+      renderUserSettingsTable(users);
+    }).catch(function () { showToast("Could not load users"); });
+  }
+
+  function renderUserSettingsTable(users) {
+    var body = document.getElementById("user-settings-table-body");
+    if (!body) return;
+    body.innerHTML = users.map(function (u) {
+      var isMe = currentAuthUser && u.id === currentAuthUser.id;
+      return "<tr>" +
+        "<td><div class='us-name-cell'>" +
+          "<div class='us-avatar' style='background:" + usAvatarColor(u.email) + "'>" + usInitials(u.displayName, u.email) + "</div>" +
+          "<span>" + escapeHtml(u.displayName || "") + (isMe ? " <span style='color:var(--nc-gray-400);font-size:11px'>(you)</span>" : "") + "</span>" +
+        "</div></td>" +
+        "<td class='us-email-cell'>" + escapeHtml(u.email) + "</td>" +
+        "<td>" +
+          "<select class='us-role-select' onchange=\"changeUserRole('" + u.id + "', this.value)\">" +
+            "<option value='user'" + (u.siteRole === "user" ? " selected" : "") + ">Food Team</option>" +
+            "<option value='admin'" + (u.siteRole === "admin" ? " selected" : "") + ">Technical</option>" +
+          "</select>" +
+          "<span class='us-reset-link' onclick=\"resetUserPassword('" + u.id + "')\">Reset password</span>" +
+        "</td>" +
+        "<td>" + (isMe ? "" : "<button type='button' class='us-remove-btn' title='Remove account' onclick=\"deleteUserAccount('" + u.id + "')\">✕</button>") + "</td>" +
+        "</tr>";
+    }).join("");
+  }
+
+  function changeUserRole(id, newRole) {
+    fetch("/api/site/users/" + id + "/role", {
+      method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ siteRole: newRole })
+    }).then(function (r) {
+      if (!r.ok) return r.json().then(function (j) { throw new Error(j.error || "Failed"); });
+      loadUserSettings();
+    }).catch(function (e) { showToast(e.message || "Could not change role"); loadUserSettings(); });
+  }
+
+  function resetUserPassword(id) {
+    var pw = prompt("New password for this account (at least 6 characters):");
+    if (!pw) return;
+    fetch("/api/site/users/" + id + "/reset-password", {
+      method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ password: pw })
+    }).then(function (r) {
+      if (!r.ok) return r.json().then(function (j) { throw new Error(j.error || "Failed"); });
+      showToast("Password reset");
+    }).catch(function (e) { showToast(e.message || "Could not reset password"); });
+  }
+
+  function deleteUserAccount(id) {
+    if (!confirm("Remove this account? They will no longer be able to sign in.")) return;
+    fetch("/api/site/users/" + id, { method: "DELETE" }).then(function (r) {
+      if (!r.ok) return r.json().then(function (j) { throw new Error(j.error || "Failed"); });
+      loadUserSettings();
+    }).catch(function (e) { showToast(e.message || "Could not remove account"); });
+  }
+
+  window.fetchCurrentAuthUser = fetchCurrentAuthUser;
+  window.loadUserSettings = loadUserSettings;
+  window.changeUserRole = changeUserRole;
+  window.resetUserPassword = resetUserPassword;
+  window.deleteUserAccount = deleteUserAccount;
+
+  // ─── Notifications panel (NUTRICOST_AUTH_MODE=local only) ──────────────────
+  // Structurally mirrors Wasabi Timeline's inbox/alert panel (slide-out, filter tabs, dot +
+  // title + meta rows, mark-all-read). Nothing produces notifications yet — the backend table
+  // and endpoints exist, this just has nothing to show until a feature (e.g. sharing a saved
+  // comparison with another account) starts writing rows. Empty state covers that until then.
+  var notifCache = [];
+  var notifFilter = "all";
+
+  function loadNotifications(cb) {
+    if (!currentAuthUser) { if (cb) cb(); return; }
+    fetch("/api/notifications").then(function (r) { return r.ok ? r.json() : []; }).then(function (rows) {
+      notifCache = rows;
+      updateNotifBadge();
+      if (cb) cb();
+    }).catch(function () { if (cb) cb(); });
+  }
+
+  function updateNotifBadge() {
+    var unread = notifCache.filter(function (n) { return !n.read; }).length;
+    var badge = document.getElementById("nc-notif-badge");
+    if (badge) { badge.textContent = unread; badge.style.display = unread ? "" : "none"; }
+    var countEl = document.getElementById("nc-notif-count");
+    if (countEl) countEl.textContent = unread;
+  }
+
+  function openNotifPanel() {
+    document.getElementById("nc-notif-panel").classList.add("open");
+    document.getElementById("nc-notif-overlay").classList.add("open");
+    loadNotifications(renderNotifList);
+  }
+
+  function closeNotifPanel() {
+    document.getElementById("nc-notif-panel").classList.remove("open");
+    document.getElementById("nc-notif-overlay").classList.remove("open");
+  }
+
+  function setNotifFilter(f) {
+    notifFilter = f;
+    document.getElementById("nc-notif-filter-all").classList.toggle("active", f === "all");
+    document.getElementById("nc-notif-filter-unread").classList.toggle("active", f === "unread");
+    renderNotifList();
+  }
+
+  function renderNotifList() {
+    var list = document.getElementById("nc-notif-list");
+    if (!list) return;
+    var rows = notifFilter === "unread" ? notifCache.filter(function (n) { return !n.read; }) : notifCache;
+    if (!rows.length) {
+      list.innerHTML = "<div class='nc-notif-empty'><div class='nc-notif-empty-icon'>🔔</div>You're all caught up.<br>Nothing here yet.</div>";
+      return;
+    }
+    list.innerHTML = rows.map(function (n) {
+      var dateLabel = n.createdAt ? new Date(n.createdAt).toLocaleString() : "";
+      return "<div class='nc-notif-item" + (n.read ? " read" : "") + "' onclick=\"openNotification('" + n.id + "')\">" +
+        "<div class='nc-notif-item-dot'></div>" +
+        "<div class='nc-notif-item-body'>" +
+          "<div class='nc-notif-item-title'>" + escapeHtml(n.title) + "</div>" +
+          (n.body ? "<div class='nc-notif-item-meta'>" + escapeHtml(n.body) + "</div>" : "") +
+          "<div class='nc-notif-item-meta'>" + dateLabel + "</div>" +
+        "</div></div>";
+    }).join("");
+  }
+
+  function openNotification(id) {
+    var n = notifCache.find(function (x) { return x.id === id; });
+    if (!n) return;
+    fetch("/api/notifications/" + id + "/read", { method: "POST" }).then(function () {
+      loadNotifications(renderNotifList);
+    });
+    if (n.link) { closeNotifPanel(); switchView(n.link); }
+  }
+
+  function markAllNotifsRead() {
+    fetch("/api/notifications/mark-all-read", { method: "POST" }).then(function () {
+      loadNotifications(renderNotifList);
+    });
+  }
+
+  window.loadNotifications = loadNotifications;
+  window.openNotifPanel = openNotifPanel;
+  window.closeNotifPanel = closeNotifPanel;
+  window.setNotifFilter = setNotifFilter;
+  window.openNotification = openNotification;
+  window.markAllNotifsRead = markAllNotifsRead;
+
   window.handleIngredientRowDblClick = handleIngredientRowDblClick;
   window.handleIngredientRowContextMenu = handleIngredientRowContextMenu;
   window.handleIngredientCentreRowClick = handleIngredientCentreRowClick;
@@ -7496,6 +7772,9 @@ desc: "Imported from " + (fname || "spreadsheet"),
     // empty list until someone happens to visit Projects first.
     loadProjectFolders().then(function () { if (typeof populateProjectSelects === "function") populateProjectSelects(); });
     bindExportExcelDropzone();
+    // Only meaningful under NUTRICOST_AUTH_MODE=local (the homepage-JWT mode has no such
+    // endpoint and this 404s harmlessly) — shows "User Settings" once we know who's signed in.
+    fetchCurrentAuthUser();
     // Deep link: ?recipe=<code> opens that recipe directly on load, taking priority over the
     // normal last-view restore — lets an external list (e.g. a review checklist) link straight
     // into a specific recipe instead of just showing its code for a manual search.

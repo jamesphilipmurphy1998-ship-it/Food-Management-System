@@ -10,6 +10,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<RecipeLineEntity> RecipeLines => Set<RecipeLineEntity>();
     public DbSet<ExportTemplateEntity> ExportTemplates => Set<ExportTemplateEntity>();
     public DbSet<ProjectFolderEntity> ProjectFolders => Set<ProjectFolderEntity>();
+    public DbSet<NutriUserEntity> Users => Set<NutriUserEntity>();
+    public DbSet<ComparisonSaveEntity> ComparisonSaves => Set<ComparisonSaveEntity>();
+    public DbSet<NotificationEntity> Notifications => Set<NotificationEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -130,6 +133,47 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             e.Property(x => x.IsLayer).HasColumnName("is_layer").HasDefaultValue(false);
             e.Property(x => x.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now()");
             e.HasIndex(x => x.ParentId);
+        });
+
+        modelBuilder.Entity<NutriUserEntity>(e =>
+        {
+            e.ToTable("nutri_users");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.Username).HasColumnName("username").IsRequired();
+            e.Property(x => x.Email).HasColumnName("email");
+            e.Property(x => x.DisplayName).HasColumnName("display_name");
+            e.Property(x => x.PassHash).HasColumnName("pass_hash").IsRequired();
+            e.Property(x => x.SiteRole).HasColumnName("site_role").HasDefaultValue("user");
+            e.Property(x => x.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now()");
+            e.HasIndex(x => x.Username).IsUnique();
+        });
+
+        modelBuilder.Entity<ComparisonSaveEntity>(e =>
+        {
+            e.ToTable("comparison_saves");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.UserId).HasColumnName("user_id").IsRequired();
+            e.Property(x => x.Name).HasColumnName("name").IsRequired();
+            e.Property(x => x.ItemsJson).HasColumnName("items_json").IsRequired();
+            e.Property(x => x.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now()");
+            e.Property(x => x.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now()");
+            e.HasIndex(x => x.UserId);
+        });
+
+        modelBuilder.Entity<NotificationEntity>(e =>
+        {
+            e.ToTable("notifications");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.UserId).HasColumnName("user_id").IsRequired();
+            e.Property(x => x.Title).HasColumnName("title").IsRequired();
+            e.Property(x => x.Body).HasColumnName("body");
+            e.Property(x => x.Link).HasColumnName("link");
+            e.Property(x => x.Read).HasColumnName("read").HasDefaultValue(false);
+            e.Property(x => x.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now()");
+            e.HasIndex(x => x.UserId);
         });
     }
 }

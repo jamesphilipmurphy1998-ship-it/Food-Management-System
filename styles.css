@@ -1528,3 +1528,68 @@ body.login-page-active .main-area #view-login .card {
   .topbar, .sidebar, .page-header .actions, .tabs { display: none !important; }
   .main-area { margin: 0; padding: 20px; }
 }
+
+/* ═══════ User Settings (styled after Wasabi Timeline's admin settings page) ═══════ */
+.us-page { background: var(--nc-gray-50); padding: 24px 28px; min-height: 100%; }
+.us-header { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 20px; }
+.us-header-icon { font-size: 18px; line-height: 1; color: var(--nc-green); margin-top: 2px; }
+.us-header h1 { margin: 0; font-size: 18px; font-weight: 600; color: var(--nc-gray-800); }
+.us-header p { margin: 4px 0 0; font-size: 13px; color: var(--nc-gray-500); }
+.us-card { background: #fff; border: 1px solid var(--nc-gray-200); border-radius: 12px; margin-bottom: 20px; overflow: hidden; }
+.us-card-header { display: flex; align-items: flex-start; gap: 12px; padding: 18px 20px; border-bottom: 1px solid var(--nc-gray-100); }
+.us-card-header-icon { width: 28px; height: 28px; flex-shrink: 0; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+.us-card-header h2 { margin: 0; font-size: 14px; font-weight: 600; color: var(--nc-gray-800); }
+.us-card-header p { margin: 3px 0 0; font-size: 12.5px; color: var(--nc-gray-500); }
+.us-card-body { padding: 18px 20px; }
+.us-people-table { width: 100%; border-collapse: collapse; }
+.us-people-table th { text-align: left; font-size: 11.5px; font-weight: 600; color: var(--nc-gray-500); text-transform: uppercase; letter-spacing: .02em; padding: 0 10px 10px; border-bottom: 1px solid var(--nc-gray-100); }
+.us-people-table td { padding: 10px; border-bottom: 1px solid var(--nc-gray-100); font-size: 13px; color: var(--nc-gray-800); vertical-align: middle; }
+.us-people-table tr:last-child td { border-bottom: none; }
+.us-people-table tr:hover td { background: var(--nc-gray-50); }
+.us-name-cell { display: flex; align-items: center; gap: 10px; }
+.us-avatar { width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 11px; font-weight: 600; }
+.us-email-cell { color: var(--nc-gray-500); }
+.us-role-select { border: 1px solid var(--nc-gray-300); border-radius: 6px; padding: 5px 8px; font-size: 12.5px; color: var(--nc-gray-700); background: #fff; }
+.us-remove-btn { width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--nc-gray-200); background: #fff; color: var(--nc-gray-400); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+.us-remove-btn:hover { background: #fdecec; color: #b91c1c; border-color: #f3c9c9; }
+.us-reset-link { font-size: 12px; color: var(--nc-green); cursor: pointer; margin-left: 10px; white-space: nowrap; }
+.us-reset-link:hover { text-decoration: underline; }
+.us-me-row { display: flex; align-items: center; gap: 14px; }
+
+.us-accordion-item { border: 1px solid var(--nc-gray-200); border-radius: 10px; margin-bottom: 8px; overflow: hidden; }
+.us-accordion-item summary { list-style: none; cursor: pointer; padding: 12px 16px; font-size: 13.5px; font-weight: 600; color: var(--nc-gray-800); background: var(--nc-gray-50); display: flex; align-items: center; gap: 8px; }
+.us-accordion-item summary::-webkit-details-marker { display: none; }
+.us-accordion-item summary::before { content: "▶"; font-size: 9px; color: var(--nc-gray-400); transition: transform .12s; }
+.us-accordion-item[open] summary::before { transform: rotate(90deg); }
+.us-accordion-item[open] summary { border-bottom: 1px solid var(--nc-gray-200); }
+.us-accordion-body { padding: 12px 16px; font-size: 13px; color: var(--nc-gray-600); line-height: 1.5; }
+
+/* ═══════ Notifications (styled after Wasabi Timeline's alert/inbox panel) ═══════ */
+.nc-notif-panel {
+  position: fixed; top: var(--nc-topbar-h); right: 0; bottom: 0; width: 380px;
+  background: #fff; border-left: 1px solid var(--nc-gray-200);
+  box-shadow: -4px 0 20px rgba(0,0,0,.1); z-index: 250;
+  transform: translateX(100%); transition: transform .22s ease;
+  display: flex; flex-direction: column;
+}
+.nc-notif-panel.open { transform: translateX(0); }
+.nc-notif-hdr { padding: 16px 18px; border-bottom: 1px solid var(--nc-gray-200); display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.nc-notif-title { font-size: 15px; font-weight: 700; flex: 1; color: var(--nc-gray-800); }
+.nc-notif-count { background: var(--nc-green); color: #fff; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 10px; }
+.nc-notif-filters { padding: 10px 18px 6px; border-bottom: 1px solid var(--nc-gray-200); display: flex; gap: 6px; }
+.nc-notif-fbtn { padding: 5px 10px; border-radius: 6px; border: none; background: none; cursor: pointer; font-size: 12px; font-weight: 600; color: var(--nc-gray-500); font-family: inherit; }
+.nc-notif-fbtn:hover { background: var(--nc-gray-50); color: var(--nc-gray-800); }
+.nc-notif-fbtn.active { background: var(--nc-accent-light); color: var(--nc-green); }
+.nc-notif-list { flex: 1; overflow-y: auto; padding: 8px 0; }
+.nc-notif-item { padding: 12px 18px; border-bottom: 1px solid var(--nc-gray-100); display: flex; gap: 10px; align-items: flex-start; cursor: pointer; transition: background .12s; }
+.nc-notif-item:hover { background: var(--nc-gray-50); }
+.nc-notif-item-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; background: var(--nc-green); }
+.nc-notif-item.read .nc-notif-item-dot { background: var(--nc-gray-300); }
+.nc-notif-item-body { flex: 1; min-width: 0; }
+.nc-notif-item-title { font-size: 13px; font-weight: 600; color: var(--nc-gray-800); }
+.nc-notif-item-meta { font-size: 11.5px; color: var(--nc-gray-500); margin-top: 2px; }
+.nc-notif-empty { padding: 50px 20px; text-align: center; color: var(--nc-gray-500); font-size: 13px; }
+.nc-notif-empty-icon { font-size: 36px; margin-bottom: 10px; }
+.nc-notif-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.15); z-index: 240; display: none; }
+.nc-notif-overlay.open { display: block; }
+.sidebar-item .nc-notif-badge { margin-left: auto; background: var(--nc-green); color: #fff; font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 10px; }

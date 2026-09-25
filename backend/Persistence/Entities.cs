@@ -104,6 +104,57 @@ public sealed class ProjectFolderEntity
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 }
 
+/// <summary>A NutriCost account for local (username/password) sign-in — same pattern as Wasabi
+/// Timeline's `timeline_users` table, so this can later be switched to Entra ID the same way
+/// Timeline was, without changing the shape of "who is signed in." SiteRole gates the User
+/// Settings admin page; every other endpoint is still shared data (accounts don't yet scope
+/// ingredients/recipes to a single user — that's the next step once this framework is in place).</summary>
+public sealed class NutriUserEntity
+{
+    public string Id { get; set; } = "";
+    public string Username { get; set; } = "";
+    public string Email { get; set; } = "";
+    public string DisplayName { get; set; } = "";
+    public string PassHash { get; set; } = "";
+    public string SiteRole { get; set; } = "user";
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+}
+
+/// <summary>A named comparison a signed-in user saved for later — personal, not shared: only
+/// visible to the account that created it (enforced server-side by matching UserId against the
+/// caller's NameIdentifier claim, not just hidden client-side). Only reachable under
+/// NUTRICOST_AUTH_MODE=local, where accounts are real; other modes have no per-user identity to
+/// scope this by.</summary>
+public sealed class ComparisonSaveEntity
+{
+    public string Id { get; set; } = "";
+    public string UserId { get; set; } = "";
+    public string Name { get; set; } = "";
+    /// <summary>JSON array of {kind,id,name,code,sellPrice,annualVolume} — same shape the
+    /// frontend already builds client-side, just persisted instead of kept in localStorage.</summary>
+    public string ItemsJson { get; set; } = "[]";
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
+}
+
+/// <summary>A personal notification for one account — mirrors Wasabi Timeline's inbox/alert
+/// panel structurally. Nothing produces these yet (no event creates a row here today); the
+/// table and endpoints exist now so the upcoming "share a saved comparison with another
+/// account" feature can start writing rows without a schema change, and the frontend panel has
+/// something real to read from in the meantime (just empty).</summary>
+public sealed class NotificationEntity
+{
+    public string Id { get; set; } = "";
+    public string UserId { get; set; } = "";
+    public string Title { get; set; } = "";
+    public string? Body { get; set; }
+    /// <summary>Client-side route to open when the notification is clicked, e.g. a comparison
+    /// save id — shape TBD once the producing feature (shared comparisons) exists.</summary>
+    public string? Link { get; set; }
+    public bool Read { get; set; }
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+}
+
 /// <summary>Shared export template (e.g. BC Form). Stored in backend so all users see the same templates.</summary>
 public sealed class ExportTemplateEntity
 {
