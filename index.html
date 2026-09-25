@@ -650,6 +650,7 @@
           </div>
           <button class="btn btn-sm" id="recipe-detail-toggle-approved" onclick="toggleRecipeApproved()">Mark as approved</button>
           <button class="btn btn-sm" id="recipe-detail-submit-approval" style="display:none" onclick="openSubmitForApprovalModal()">Submit for Approval</button>
+          <button class="btn btn-sm" id="recipe-detail-merge-btn" style="display:none" onclick="openMergeRecipeModal()">Merge Recipe</button>
           <button class="btn" onclick="openDuplicateRecipeModal()">Duplicate</button>
           <button class="btn btn-danger" onclick="deleteCurrentRecipe()">Delete</button>
         </div>
@@ -1401,6 +1402,21 @@
   <div class="nc-notif-list" id="nc-notif-list"></div>
 </div>
 
+<!-- Merge Recipe Modal -->
+<div class="modal-overlay" id="modal-merge-recipe">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header"><h3>Merge into this recipe</h3></div>
+    <div class="modal-body">
+      <p style="font-size:12.5px;color:var(--nc-gray-500);margin-bottom:10px">This recipe's ingredients and nutrition are kept. Pick the real-coded recipe to take the code and name from — it will be deleted once merged.</p>
+      <input type="text" class="form-input" id="merge-recipe-search" placeholder="Search by name or code…" oninput="filterMergeRecipeResults()" style="margin-bottom:10px">
+      <div id="merge-recipe-results" style="max-height:320px;overflow-y:auto"></div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn" onclick="closeModal('modal-merge-recipe')">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <!-- Submit Recipe For Approval Modal -->
 <div class="modal-overlay" id="modal-submit-approval">
   <div class="modal" style="max-width:380px">
@@ -1812,7 +1828,7 @@
 <script src="hfss.js?v=20260923-cache-buster"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="app.js?v=20260925-submit-approval"></script>
+<script src="app.js?v=20260925-merge-recipe"></script>
 <script src="excel-import.js?v=20260916-parentnoofportions-col-k"></script>
 <script src="reports.js?v=20260923-cache-buster"></script>
 </body>

@@ -4334,13 +4334,15 @@
     var badge = document.getElementById("recipe-detail-status-badge");
     var toggleBtn = document.getElementById("recipe-detail-toggle-approved");
     if (badge) {
-      badge.textContent = r.approved ? "Approved" : "In development";
+      badge.textContent = r.approved ? "Approved for code creation" : "In development";
       badge.className = "badge badge-status " + (r.approved ? "badge-approved" : "badge-development");
     }
     if (toggleBtn) {
-      toggleBtn.textContent = r.approved ? "Mark as in development" : "Mark as approved";
+      toggleBtn.textContent = r.approved ? "Mark as in development" : "Approve for code creation";
       toggleBtn.style.display = canApproveRecipes() ? "" : "none";
     }
+    var mergeBtn = document.getElementById("recipe-detail-merge-btn");
+    if (mergeBtn) mergeBtn.style.display = (canApproveRecipes() && r.approved) ? "" : "none";
     var submitApprovalBtn = document.getElementById("recipe-detail-submit-approval");
     if (submitApprovalBtn) submitApprovalBtn.style.display = (!canApproveRecipes() && !r.approved) ? "" : "none";
     // Approved recipes are locked: the Edit modal (name/code/type/UOM/weight) must not be
@@ -4422,14 +4424,86 @@
     // to "in development" reopens it to editing, so confirm first rather than silently
     // unlocking an approved recipe from a stray click.
     if (r.approved) {
-      if (!confirm("This recipe is approved and currently locked. Mark it as in development so it can be edited again?")) return;
+      if (!confirm("This recipe is approved for code creation and currently locked. Mark it as in development so it can be edited again?")) return;
     }
     r.approved = !r.approved;
     Recipes.saveRecipe(r);
-    showToast(r.approved ? "Recipe marked as approved" : "Recipe marked as in development — now editable");
+    showToast(r.approved ? "Recipe approved for code creation" : "Recipe marked as in development — now editable");
     openRecipe(currentRecipeId);
     renderAll();
   }
+
+  // ─── Merge Recipe ────────────────────────────────────────────────────────────
+  // Once a recipe is "Approved for code creation," the real workflow is: someone builds the
+  // identical recipe in the official system with a real code, and it gets imported back in here
+  // — so for a while there are two rows for the same product (ours, still coded "NEW"-style,
+  // with full nutritionals/ingredients; theirs, with the real code, freshly imported and usually
+  // thin on detail). Merge keeps THIS recipe (its ingredients/nutrition/method survive) but takes
+  // the Code and Name from whichever recipe you pick, then deletes that picked one — one recipe,
+  // real code, our detail. Technical-only, and only offered once approved (see the visibility
+  // check next to canApproveRecipes() above).
+  var mergeRecipeTargetId = null;
+
+  function openMergeRecipeModal() {
+    if (!currentRecipeId) return;
+    mergeRecipeTargetId = null;
+    var searchInput = document.getElementById("merge-recipe-search");
+    if (searchInput) searchInput.value = "";
+    renderMergeRecipeResults("");
+    openModal("modal-merge-recipe");
+  }
+
+  function filterMergeRecipeResults() {
+    var searchInput = document.getElementById("merge-recipe-search");
+    renderMergeRecipeResults(searchInput ? searchInput.value : "");
+  }
+
+  function renderMergeRecipeResults(query) {
+    var list = document.getElementById("merge-recipe-results");
+    if (!list) return;
+    var q = (query || "").trim().toLowerCase();
+    var recipes = Recipes.getRecipes().filter(function (r) { return r.id !== currentRecipeId; });
+    if (q) {
+      recipes = recipes.filter(function (r) {
+        return (r.name || "").toLowerCase().indexOf(q) !== -1 || (r.code || "").toLowerCase().indexOf(q) !== -1;
+      });
+    }
+    recipes = recipes.slice(0, 30);
+    list.innerHTML = recipes.length
+      ? recipes.map(function (r) {
+          return "<div class=\"card\" style=\"padding:8px 12px;display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px\">" +
+            "<div><div style=\"font-weight:600;font-size:13px\">" + escapeHtml(r.name) + "</div>" +
+            "<div style=\"font-size:11.5px;color:var(--nc-gray-500)\">Code: " + escapeHtml(r.code || "—") + "</div></div>" +
+            "<button type=\"button\" class=\"btn btn-sm btn-primary\" onclick=\"mergeRecipeConfirm('" + r.id + "')\">Merge</button>" +
+            "</div>";
+        }).join("")
+      : "<p style=\"font-size:12px;color:var(--nc-gray-500)\">No matching recipes.</p>";
+  }
+
+  function mergeRecipeConfirm(targetId) {
+    var recipes = Recipes.getRecipes();
+    var keep = recipes.find(function (r) { return r.id === currentRecipeId; });
+    var target = recipes.find(function (r) { return r.id === targetId; });
+    if (!keep || !target) return;
+    if (!confirm("Merge \"" + target.name + "\" (code " + (target.code || "—") + ") into this recipe? This recipe's ingredients and nutrition are kept; its name and code are replaced with the selected recipe's, and the selected recipe is deleted.")) return;
+    keep.code = target.code;
+    keep.name = target.name;
+    // Union, not overwrite — keeps this recipe's own Project-folder tag(s) as well as any the
+    // incoming (real-coded) recipe already picked up on import, so neither side's tagging is lost.
+    var tagSet = {};
+    (keep.descriptionTags || []).concat(target.descriptionTags || []).forEach(function (t) { tagSet[t] = true; });
+    keep.descriptionTags = Object.keys(tagSet);
+    Recipes.saveRecipe(keep);
+    Recipes.deleteRecipe(target.id);
+    closeModal("modal-merge-recipe");
+    renderAll();
+    openRecipe(keep.id);
+    showToast("Recipes merged");
+  }
+
+  window.openMergeRecipeModal = openMergeRecipeModal;
+  window.filterMergeRecipeResults = filterMergeRecipeResults;
+  window.mergeRecipeConfirm = mergeRecipeConfirm;
 
   // "Submit for Approval" — a Food Team account can't approve a recipe itself, so this just
   // sends a chosen Technical account a notification that opens straight to the recipe (see
