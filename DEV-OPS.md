@@ -206,3 +206,57 @@ back empty):
 git remote add origin https://github.com/jamesphilipmurphy1998-ship-it/Food-Management-System.git
 git push -u origin master
 ```
+
+## 5. Deploying the other Wasabi Functions apps (homepage, Approval Process)
+
+These live outside this repo, at `C:\Dev\wasabi-home` and `C:\Dev\wasabi-approval` — neither
+is a git repo, so there's no push/pull step, just copy-to-Pi. Both are plain static HTML (no
+build step, no backend of their own), served the same way `wasabi-home` already is: a
+systemd unit running `python3 -m http.server <port>` pointed at a folder under `/opt`.
+
+**Wasabi Functions homepage** (`http://192.168.0.50:5000`, systemd service `wasabi-home`) —
+after editing `wasabi-home/index.html` (e.g. adding a new app box):
+
+```powershell
+scp C:\Dev\wasabi-home\index.html dizziness7883@192.168.0.50:/opt/wasabi-home/
+ssh dizziness7883@192.168.0.50 "sudo systemctl restart wasabi-home"
+curl http://192.168.0.50:5000/
+```
+
+No cache-buster needed — it's a single un-cached HTML file with no separate JS/CSS assets.
+
+**Approval Process** (`http://192.168.0.50:5005` once deployed) — tracks where each recipe
+sits in the code-creation pipeline (In Development → Approved for Code Creation → Complete)
+by reading NutriCost's `/api/recipes` live, using the visitor's existing NutriCost sign-in
+cookie (this only works because NutriCost's CORS policy has `AllowCredentials()` — see
+`backend/Program.cs`). First-time setup on the Pi (do this once):
+
+```powershell
+ssh dizziness7883@192.168.0.50 "sudo mkdir -p /opt/wasabi-approval"
+scp C:\Dev\wasabi-approval\index.html dizziness7883@192.168.0.50:/opt/wasabi-approval/
+```
+
+Then create the systemd unit (`/etc/systemd/system/wasabi-approval.service` on the Pi),
+mirroring whatever `wasabi-home.service` already looks like — same `python3 -m http.server`
+pattern, just port `5005` and `WorkingDirectory=/opt/wasabi-approval`:
+
+```powershell
+ssh dizziness7883@192.168.0.50 "sudo systemctl enable --now wasabi-approval"
+curl http://192.168.0.50:5005/
+```
+
+**Every later update** (just the one file, same as the homepage):
+
+```powershell
+scp C:\Dev\wasabi-approval\index.html dizziness7883@192.168.0.50:/opt/wasabi-approval/
+ssh dizziness7883@192.168.0.50 "sudo systemctl restart wasabi-approval"
+```
+
+Also add its box to the homepage (section above) once it's live, if not already there.
+
+> **Local testing note:** `static-server.ps1` (section 1) already uses port 5005 for
+> NutriCost's own frontend-only dev server. If that's running, test Approval Process on a
+> different local port instead (e.g. `python -m http.server 5006` from
+> `C:\Dev\wasabi-approval`) and pass `?api=http://localhost:5055` in the URL to point it at
+> the local NutriCost backend — the Pi deployment still uses 5005 as documented above, this
+> is purely a local dev-port collision, not a Pi-side one.
