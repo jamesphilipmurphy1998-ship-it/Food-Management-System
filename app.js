@@ -5902,10 +5902,11 @@
     // built — this is what belongs under Line Cost, distinct from totalCostPerUom above (cost
     // per 1 unit of the recipe's own UOM, which only equals the line-cost sum when the recipe's
     // total output happens to be exactly 1 of that unit).
+    var totalWeightCellText = totalW > 0 ? Data.round(totalW) + "g" : "";
     var totalRow = "<tr class=\"recipe-totals-row\" style=\"font-weight:700;background:var(--nc-gray-50);border-top:2px solid var(--nc-gray-300)\">" +
       "<td colspan=\"2\">Total</td>" +
       "<td class=\"num\" style=\"font-family:var(--nc-mono)\">" + totalDisplay + "</td>" +
-      "<td></td>" +
+      "<td class=\"num\" style=\"font-family:var(--nc-mono);font-size:12px;color:var(--nc-gray-600)\" title=\"Total recipe weight\">" + totalWeightCellText + "</td>" +
       "<td class=\"num\">100%</td>" +
       "<td></td>" +
       "<td class=\"num\" style=\"font-family:var(--nc-mono);font-size:12px\">£" + totalCostPerUom.toFixed(3) +
