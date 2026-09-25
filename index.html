@@ -506,6 +506,19 @@
           <input type="checkbox" id="ingredient-include-unlinked" onchange="setIngredientFilter()">
           Include unlinked
         </label>
+        <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--nc-gray-500)">
+          Created
+          <input type="date" class="form-input" id="ingredient-created-from" onchange="setIngredientFilter()" style="width:135px;padding:6px 8px;font-size:12px" title="Created on or after">
+          <span>–</span>
+          <input type="date" class="form-input" id="ingredient-created-to" onchange="setIngredientFilter()" style="width:135px;padding:6px 8px;font-size:12px" title="Created on or before">
+        </div>
+        <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--nc-gray-500)">
+          Modified
+          <input type="date" class="form-input" id="ingredient-modified-from" onchange="setIngredientFilter()" style="width:135px;padding:6px 8px;font-size:12px" title="Last modified on or after">
+          <span>–</span>
+          <input type="date" class="form-input" id="ingredient-modified-to" onchange="setIngredientFilter()" style="width:135px;padding:6px 8px;font-size:12px" title="Last modified on or before">
+        </div>
+        <button type="button" class="btn btn-sm" onclick="clearIngredientDateFilters()" title="Clear date filters">Clear dates</button>
       </div>
 
       <div class="card" id="ingredients-card" style="padding:0;">
@@ -579,6 +592,19 @@
           <input type="checkbox" id="recipe-include-delisted" onchange="setRecipeFilter()">
           Include delisted
         </label>
+        <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--nc-gray-500)">
+          Created
+          <input type="date" class="form-input" id="recipe-created-from" onchange="setRecipeFilter()" style="width:135px;padding:6px 8px;font-size:12px" title="Created on or after">
+          <span>–</span>
+          <input type="date" class="form-input" id="recipe-created-to" onchange="setRecipeFilter()" style="width:135px;padding:6px 8px;font-size:12px" title="Created on or before">
+        </div>
+        <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--nc-gray-500)">
+          Modified
+          <input type="date" class="form-input" id="recipe-modified-from" onchange="setRecipeFilter()" style="width:135px;padding:6px 8px;font-size:12px" title="Last modified on or after">
+          <span>–</span>
+          <input type="date" class="form-input" id="recipe-modified-to" onchange="setRecipeFilter()" style="width:135px;padding:6px 8px;font-size:12px" title="Last modified on or before">
+        </div>
+        <button type="button" class="btn btn-sm" onclick="clearRecipeDateFilters()" title="Clear date filters">Clear dates</button>
       </div>
 
       <div class="card" id="recipes-card" style="padding:0;">
@@ -1828,7 +1854,7 @@
 <script src="hfss.js?v=20260923-cache-buster"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="app.js?v=20260925-total-weight-col"></script>
+<script src="app.js?v=20260925-date-filters"></script>
 <script src="excel-import.js?v=20260916-parentnoofportions-col-k"></script>
 <script src="reports.js?v=20260923-cache-buster"></script>
 </body>

@@ -3687,6 +3687,13 @@
     if (typeFilterVal === "packaging") filteredIng = filteredIng.filter(isPackagingItem);
     if (typeFilterVal === "other") filteredIng = filteredIng.filter(function (i) { return (i.cat || "").trim() === "Other" && !isPackagingItem(i); });
     if (!includeDelistedIngredients()) filteredIng = filteredIng.filter(function (i) { return !isDelisted(i.name); });
+    var createdFromVal = (document.getElementById("ingredient-created-from") || {}).value;
+    var createdToVal = (document.getElementById("ingredient-created-to") || {}).value;
+    var modifiedFromVal = (document.getElementById("ingredient-modified-from") || {}).value;
+    var modifiedToVal = (document.getElementById("ingredient-modified-to") || {}).value;
+    filteredIng = filteredIng.filter(function (i) {
+      return dateInRange(i.created, createdFromVal, createdToVal) && dateInRange(i.updatedAt, modifiedFromVal, modifiedToVal);
+    });
     var singleIngRecipes = recipes.filter(isSingleIngredientRecipe);
     if (filterVal === "approved") singleIngRecipes = singleIngRecipes.filter(function (r) { return !!r.approved; });
     if (filterVal === "development") singleIngRecipes = singleIngRecipes.filter(function (r) { return !r.approved; });
@@ -3703,6 +3710,9 @@
       return baseIng && (baseIng.cat || "").trim() === "Other" && !isPackagingItem(baseIng);
     });
     if (!includeDelistedIngredients()) singleIngRecipes = singleIngRecipes.filter(function (r) { return !isDelisted(r.name); });
+    singleIngRecipes = singleIngRecipes.filter(function (r) {
+      return dateInRange(r.created, createdFromVal, createdToVal) && dateInRange(r.updatedAt, modifiedFromVal, modifiedToVal);
+    });
     if (!includeUnlinkedIngredients()) {
       filteredIng = filteredIng.filter(function (i) { return (usedInCount[i.id] || 0) > 0; });
       singleIngRecipes = singleIngRecipes.filter(function (r) { return (usedInCount["rec:" + r.id] || 0) > 0; });
@@ -3776,6 +3786,40 @@
   function setIngredientFilter(value) {
     renderIngredientsTable();
   }
+
+  // Shared by the Ingredient Centre and Recipe Centre date-range filters. No bounds set ==
+  // no filtering at all (fast path, and matches every other filter here defaulting to "all").
+  // A record with no date of its own only matches when no bound is set, since we can't confirm
+  // it's actually in range.
+  function dateInRange(dateVal, fromVal, toVal) {
+    if (!fromVal && !toVal) return true;
+    if (!dateVal) return false;
+    var d = new Date(dateVal);
+    if (isNaN(d.getTime())) return false;
+    if (fromVal && d < new Date(fromVal + "T00:00:00")) return false;
+    if (toVal && d > new Date(toVal + "T23:59:59")) return false;
+    return true;
+  }
+
+  function clearIngredientDateFilters() {
+    ["ingredient-created-from", "ingredient-created-to", "ingredient-modified-from", "ingredient-modified-to"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.value = "";
+    });
+    renderIngredientsTable();
+  }
+
+  function clearRecipeDateFilters() {
+    ["recipe-created-from", "recipe-created-to", "recipe-modified-from", "recipe-modified-to"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.value = "";
+    });
+    renderRecipesList();
+  }
+
+  window.dateInRange = dateInRange;
+  window.clearIngredientDateFilters = clearIngredientDateFilters;
+  window.clearRecipeDateFilters = clearRecipeDateFilters;
 
   function clearAllIngredients(closeModalAfter) {
     var ingredients = Ingredients.getIngredients();
@@ -5139,6 +5183,13 @@
     if (typeFilterVal === "subRecipe") filtered = filtered.filter(function (r) { return (r.recipeType || "finishedProduct") === "subRecipe"; });
     if (!includeDelistedRecipes()) filtered = filtered.filter(function (r) { return !isDelisted(r.name); });
     filtered = filtered.filter(function (r) { return !isSingleIngredientRecipe(r); });
+    var recCreatedFromVal = (document.getElementById("recipe-created-from") || {}).value;
+    var recCreatedToVal = (document.getElementById("recipe-created-to") || {}).value;
+    var recModifiedFromVal = (document.getElementById("recipe-modified-from") || {}).value;
+    var recModifiedToVal = (document.getElementById("recipe-modified-to") || {}).value;
+    filtered = filtered.filter(function (r) {
+      return dateInRange(r.created, recCreatedFromVal, recCreatedToVal) && dateInRange(r.updatedAt, recModifiedFromVal, recModifiedToVal);
+    });
     var body = document.getElementById("recipes-body");
     var emptyEl = document.getElementById("recipes-empty");
     var countLabel = document.getElementById("recipes-count-label");
