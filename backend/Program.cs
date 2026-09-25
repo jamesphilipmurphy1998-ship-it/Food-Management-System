@@ -574,6 +574,38 @@ document.getElementById('f').addEventListener('submit', async (ev) => {
         var result = rows.Select(r => new { r.Id, r.Name, items = JsonSerializer.Deserialize<JsonElement>(r.ItemsJson, (JsonSerializerOptions?)null), r.savedAt, r.sharedAt, r.sharedByName, r.sharedByEmail });
         return Results.Ok(result);
     });
+
+    // ─── Submit a recipe for approval ───────────────────────────────────────────
+    // A Food Team account can't approve a recipe itself (see the approved-field guard on the
+    // recipe PUT endpoints) — this just pings a chosen Technical account with a notification
+    // that opens straight to the recipe so they can review and flip it themselves. Doesn't
+    // change the recipe or grant any extra access; purely a nudge.
+    app.MapPost("/api/recipes/{id}/submit-for-approval", async (AppDbContext db, HttpContext ctx, string id, JsonElement body) =>
+    {
+        var userId = ctx.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId)) return Results.Unauthorized();
+        var recipe = await db.Recipes.AsNoTracking().FirstOrDefaultAsync(r => r.Id == id);
+        if (recipe == null) return Results.NotFound();
+        var targetUserId = body.TryGetProperty("userId", out var uEl) ? uEl.GetString() : null;
+        if (string.IsNullOrWhiteSpace(targetUserId)) return Results.BadRequest(new { error = "Pick who to submit to" });
+        var targetRoleRows = await db.Database.SqlQueryRaw<string>("SELECT site_role AS \"Value\" FROM nutri_users WHERE id = {0} LIMIT 1", targetUserId).ToListAsync();
+        if (targetRoleRows.Count == 0) return Results.NotFound(new { error = "Account not found" });
+        if (targetRoleRows[0] != "admin") return Results.BadRequest(new { error = "Pick a Technical team member" });
+
+        var submitterNameRows = await db.Database.SqlQueryRaw<string>("SELECT display_name AS \"Value\" FROM nutri_users WHERE id = {0} LIMIT 1", userId).ToListAsync();
+        var submitterName = submitterNameRows.Count > 0 && !string.IsNullOrWhiteSpace(submitterNameRows[0]) ? submitterNameRows[0] : "Someone";
+
+        db.Notifications.Add(new NotificationEntity
+        {
+            Id = Guid.NewGuid().ToString("N"),
+            UserId = targetUserId!,
+            Title = submitterName + " submitted a recipe for approval",
+            Body = recipe.Name,
+            Link = "reviewrecipe:" + id
+        });
+        await db.SaveChangesAsync();
+        return Results.Ok(new { ok = true });
+    });
 }
 
 // Ensure DB has latest schema

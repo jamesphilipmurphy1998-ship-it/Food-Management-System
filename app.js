@@ -4341,6 +4341,8 @@
       toggleBtn.textContent = r.approved ? "Mark as in development" : "Mark as approved";
       toggleBtn.style.display = canApproveRecipes() ? "" : "none";
     }
+    var submitApprovalBtn = document.getElementById("recipe-detail-submit-approval");
+    if (submitApprovalBtn) submitApprovalBtn.style.display = (!canApproveRecipes() && !r.approved) ? "" : "none";
     // Approved recipes are locked: the Edit modal (name/code/type/UOM/weight) must not be
     // reachable until someone explicitly unlocks the recipe via toggleRecipeApproved().
     var editBtn = document.getElementById("recipe-detail-edit-btn");
@@ -4428,6 +4430,39 @@
     openRecipe(currentRecipeId);
     renderAll();
   }
+
+  // "Submit for Approval" — a Food Team account can't approve a recipe itself, so this just
+  // sends a chosen Technical account a notification that opens straight to the recipe (see
+  // openNotification's "reviewrecipe:" handling). Doesn't change the recipe at all.
+  function openSubmitForApprovalModal() {
+    if (!currentRecipeId) return;
+    var select = document.getElementById("submit-approval-user-select");
+    if (!select) return;
+    select.innerHTML = "<option value=''>Loading…</option>";
+    openModal("modal-submit-approval");
+    fetch("/api/site/users").then(function (r) { return r.json(); }).then(function (users) {
+      var technical = users.filter(function (u) { return u.siteRole === "admin"; });
+      select.innerHTML = technical.length
+        ? technical.map(function (u) { return "<option value='" + u.id + "'>" + escapeHtml(u.displayName || u.email) + "</option>"; }).join("")
+        : "<option value=''>No Technical accounts yet</option>";
+    }).catch(function () { select.innerHTML = "<option value=''>Could not load accounts</option>"; });
+  }
+
+  function submitForApprovalConfirm() {
+    var select = document.getElementById("submit-approval-user-select");
+    var targetId = select ? select.value : "";
+    if (!targetId || !currentRecipeId) { closeModal("modal-submit-approval"); return; }
+    fetch("/api/recipes/" + currentRecipeId + "/submit-for-approval", {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ userId: targetId })
+    }).then(function (r) {
+      if (!r.ok) return r.json().then(function (j) { throw new Error(j.error || "Failed"); });
+      closeModal("modal-submit-approval");
+      showToast("Submitted for approval");
+    }).catch(function (e) { showToast(e.message || "Could not submit for approval"); });
+  }
+
+  window.openSubmitForApprovalModal = openSubmitForApprovalModal;
+  window.submitForApprovalConfirm = submitForApprovalConfirm;
 
   function openEditRecipeNameModal() {
     if (!currentRecipeId) return;
@@ -7685,6 +7720,11 @@ desc: "Imported from " + (fname || "spreadsheet"),
     if (n.link && n.link.indexOf("sharedcomparison:") === 0) {
       closeNotifPanel();
       openSharedComparisonById(n.link.slice("sharedcomparison:".length));
+      return;
+    }
+    if (n.link && n.link.indexOf("reviewrecipe:") === 0) {
+      closeNotifPanel();
+      openRecipe(n.link.slice("reviewrecipe:".length));
       return;
     }
     if (n.link) { closeNotifPanel(); switchView(n.link); }

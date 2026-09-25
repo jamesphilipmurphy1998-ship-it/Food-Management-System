@@ -649,6 +649,7 @@
             </div>
           </div>
           <button class="btn btn-sm" id="recipe-detail-toggle-approved" onclick="toggleRecipeApproved()">Mark as approved</button>
+          <button class="btn btn-sm" id="recipe-detail-submit-approval" style="display:none" onclick="openSubmitForApprovalModal()">Submit for Approval</button>
           <button class="btn" onclick="openDuplicateRecipeModal()">Duplicate</button>
           <button class="btn btn-danger" onclick="deleteCurrentRecipe()">Delete</button>
         </div>
@@ -1400,6 +1401,21 @@
   <div class="nc-notif-list" id="nc-notif-list"></div>
 </div>
 
+<!-- Submit Recipe For Approval Modal -->
+<div class="modal-overlay" id="modal-submit-approval">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-header"><h3>Submit for approval</h3></div>
+    <div class="modal-body">
+      <label class="form-label">Send to</label>
+      <select class="form-input" id="submit-approval-user-select"></select>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn" onclick="closeModal('modal-submit-approval')">Cancel</button>
+      <button type="button" class="btn btn-primary" onclick="submitForApprovalConfirm()">Submit</button>
+    </div>
+  </div>
+</div>
+
 <!-- Share Comparison Modal -->
 <div class="modal-overlay" id="modal-share-comparison">
   <div class="modal" style="max-width:380px">
@@ -1796,7 +1812,7 @@
 <script src="hfss.js?v=20260923-cache-buster"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="app.js?v=20260925-login-dashboard"></script>
+<script src="app.js?v=20260925-submit-approval"></script>
 <script src="excel-import.js?v=20260916-parentnoofportions-col-k"></script>
 <script src="reports.js?v=20260923-cache-buster"></script>
 </body>
