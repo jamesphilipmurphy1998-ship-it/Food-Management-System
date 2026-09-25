@@ -13,6 +13,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<NutriUserEntity> Users => Set<NutriUserEntity>();
     public DbSet<ComparisonSaveEntity> ComparisonSaves => Set<ComparisonSaveEntity>();
     public DbSet<NotificationEntity> Notifications => Set<NotificationEntity>();
+    public DbSet<ComparisonShareEntity> ComparisonShares => Set<ComparisonShareEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -160,6 +161,19 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             e.Property(x => x.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now()");
             e.Property(x => x.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now()");
             e.HasIndex(x => x.UserId);
+        });
+
+        modelBuilder.Entity<ComparisonShareEntity>(e =>
+        {
+            e.ToTable("comparison_shares");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.ComparisonSaveId).HasColumnName("comparison_save_id").IsRequired();
+            e.Property(x => x.SharedByUserId).HasColumnName("shared_by_user_id").IsRequired();
+            e.Property(x => x.SharedWithUserId).HasColumnName("shared_with_user_id").IsRequired();
+            e.Property(x => x.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now()");
+            e.HasIndex(x => x.SharedWithUserId);
+            e.HasIndex(x => x.ComparisonSaveId);
         });
 
         modelBuilder.Entity<NotificationEntity>(e =>

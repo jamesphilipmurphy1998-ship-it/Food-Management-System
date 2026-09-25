@@ -269,7 +269,7 @@ document.getElementById('f').addEventListener('submit', async (ev) => {
   const u = document.getElementById('u').value.trim();
   const p = document.getElementById('p').value;
   const r = await fetch('/api/auth/local/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email:u,password:p})});
-  if (r.ok) { location.href = '/'; return; }
+  if (r.ok) { sessionStorage.setItem('ncJustSignedIn','1'); location.href = '/'; return; }
   document.getElementById('e').textContent = 'Login failed — check your email and password.';
 });
 </script></body></html>
@@ -298,7 +298,7 @@ document.getElementById('f').addEventListener('submit', async (ev) => {
   const u = document.getElementById('u').value.trim();
   const p = document.getElementById('p').value;
   const r = await fetch('/api/auth/local/signup',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({displayName:d,email:u,password:p})});
-  if (r.ok) { location.href = '/'; return; }
+  if (r.ok) { sessionStorage.setItem('ncJustSignedIn','1'); location.href = '/'; return; }
   const j = await r.json().catch(() => ({}));
   document.getElementById('e').textContent = j.error || 'Could not create account.';
 });
@@ -519,6 +519,60 @@ document.getElementById('f').addEventListener('submit', async (ev) => {
         if (string.IsNullOrEmpty(userId)) return Results.Unauthorized();
         await db.Notifications.Where(n => n.UserId == userId && !n.Read).ExecuteUpdateAsync(s => s.SetProperty(n => n.Read, true));
         return Results.Ok(new { ok = true });
+    });
+
+    // ─── Sharing a saved comparison with another account ───────────────────────
+    // The comparison stays owned by whoever saved it — a share only grants the recipient read
+    // access (via GET .../shared-with-me) and creates a notification. Only the owner can share.
+    app.MapPost("/api/comparison-saves/{id}/share", async (AppDbContext db, HttpContext ctx, string id, JsonElement body) =>
+    {
+        var userId = ctx.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId)) return Results.Unauthorized();
+        var save = await db.ComparisonSaves.AsNoTracking().FirstOrDefaultAsync(c => c.Id == id);
+        if (save == null) return Results.NotFound();
+        if (save.UserId != userId) return Results.Forbid();
+        var targetUserId = body.TryGetProperty("userId", out var uEl) ? uEl.GetString() : null;
+        if (string.IsNullOrWhiteSpace(targetUserId)) return Results.BadRequest(new { error = "Pick who to share with" });
+        if (targetUserId == userId) return Results.BadRequest(new { error = "You already have this one" });
+        var targetExists = await db.Database.SqlQueryRaw<int>("SELECT 1 AS \"Value\" FROM nutri_users WHERE id = {0} LIMIT 1", targetUserId).FirstOrDefaultAsync();
+        if (targetExists != 1) return Results.NotFound(new { error = "Account not found" });
+
+        var alreadyShared = await db.ComparisonShares.AnyAsync(s => s.ComparisonSaveId == id && s.SharedWithUserId == targetUserId);
+        if (!alreadyShared)
+        {
+            db.ComparisonShares.Add(new ComparisonShareEntity { Id = Guid.NewGuid().ToString("N"), ComparisonSaveId = id, SharedByUserId = userId, SharedWithUserId = targetUserId! });
+        }
+
+        var sharerNameRows = await db.Database.SqlQueryRaw<string>("SELECT display_name AS \"Value\" FROM nutri_users WHERE id = {0} LIMIT 1", userId).ToListAsync();
+        var sharerName = sharerNameRows.Count > 0 && !string.IsNullOrWhiteSpace(sharerNameRows[0]) ? sharerNameRows[0] : "Someone";
+        db.Notifications.Add(new NotificationEntity
+        {
+            Id = Guid.NewGuid().ToString("N"),
+            UserId = targetUserId!,
+            Title = sharerName + " shared a comparison with you",
+            Body = save.Name,
+            Link = "sharedcomparison:" + id
+        });
+        await db.SaveChangesAsync();
+        return Results.Ok(new { ok = true });
+    });
+
+    // Comparisons someone else shared with me — read-only from my side; the owner (SharedByUserId)
+    // keeps sole edit/delete rights over the underlying comparison_saves row.
+    app.MapGet("/api/comparison-saves/shared-with-me", async (AppDbContext db, HttpContext ctx) =>
+    {
+        var userId = ctx.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId)) return Results.Unauthorized();
+        var rows = await (
+            from share in db.ComparisonShares.AsNoTracking()
+            where share.SharedWithUserId == userId
+            join save in db.ComparisonSaves.AsNoTracking() on share.ComparisonSaveId equals save.Id
+            join owner in db.Users.AsNoTracking() on share.SharedByUserId equals owner.Id
+            orderby share.CreatedAt descending
+            select new { save.Id, save.Name, save.ItemsJson, savedAt = save.UpdatedAt, sharedAt = share.CreatedAt, sharedByName = owner.DisplayName, sharedByEmail = owner.Email }
+        ).ToListAsync();
+        var result = rows.Select(r => new { r.Id, r.Name, items = JsonSerializer.Deserialize<JsonElement>(r.ItemsJson, (JsonSerializerOptions?)null), r.savedAt, r.sharedAt, r.sharedByName, r.sharedByEmail });
+        return Results.Ok(result);
     });
 }
 

@@ -556,7 +556,10 @@
     if (name === "recipes") window.renderRecipesList();
     if (name === "project-recipes") window.renderProjectRecipesList();
     if (name === "comparisons") filterComparisonSearch();
-    if (name === "comparison-saves") loadComparisonSaves(renderComparisonSaves);
+    if (name === "comparison-saves") {
+      loadComparisonSaves(renderComparisonSaves);
+      loadSharedComparisons(renderSharedComparisons);
+    }
     if (name === "user-settings") loadUserSettings();
     persistLastView(name);
   }
@@ -697,7 +700,7 @@
     if (comparisonSavesUseServer()) {
       fetch("/api/comparison-saves", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: name, items: items }) })
         .then(function (r) { if (!r.ok) throw new Error("Failed"); return r.json(); })
-        .then(function () { loadComparisonSaves(function () { renderComparisonSaves(); showToast(toastMsg); }); })
+        .then(function () { loadComparisonSaves(function () { renderComparisonSaves(); updateComparisonShareButtonState(); showToast(toastMsg); }); })
         .catch(function () { showToast("Could not save comparison"); });
       return;
     }
@@ -705,6 +708,7 @@
     saves.unshift({ id: Data.genId(), name: name, savedAt: new Date().toISOString(), items: items });
     setComparisonSaves(saves);
     renderComparisonSaves();
+    updateComparisonShareButtonState();
     showToast(toastMsg);
   }
 
@@ -712,7 +716,7 @@
     if (comparisonSavesUseServer()) {
       fetch("/api/comparison-saves/" + id, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: name, items: items }) })
         .then(function (r) { if (!r.ok) throw new Error("Failed"); return r.json(); })
-        .then(function () { loadComparisonSaves(function () { renderComparisonSaves(); showToast(toastMsg); }); })
+        .then(function () { loadComparisonSaves(function () { renderComparisonSaves(); updateComparisonShareButtonState(); showToast(toastMsg); }); })
         .catch(function () { showToast("Could not update comparison"); });
       return;
     }
@@ -720,6 +724,7 @@
     saves.unshift({ id: id, name: name, savedAt: new Date().toISOString(), items: items });
     setComparisonSaves(saves);
     renderComparisonSaves();
+    updateComparisonShareButtonState();
     showToast(toastMsg);
   }
 
@@ -749,6 +754,31 @@
     }).join("");
   }
 
+  // Does the current comparisonSelected set (order-independent) match an already-saved
+  // comparison of my own? Same key-set logic saveCurrentComparison uses to offer "overwrite"
+  // instead of a duplicate — reused here so the Share button only appears once there's actually
+  // something saved to share, per the request, not just an in-progress unsaved comparison.
+  function findMatchingOwnComparisonSave() {
+    if (!comparisonSelected.length) return null;
+    var currentKeySet = comparisonSelected.map(function (s) { return s.kind + ":" + s.id; }).sort().join("|");
+    return getComparisonSaves().find(function (sv) {
+      var keySet = (sv.items || []).map(function (it) { return it.kind + ":" + it.id; }).sort().join("|");
+      return keySet === currentKeySet;
+    }) || null;
+  }
+
+  function updateComparisonShareButtonState() {
+    var match = comparisonSavesUseServer() ? findMatchingOwnComparisonSave() : null;
+    currentOpenComparisonSaveId = match ? match.id : null;
+    var btn = document.getElementById("comparison-share-btn");
+    if (btn) btn.style.display = (currentOpenComparisonSaveId && !currentOpenComparisonSharedBy) ? "" : "none";
+    var banner = document.getElementById("comparison-shared-by-banner");
+    if (banner) {
+      if (currentOpenComparisonSharedBy) { banner.style.display = ""; banner.textContent = "🔗 Shared by " + currentOpenComparisonSharedBy; }
+      else banner.style.display = "none";
+    }
+  }
+
   function openComparisonSave(id) {
     var save = getComparisonSaves().find(function (s) { return s.id === id; });
     if (!save) return;
@@ -766,6 +796,89 @@
       if (sellPriceEl || annualVolumeEl) comparisonRecalcMargins(idx);
     });
   }
+
+  function openShareComparisonModal() {
+    if (!currentOpenComparisonSaveId) return;
+    var select = document.getElementById("share-comparison-user-select");
+    if (!select) return;
+    select.innerHTML = "<option value=''>Loading…</option>";
+    openModal("modal-share-comparison");
+    fetch("/api/site/users").then(function (r) { return r.json(); }).then(function (users) {
+      var others = users.filter(function (u) { return !currentAuthUser || u.id !== currentAuthUser.id; });
+      select.innerHTML = others.length
+        ? others.map(function (u) { return "<option value='" + u.id + "'>" + escapeHtml(u.displayName || u.email) + "</option>"; }).join("")
+        : "<option value=''>No other accounts yet</option>";
+    }).catch(function () { select.innerHTML = "<option value=''>Could not load accounts</option>"; });
+  }
+
+  function shareComparisonConfirm() {
+    var select = document.getElementById("share-comparison-user-select");
+    var targetId = select ? select.value : "";
+    if (!targetId || !currentOpenComparisonSaveId) { closeModal("modal-share-comparison"); return; }
+    fetch("/api/comparison-saves/" + currentOpenComparisonSaveId + "/share", {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ userId: targetId })
+    }).then(function (r) {
+      if (!r.ok) return r.json().then(function (j) { throw new Error(j.error || "Failed"); });
+      closeModal("modal-share-comparison");
+      showToast("Comparison shared");
+    }).catch(function (e) { showToast(e.message || "Could not share comparison"); });
+  }
+
+  window.openShareComparisonModal = openShareComparisonModal;
+  window.shareComparisonConfirm = shareComparisonConfirm;
+
+  // Comparisons other accounts shared with me — read-only from here: opening one loads it into
+  // the same comparison-result page as my own saves, with a "Shared by X" banner, but the Share
+  // button stays hidden (see updateComparisonShareButtonState) since only the owner can re-share.
+  var comparisonSharedWithMeCache = [];
+
+  function loadSharedComparisons(cb) {
+    if (!currentAuthUser) { if (cb) cb(); return; }
+    fetch("/api/comparison-saves/shared-with-me").then(function (r) { return r.ok ? r.json() : []; }).then(function (rows) {
+      comparisonSharedWithMeCache = rows;
+      if (cb) cb();
+    }).catch(function () { if (cb) cb(); });
+  }
+
+  function renderSharedComparisons() {
+    var section = document.getElementById("comparison-saves-shared-section");
+    var list = document.getElementById("comparison-saves-shared-list");
+    if (!section || !list) return;
+    if (!comparisonSharedWithMeCache.length) { section.style.display = "none"; return; }
+    section.style.display = "";
+    list.innerHTML = comparisonSharedWithMeCache.map(function (save) {
+      var itemsLabel = (save.items || []).map(function (it) { return it.name; }).join(", ");
+      return "<div class=\"card\" style=\"padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap\">" +
+        "<div>" +
+        "<div style=\"font-weight:600\">" + escapeHtml(save.name) + "</div>" +
+        "<div style=\"font-size:12px;color:var(--nc-gray-500)\">" + escapeHtml(itemsLabel) + " · shared by " + escapeHtml(save.sharedByName || save.sharedByEmail) + "</div>" +
+        "</div>" +
+        "<button type=\"button\" class=\"btn btn-sm btn-primary\" onclick=\"openSharedComparisonById('" + save.id + "')\">Open</button>" +
+        "</div>";
+    }).join("");
+  }
+
+  function openSharedComparisonById(id) {
+    function openFromCache() {
+      var save = comparisonSharedWithMeCache.find(function (s) { return s.id === id; });
+      if (!save) { showToast("Couldn't find that shared comparison"); return; }
+      comparisonSelected = (save.items || []).slice();
+      renderComparisonTable({ sharedBy: save.sharedByName || save.sharedByEmail });
+      save.items.forEach(function (item, idx) {
+        var sellPriceEl = document.getElementById("comp-sell-price-" + idx);
+        var annualVolumeEl = document.getElementById("comp-annual-volume-" + idx);
+        if (sellPriceEl) sellPriceEl.value = item.sellPrice != null ? item.sellPrice : "";
+        if (annualVolumeEl) annualVolumeEl.value = item.annualVolume != null ? item.annualVolume : "";
+        if (sellPriceEl || annualVolumeEl) comparisonRecalcMargins(idx);
+      });
+    }
+    // Cache might not be loaded yet if the notification was clicked before the Saved
+    // Comparisons page was ever visited this session — load fresh rather than assume.
+    if (comparisonSharedWithMeCache.length) openFromCache();
+    else loadSharedComparisons(openFromCache);
+  }
+
+  window.openSharedComparisonById = openSharedComparisonById;
 
   function deleteComparisonSave(id) {
     if (comparisonSavesUseServer()) {
@@ -825,7 +938,16 @@
     };
   }
 
-  function renderComparisonTable() {
+  // Who shared the comparison currently on screen, if it was opened that way — cleared by
+  // default on every renderComparisonTable() call (a fresh Compare, a reorder, etc.) and set
+  // only by openSharedComparisonById via the sharedBy option, so a stale banner never survives
+  // onto an unrelated comparison. Sharing itself is owner-only (see the Share button), so this
+  // also hides that button while viewing someone else's share.
+  var currentOpenComparisonSaveId = null;
+  var currentOpenComparisonSharedBy = null;
+
+  function renderComparisonTable(opts) {
+    currentOpenComparisonSharedBy = (opts && opts.sharedBy) || null;
     var wrap = document.getElementById("comparison-result-body");
     if (!wrap) return;
     if (comparisonSelected.length === 0) {
@@ -865,6 +987,7 @@
       }).join("") + "</tbody></table></div></div>";
     wrap.innerHTML = html;
     switchView("comparison-result");
+    updateComparisonShareButtonState();
   }
 
   /** Self-contained single-recipe view, reached only by clicking Compare on the Comparisons
@@ -893,6 +1016,7 @@
     if (!cardHtml) { wrap.innerHTML = ""; return; }
     wrap.innerHTML = buildComparisonSharedTabBar() + "<div style=\"display:flex;gap:16px;flex-wrap:wrap;justify-content:center;margin-top:16px\">" + cardHtml + "</div>";
     switchView("comparison-result");
+    updateComparisonShareButtonState();
   }
 
   /** Two recipes selected — same cards as the single-recipe view, side by side, each capped
@@ -915,6 +1039,7 @@
     wrap.innerHTML = buildComparisonSharedTabBar() + "<div style=\"display:flex;gap:16px;flex-wrap:wrap;justify-content:center;align-items:flex-start;margin-top:16px\">" + (cardA || "") + (cardB || "") + "</div>" + diffCard;
     switchView("comparison-result");
     equalizeComparisonCardHeaders();
+    updateComparisonShareButtonState();
   }
 
   /** Same 4 costing figures shown in each recipe's own Costing Summary card, used again here
@@ -7557,6 +7682,11 @@ desc: "Imported from " + (fname || "spreadsheet"),
     fetch("/api/notifications/" + id + "/read", { method: "POST" }).then(function () {
       loadNotifications(renderNotifList);
     });
+    if (n.link && n.link.indexOf("sharedcomparison:") === 0) {
+      closeNotifPanel();
+      openSharedComparisonById(n.link.slice("sharedcomparison:".length));
+      return;
+    }
     if (n.link) { closeNotifPanel(); switchView(n.link); }
   }
 
@@ -7782,6 +7912,12 @@ desc: "Imported from " + (fname || "spreadsheet"),
     var deepLinkRecipe = deepLinkCode ? Recipes.getRecipes().find(function (r) { return r.code === deepLinkCode; }) : null;
     if (deepLinkRecipe) {
       openRecipe(deepLinkRecipe.id);
+    } else if (sessionStorage.getItem("ncJustSignedIn")) {
+      // Set by the /login and /signup pages right before they redirect here — a fresh sign-in
+      // always lands on the Dashboard, but reloading/refreshing an already-open session (no such
+      // flag) keeps restoring whatever page you were last on, same as before.
+      sessionStorage.removeItem("ncJustSignedIn");
+      switchView("dashboard");
     } else {
       restoreLastView();
     }

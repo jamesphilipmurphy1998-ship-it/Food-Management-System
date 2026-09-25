@@ -137,6 +137,19 @@ public sealed class ComparisonSaveEntity
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
 }
 
+/// <summary>One account sharing a saved comparison with another — the comparison stays owned
+/// (and editable/deletable) by whoever saved it; a share just grants the recipient read access
+/// and shows up in their "Shared with me" list. A row here also produces a NotificationEntity
+/// for the recipient at share time.</summary>
+public sealed class ComparisonShareEntity
+{
+    public string Id { get; set; } = "";
+    public string ComparisonSaveId { get; set; } = "";
+    public string SharedByUserId { get; set; } = "";
+    public string SharedWithUserId { get; set; } = "";
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+}
+
 /// <summary>A personal notification for one account — mirrors Wasabi Timeline's inbox/alert
 /// panel structurally. Nothing produces these yet (no event creates a row here today); the
 /// table and endpoints exist now so the upcoming "share a saved comparison with another
