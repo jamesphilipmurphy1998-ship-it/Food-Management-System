@@ -6613,10 +6613,15 @@
     NUTRITION_BREAKDOWN_COLUMNS.forEach(function (c) { html += '<th style="font-size:9px;writing-mode:vertical-lr;text-align:center;padding:4px 2px">' + c.label + "</th>"; });
     html += "</tr></thead><tbody>";
     if (totalWeight <= 0) {
-      table.innerHTML = html + "</tbody>";
+      html += "</tbody><tfoot><tr><td class=\"bold\" style=\"font-size:12px\">Total</td>";
+      NUTRITION_BREAKDOWN_COLUMNS.forEach(function () { html += '<td class="bold" style="text-align:center;font-size:12px">0</td>'; });
+      html += "</tr></tfoot>";
+      table.innerHTML = html;
       return;
     }
     var scale = 100 / totalWeight;
+    var totals = {};
+    NUTRITION_BREAKDOWN_COLUMNS.forEach(function (c) { totals[c.key] = 0; });
     (recipe.ingredients || []).forEach(function (ri) {
       var name; var lineNut = null; var ingBadge;
       var qtyG = recipeLineWeightForTotal(ri);
@@ -6636,11 +6641,17 @@
       var f = qtyG / 100 * scale;
       NUTRITION_BREAKDOWN_COLUMNS.forEach(function (c) {
         var contribution = (Number(lineNut[c.key]) || 0) * f;
+        if (qtyG > 0) totals[c.key] += contribution;
         html += '<td style="text-align:center;font-size:12px">' + (qtyG > 0 ? Data.round(contribution, c.dp) : '<span style="color:var(--nc-gray-200)">—</span>') + "</td>";
       });
       html += "</tr>";
     });
-    table.innerHTML = html + "</tbody>";
+    html += "</tbody><tfoot><tr><td class=\"bold\" style=\"font-size:12px\">Total</td>";
+    NUTRITION_BREAKDOWN_COLUMNS.forEach(function (c) {
+      html += '<td class="bold" style="text-align:center;font-size:12px">' + Data.round(totals[c.key], c.dp) + "</td>";
+    });
+    html += "</tr></tfoot>";
+    table.innerHTML = html;
   }
 
   function renderLabel(n, recipe) {
