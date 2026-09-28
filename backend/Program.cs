@@ -606,6 +606,7 @@ document.getElementById('f').addEventListener('submit', async (ev) => {
         // Approval Process app both reflect "pending" even after the notification's been read
         // or the app restarted — see toggleRecipeApproved on the frontend for where this clears.
         recipe.PendingApproval = true;
+        recipe.PendingApprovalReviewerId = targetUserId;
         recipe.PendingApprovalReviewerName = reviewerName;
         recipe.PendingApprovalSubmittedByName = submitterName;
         recipe.PendingApprovalAt = DateTimeOffset.UtcNow;
@@ -634,8 +635,19 @@ document.getElementById('f').addEventListener('submit', async (ev) => {
         if ((ctx.User.FindFirstValue("site_role") ?? "user") != "admin") return Results.Json(new { error = "Only Technical can approve a recipe" }, statusCode: 403);
         var recipe = await db.Recipes.FirstOrDefaultAsync(r => r.Id == id);
         if (recipe == null) return Results.NotFound();
+        // Anyone on Technical can see it's pending, but only the person it was actually sent to
+        // can approve it — otherwise "submit to a specific reviewer" is meaningless.
+        if (!string.IsNullOrEmpty(recipe.PendingApprovalReviewerId))
+        {
+            var userId = ctx.User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId != recipe.PendingApprovalReviewerId)
+            {
+                return Results.Json(new { error = "This recipe was sent to " + (recipe.PendingApprovalReviewerName ?? "someone else") + " — only they can approve it." }, statusCode: 403);
+            }
+        }
         recipe.Approved = true;
         recipe.PendingApproval = false;
+        recipe.PendingApprovalReviewerId = null;
         recipe.PendingApprovalReviewerName = null;
         recipe.PendingApprovalSubmittedByName = null;
         recipe.PendingApprovalAt = null;
@@ -889,6 +901,14 @@ app.MapPut("/api/recipes/{id}", async (AppDbContext db, HttpContext ctx, string 
     {
         return Results.Json(new { error = "Only an admin can approve or un-approve a recipe." }, statusCode: 403);
     }
+    // Approving (not un-approving) a recipe that was sent to a specific reviewer is restricted
+    // to that reviewer — same rule as the Approval Process app's one-click Approve.
+    if (recipe.Approved && !entity.Approved && entity.PendingApproval && !string.IsNullOrEmpty(entity.PendingApprovalReviewerId)
+        && (ctx.User?.Identity?.IsAuthenticated ?? false)
+        && ctx.User.FindFirstValue(ClaimTypes.NameIdentifier) != entity.PendingApprovalReviewerId)
+    {
+        return Results.Json(new { error = "This recipe was sent to " + (entity.PendingApprovalReviewerName ?? "someone else") + " — only they can approve it." }, statusCode: 403);
+    }
     recipe.Id = id;
     var incoming = recipe.ToEntity();
     db.Entry(entity).CurrentValues.SetValues(incoming);
@@ -910,6 +930,15 @@ app.MapPut("/api/recipes", async (AppDbContext db, HttpContext ctx, List<Recipe>
     var isAdmin = !(ctx.User?.Identity?.IsAuthenticated ?? false) || (ctx.User.FindFirstValue("site_role") ?? "user") == "admin";
     if (!isAdmin && recipes.Any(r => trackedExisting.TryGetValue(r.Id, out var existing) && r.Approved != existing.Approved))
         return Results.Json(new { error = "Only an admin can approve or un-approve a recipe." }, statusCode: 403);
+    var currentUserId = ctx.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+    var reviewerMismatch = recipes.FirstOrDefault(r => trackedExisting.TryGetValue(r.Id, out var existing)
+        && r.Approved && !existing.Approved && existing.PendingApproval && !string.IsNullOrEmpty(existing.PendingApprovalReviewerId)
+        && (ctx.User?.Identity?.IsAuthenticated ?? false) && currentUserId != existing.PendingApprovalReviewerId);
+    if (reviewerMismatch != null)
+    {
+        var reviewerName = trackedExisting[reviewerMismatch.Id].PendingApprovalReviewerName ?? "someone else";
+        return Results.Json(new { error = "This recipe was sent to " + reviewerName + " — only they can approve it." }, statusCode: 403);
+    }
     foreach (var recipe in recipes)
     {
         if (string.IsNullOrWhiteSpace(recipe.Id)) recipe.Id = "id_" + Guid.NewGuid().ToString("N")[..9];

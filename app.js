@@ -4480,7 +4480,31 @@
     if (r.approved) {
       if (!confirm("This recipe is approved for code creation and currently locked. Mark it as in development so it can be edited again?")) return;
     }
-    r.approved = !r.approved;
+    var approving = !r.approved;
+    var recipeId = currentRecipeId;
+    // Approving a recipe that was sent to a specific reviewer is enforced server-side (only that
+    // reviewer can do it) — go through the dedicated endpoint so a mismatch is actually reported
+    // instead of silently overwritten by the generic save.
+    if (approving && r.pendingApproval && currentAuthUser) {
+      fetch("/api/recipes/" + recipeId + "/approve", { method: "POST" }).then(function (resp) {
+        if (!resp.ok) return resp.json().then(function (j) { throw new Error(j.error || "Failed"); });
+        return resp.json();
+      }).then(function (updated) {
+        var r2 = Recipes.getRecipes().find(function (rec) { return rec.id === recipeId; });
+        if (r2) {
+          r2.approved = true;
+          r2.pendingApproval = false;
+          r2.pendingApprovalReviewerName = null;
+          r2.pendingApprovalAt = null;
+          r2.updatedAt = updated.updatedAt;
+        }
+        showToast("Recipe approved for code creation");
+        if (currentRecipeId === recipeId) openRecipe(recipeId);
+        renderAll();
+      }).catch(function (e) { showToast(e.message || "Could not approve"); });
+      return;
+    }
+    r.approved = approving;
     // Acting on it either way (approve, or send back to development) resolves whatever
     // submission was pending — Technical has now actually looked at it.
     r.pendingApproval = false;
@@ -8102,11 +8126,17 @@ desc: "Imported from " + (fname || "spreadsheet"),
     // Only meaningful under NUTRICOST_AUTH_MODE=local (the homepage-JWT mode has no such
     // endpoint and this 404s harmlessly) — shows "User Settings" once we know who's signed in.
     fetchCurrentAuthUser();
-    // Deep link: ?recipe=<code> opens that recipe directly on load, taking priority over the
-    // normal last-view restore — lets an external list (e.g. a review checklist) link straight
-    // into a specific recipe instead of just showing its code for a manual search.
-    var deepLinkCode = new URLSearchParams(window.location.search).get("recipe");
-    var deepLinkRecipe = deepLinkCode ? Recipes.getRecipes().find(function (r) { return r.code === deepLinkCode; }) : null;
+    // Deep link: ?recipe=<code> or ?recipeId=<id> opens that recipe directly on load, taking
+    // priority over the normal last-view restore — lets an external list (e.g. the Approval
+    // Process app) link straight into a specific recipe instead of just showing its code for a
+    // manual search. recipeId is needed for recipes still "in development"/pending approval,
+    // which usually don't have a real code yet.
+    var deepLinkParams = new URLSearchParams(window.location.search);
+    var deepLinkCode = deepLinkParams.get("recipe");
+    var deepLinkId = deepLinkParams.get("recipeId");
+    var deepLinkRecipe = deepLinkId
+      ? Recipes.getRecipes().find(function (r) { return r.id === deepLinkId; })
+      : (deepLinkCode ? Recipes.getRecipes().find(function (r) { return r.code === deepLinkCode; }) : null);
     if (deepLinkRecipe) {
       openRecipe(deepLinkRecipe.id);
     } else if (sessionStorage.getItem("ncJustSignedIn")) {

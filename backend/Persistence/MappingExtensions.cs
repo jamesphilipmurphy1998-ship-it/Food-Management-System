@@ -86,6 +86,7 @@ public static class MappingExtensions
         UnitWeightG = entity.UnitWeightG,
         UpdatedAt = entity.UpdatedAt,
         PendingApproval = entity.PendingApproval,
+        PendingApprovalReviewerId = entity.PendingApprovalReviewerId,
         PendingApprovalReviewerName = entity.PendingApprovalReviewerName,
         PendingApprovalSubmittedByName = entity.PendingApprovalSubmittedByName,
         PendingApprovalAt = entity.PendingApprovalAt
@@ -110,6 +111,7 @@ public static class MappingExtensions
         SheetCost = model.SheetCost,
         UnitWeightG = model.UnitWeightG,
         PendingApproval = model.PendingApproval,
+        PendingApprovalReviewerId = model.PendingApprovalReviewerId,
         PendingApprovalReviewerName = model.PendingApprovalReviewerName,
         PendingApprovalSubmittedByName = model.PendingApprovalSubmittedByName,
         PendingApprovalAt = model.PendingApprovalAt,

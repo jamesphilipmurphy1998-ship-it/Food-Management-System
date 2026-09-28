@@ -102,6 +102,7 @@ public sealed class Recipe
     /// Technical acting on it either way. Drives the "Pending Technical Approval" badge in the
     /// Recipe Centre and the matching column in the separate Approval Process app.</summary>
     public bool PendingApproval { get; set; }
+    public string? PendingApprovalReviewerId { get; set; }
     public string? PendingApprovalReviewerName { get; set; }
     public string? PendingApprovalSubmittedByName { get; set; }
     public DateTimeOffset? PendingApprovalAt { get; set; }

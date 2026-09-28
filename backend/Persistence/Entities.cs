@@ -66,6 +66,7 @@ public sealed class RecipeEntity
     public decimal UnitWeightG { get; set; }
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
     public bool PendingApproval { get; set; }
+    public string? PendingApprovalReviewerId { get; set; }
     public string? PendingApprovalReviewerName { get; set; }
     public string? PendingApprovalSubmittedByName { get; set; }
     public DateTimeOffset? PendingApprovalAt { get; set; }

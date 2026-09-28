@@ -87,6 +87,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             e.Property(x => x.UnitWeightG).HasColumnName("unit_weight_g").HasDefaultValue(0m);
             e.Property(x => x.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now()");
             e.Property(x => x.PendingApproval).HasColumnName("pending_approval").HasDefaultValue(false);
+            e.Property(x => x.PendingApprovalReviewerId).HasColumnName("pending_approval_reviewer_id");
             e.Property(x => x.PendingApprovalReviewerName).HasColumnName("pending_approval_reviewer_name");
             e.Property(x => x.PendingApprovalSubmittedByName).HasColumnName("pending_approval_submitted_by_name");
             e.Property(x => x.PendingApprovalAt).HasColumnName("pending_approval_at");
