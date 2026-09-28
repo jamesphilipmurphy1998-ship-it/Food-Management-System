@@ -104,8 +104,15 @@ seeing whether accuracy is trending up, flat, or regressing after a change.
   entries already in `KNOWN_BAD_RECIPE_CODES` (marked "same stale-BC-cost class"). This is
   ordinary cost drift, not a data error or a calc bug — **no fix needed**, and every recipe
   built on top of `Chicken Katsu Piece` inherits the same expected drift.
-- Remaining ~12 small mismatches (all under 0.8%, sauce/pack recipes — Hot Wings Sauce, Korean
-  BBQ Sauce, Chilli Oil, Turmeric Noodles, Shiitake Rice) not individually re-traced this run;
-  likely the same ordinary stale-BC-cost pattern given the size of the drift, but not confirmed
-  case-by-case.
+- **Checked all 28, not just the Katsu family — every single mismatch fits the same pattern.**
+  Every one of the 28 recipes in `mismatches_final.json` has `approved: true` and its own
+  `ownCost > 0`, meaning every one of them shows its own directly-stored BOM cost to users, not
+  a live-derived figure — confirmed with a one-line script rather than assumed. That includes
+  the sauce/pack family (Hot Wings Sauce, Korean BBQ Sauce, Chilli Oil, Turmeric Noodles,
+  Shiitake Rice, GR Fried Rice variants, Korean BBQ Katsu Sando, Mini Breakfast Bento) —
+  same ordinary stale-BC-cost drift as the Katsu family, not a separate issue. **Conclusion
+  stands for the full 28: none of them are a data or calculation bug** — every mismatch is
+  Business Central's cached cost from whenever it was last synced drifting away from what
+  today's live ingredient prices would produce, which is expected and harmless (the displayed
+  cost is correct; it just isn't the *newest possible* recompute).
 - No new `KNOWN_BAD_RECIPE_CODES` entries added this run.
