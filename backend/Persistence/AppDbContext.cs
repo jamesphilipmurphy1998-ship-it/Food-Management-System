@@ -47,6 +47,12 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             e.Property(x => x.Allergens).HasColumnName("allergens");
             e.Property(x => x.Fvn).HasColumnName("fvn");
             e.Property(x => x.Approved).HasColumnName("approved");
+            e.Property(x => x.ApprovedForCodeCreation).HasColumnName("approved_for_code_creation").HasDefaultValue(false);
+            e.Property(x => x.PendingApproval).HasColumnName("pending_approval").HasDefaultValue(false);
+            e.Property(x => x.PendingApprovalReviewerId).HasColumnName("pending_approval_reviewer_id");
+            e.Property(x => x.PendingApprovalReviewerName).HasColumnName("pending_approval_reviewer_name");
+            e.Property(x => x.PendingApprovalSubmittedByName).HasColumnName("pending_approval_submitted_by_name");
+            e.Property(x => x.PendingApprovalAt).HasColumnName("pending_approval_at");
             e.Property(x => x.Created).HasColumnName("created");
             e.Property(x => x.VersionHistory).HasColumnName("version_history");
             e.Property(x => x.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now()");
@@ -78,6 +84,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             e.Property(x => x.Serving).HasColumnName("serving");
             e.Property(x => x.Uom).HasColumnName("serving_uom");
             e.Property(x => x.Approved).HasColumnName("approved");
+            e.Property(x => x.ApprovedForCodeCreation).HasColumnName("approved_for_code_creation").HasDefaultValue(false);
             e.Property(x => x.DescriptionTags).HasColumnName("description_tags");
             e.Property(x => x.Created).HasColumnName("created");
             e.Property(x => x.VersionHistory).HasColumnName("version_history");

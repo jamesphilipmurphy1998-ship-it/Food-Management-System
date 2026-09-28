@@ -697,7 +697,8 @@ body.login-page-active .main-area #view-login .card {
 /* Approved / In development / Pending Technical Approval: tag-style chips (pill shape + border) */
 .badge-approved,
 .badge-development,
-.badge-pending {
+.badge-pending,
+.badge-code-creation {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -724,6 +725,11 @@ body.login-page-active .main-area #view-login .card {
   background: #E0E7FF;
   color: #3730A3;
   border: 1px solid rgba(67, 56, 202, 0.35);
+}
+.badge-code-creation {
+  background: #DBEAFE;
+  color: #1D4ED8;
+  border: 1px solid rgba(29, 78, 216, 0.35);
 }
 .badge-subrecipe,
 .badge-finishedproduct,

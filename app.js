@@ -919,7 +919,7 @@
       return {
         name: ing.name, code: ing.code || "—",
         kind: isPackagingItem(ing) ? "Packaging" : "Ingredient",
-        status: ing.approved ? "Approved" : "In development",
+        status: statusLabel(ing),
         cost: (ing.cost != null && ing.cost > 0) ? ((ing.currency || "£") + Number(ing.cost).toFixed(3) + " / " + (costUom || "—")) : "—",
         kcal: ing.kcal, protein: ing.protein, fat: ing.fat, carb: ing.carb, fibre: ing.fibre, salt: ing.salt
       };
@@ -932,7 +932,7 @@
     return {
       name: r.name, code: r.code || "—",
       kind: isSingleIngredientRecipe(r) ? "Recipe (single-ingredient)" : ((r.recipeType || "finishedProduct") === "subRecipe" ? "Sub recipe" : "Recipe"),
-      status: r.approved ? "Approved" : "In development",
+      status: statusLabel(r),
       cost: costPerUom > 0 ? ("£" + costPerUom.toFixed(3) + " / " + uom) : "—",
       kcal: nut.kcal, protein: nut.protein, fat: nut.fat, carb: nut.carb, fibre: nut.fibre, salt: nut.salt
     };
@@ -1382,7 +1382,7 @@
       return "<div class=\"comp-recipe-tab-pane\" data-comp-pane=\"" + key + "\" style=\"" + (idx === 0 ? "" : "display:none;") + "padding-top:12px\">" + panels[key] + "</div>";
     }).join("");
 
-    var statusBadge = r.approved ? "<span class=\"badge badge-approved\">Approved</span>" : "<span class=\"badge badge-development\">In development</span>";
+    var statusBadge = statusBadgeHtml(r, null);
     var kindBadge = (r.recipeType || "finishedProduct") === "subRecipe" ? "<span class=\"badge badge-subrecipe\">Sub recipe</span>" : "<span class=\"badge badge-finishedproduct\">Finished product</span>";
     // Same weight display as the real recipe page's "Total weight" (app.js renderRecipeIngredients)
     // — EACH-based recipes show "1 EACH" as the primary figure, plus a derived gram weight
@@ -1751,10 +1751,9 @@
     var typeFilter = (document.getElementById("comparison-search-type-filter") || {}).value || "all";
     var ingredients = Ingredients.getIngredients();
     var recipes = Recipes.getRecipes();
-    function statusMatches(approved) {
-      if (statusFilter === "approved") return !!approved;
-      if (statusFilter === "development") return !approved;
-      return true;
+    function statusMatches(item) {
+      if (statusFilter === "all") return true;
+      return statusOf(item) === statusFilter;
     }
     // Shares searchWordsMatch with every other search box on the site (Ingredient/Recipe
     // Centre, add-ingredient dropdowns, etc.) instead of a bespoke raw-substring check, so it
@@ -1766,10 +1765,10 @@
       var altR = (altCodes || []).map(function (c) { return searchWordsMatch(c, q); }).reduce(function (a, b) { return a.score > b.score ? a : b; }, { match: false, score: 0 });
       return [nameR, codeR, altR].reduce(function (a, b) { return a.score >= b.score ? a : b; }, { match: false, score: 0 });
     }
-    var ingRows = (typeFilter === "recipes" ? [] : ingredients).filter(function (i) { return bestMatch(i.name, i.code, i.altCodes).match && statusMatches(i.approved); })
+    var ingRows = (typeFilter === "recipes" ? [] : ingredients).filter(function (i) { return bestMatch(i.name, i.code, i.altCodes).match && statusMatches(i); })
       .sort(function (a, b) { return bestMatch(b.name, b.code, b.altCodes).score - bestMatch(a.name, a.code, a.altCodes).score; })
       .map(function (i) {
-        var statusBadge = i.approved ? "<span class=\"badge badge-approved\" style=\"font-size:10px\">Approved</span>" : "<span class=\"badge badge-development\" style=\"font-size:10px\">In development</span>";
+        var statusBadge = statusBadgeHtml(i, "font-size:10px");
         var typeLabel = isPackagingItem(i) ? "Packaging" : "Ingredient";
         var selected = isComparisonSelected("ingredient", i.id);
         var safeId = i.id.replace(/'/g, "\\'");
@@ -1780,10 +1779,10 @@
           "<td style=\"font-size:12px;color:var(--nc-gray-600);font-family:var(--nc-mono)\">" + (i.code || "—") + "</td>" +
           "<td>" + statusBadge + "</td></tr>";
       });
-    var recRows = (typeFilter === "ingredients" ? [] : recipes).filter(function (r) { return bestMatch(r.name, r.code, null).match && statusMatches(r.approved); })
+    var recRows = (typeFilter === "ingredients" ? [] : recipes).filter(function (r) { return bestMatch(r.name, r.code, null).match && statusMatches(r); })
       .sort(function (a, b) { return bestMatch(b.name, b.code, null).score - bestMatch(a.name, a.code, null).score; })
       .map(function (r) {
-        var statusBadge = r.approved ? "<span class=\"badge badge-approved\" style=\"font-size:10px\">Approved</span>" : "<span class=\"badge badge-development\" style=\"font-size:10px\">In development</span>";
+        var statusBadge = statusBadgeHtml(r, "font-size:10px");
         var typeLabel = isSingleIngredientRecipe(r) ? "Recipe (single-ingredient)" : ((r.recipeType || "finishedProduct") === "subRecipe" ? "Sub recipe" : "Recipe");
         var selected = isComparisonSelected("recipe", r.id);
         var safeId = r.id.replace(/'/g, "\\'");
@@ -2769,6 +2768,7 @@
     if (vhList) vhList.innerHTML = "";
     if (vhSummary) vhSummary.textContent = "Version History";
     hideIngredientVersionPicker();
+    renderIngredientLifecycleUI(null);
     setIngredientModalViewMode(true);
     openModal("modal-ingredient");
   }
@@ -2971,9 +2971,22 @@
       unitWeightG: (function () { var el = document.getElementById("new-ing-unit-weight"); var v = el ? parseFloat(el.value) : NaN; return (v != null && !isNaN(v) && v > 0) ? v : 0; })(),
       supplier: supplierEl ? supplierEl.value.trim() : "",
       allergens: allergens,
-      fvn: document.getElementById("new-ing-fvn").checked,
-      approved: document.getElementById("new-ing-approved") ? document.getElementById("new-ing-approved").checked : false
+      fvn: document.getElementById("new-ing-fvn").checked
     };
+    // Approval lifecycle is driven entirely by the dedicated buttons/endpoints now (see
+    // toggleIngredientApproved, submit/approve/merge below) — a routine field edit here should
+    // never silently change it, so carry the existing ingredient's lifecycle fields through
+    // unchanged. A brand-new ingredient starts in plain development.
+    (function () {
+      var existing = editIngredientId ? Ingredients.getIngredients().find(function (i) { return i.id === editIngredientId; }) : null;
+      data.approved = existing ? !!existing.approved : false;
+      data.approvedForCodeCreation = existing ? !!existing.approvedForCodeCreation : false;
+      data.pendingApproval = existing ? !!existing.pendingApproval : false;
+      data.pendingApprovalReviewerId = existing ? existing.pendingApprovalReviewerId : null;
+      data.pendingApprovalReviewerName = existing ? existing.pendingApprovalReviewerName : null;
+      data.pendingApprovalSubmittedByName = existing ? existing.pendingApprovalSubmittedByName : null;
+      data.pendingApprovalAt = existing ? existing.pendingApprovalAt : null;
+    })();
     if (Data.isPackagingBySupplier && Data.isPackagingBySupplier(data.supplier)) data.cat = "Packaging";
     if ((name || "").trim().toLowerCase().indexOf("nf ") === 0) data.cat = "Packaging";
     var ingredients = Ingredients.getIngredients();
@@ -3059,9 +3072,196 @@
         whereUsedBtn.onclick = function () { showIngredientWhereUsed(id); };
       }
     }
+    renderIngredientLifecycleUI(ing);
     setIngredientModalViewMode(true);
     openModal("modal-ingredient");
   }
+
+  // Same 4-status lifecycle as recipes (see statusOf/toggleRecipeApproved above) — Submit for
+  // Approval / Approve for Code Creation / Merge Ingredient mirror the recipe workflow exactly,
+  // just against /api/ingredients/... endpoints. Only shown once an ingredient actually exists
+  // (hidden for the New Ingredient form, which has no id yet to attach a status to).
+  function renderIngredientLifecycleUI(ing) {
+    var row = document.querySelector(".ingredient-lifecycle-row");
+    if (!row) return;
+    if (!ing) { row.style.display = "none"; return; }
+    row.style.display = "";
+    var status = statusOf(ing);
+    var badge = document.getElementById("ingredient-status-badge");
+    if (badge) {
+      var text = status === "pending_approval"
+        ? "Pending Technical Approval" + (ing.pendingApprovalReviewerName ? " (" + ing.pendingApprovalReviewerName + ")" : "")
+        : STATUS_LABELS[status];
+      var cls = { approved: "badge-approved", approved_for_code_creation: "badge-code-creation", pending_approval: "badge-pending", development: "badge-development" }[status];
+      badge.textContent = text;
+      badge.className = "badge badge-status " + cls;
+    }
+    var toggleBtn = document.getElementById("ingredient-toggle-approved-btn");
+    if (toggleBtn) {
+      toggleBtn.textContent = (status === "approved" || status === "approved_for_code_creation") ? "Mark as in development" : "Approve for code creation";
+      toggleBtn.style.display = canApproveIngredients() ? "" : "none";
+    }
+    var mergeBtn = document.getElementById("ingredient-merge-btn");
+    if (mergeBtn) mergeBtn.style.display = (canApproveIngredients() && status === "approved_for_code_creation") ? "" : "none";
+    var submitBtn = document.getElementById("ingredient-submit-approval-btn");
+    if (submitBtn) submitBtn.style.display = (!canApproveIngredients() && status === "development") ? "" : "none";
+  }
+
+  function toggleIngredientApproved() {
+    if (!editIngredientId) return;
+    if (!canApproveIngredients()) { showToast("Only Technical can approve or un-approve an ingredient"); return; }
+    var ingredients = Ingredients.getIngredients();
+    var ing = ingredients.find(function (i) { return i.id === editIngredientId; });
+    if (!ing) return;
+    var status = statusOf(ing);
+    var ingId = editIngredientId;
+
+    if (status === "approved" || status === "approved_for_code_creation") {
+      ing.approved = false;
+      ing.approvedForCodeCreation = false;
+      Ingredients.saveIngredient(ing);
+      showToast("Ingredient marked as in development — now editable");
+      renderIngredientLifecycleUI(ing);
+      renderAll();
+      return;
+    }
+
+    if (status === "pending_approval") {
+      if (currentAuthUser) {
+        fetch("/api/ingredients/" + ingId + "/approve-for-code-creation", { method: "POST" }).then(function (resp) {
+          if (!resp.ok) return resp.json().then(function (j) { throw new Error(j.error || "Failed"); });
+          return resp.json();
+        }).then(function (updated) {
+          var i2 = Ingredients.getIngredients().find(function (i) { return i.id === ingId; });
+          if (i2) {
+            i2.approvedForCodeCreation = true;
+            i2.pendingApproval = false;
+            i2.pendingApprovalReviewerName = null;
+            i2.pendingApprovalAt = null;
+            i2.updatedAt = updated.updatedAt;
+          }
+          showToast("Ingredient approved for code creation");
+          renderIngredientLifecycleUI(i2);
+          renderAll();
+        }).catch(function (e) { showToast(e.message || "Could not approve"); });
+        return;
+      }
+      ing.approvedForCodeCreation = true;
+      ing.pendingApproval = false;
+      ing.pendingApprovalReviewerName = null;
+      ing.pendingApprovalAt = null;
+      Ingredients.saveIngredient(ing);
+      showToast("Ingredient approved for code creation");
+      renderIngredientLifecycleUI(ing);
+      renderAll();
+      return;
+    }
+
+    ing.approvedForCodeCreation = true;
+    Ingredients.saveIngredient(ing);
+    showToast("Ingredient approved for code creation");
+    renderIngredientLifecycleUI(ing);
+    renderAll();
+  }
+  window.toggleIngredientApproved = toggleIngredientApproved;
+
+  function openSubmitIngredientApprovalModal() {
+    if (!editIngredientId) return;
+    var select = document.getElementById("submit-ingredient-approval-user-select");
+    if (!select) return;
+    select.innerHTML = "<option value=''>Loading…</option>";
+    openModal("modal-submit-ingredient-approval");
+    fetch("/api/site/users").then(function (r) { return r.json(); }).then(function (users) {
+      var technical = users.filter(function (u) { return u.siteRole === "admin"; });
+      select.innerHTML = technical.length
+        ? technical.map(function (u) { return "<option value='" + u.id + "'>" + escapeHtml(u.displayName || u.email) + "</option>"; }).join("")
+        : "<option value=''>No Technical accounts yet</option>";
+    }).catch(function () { select.innerHTML = "<option value=''>Could not load accounts</option>"; });
+  }
+  window.openSubmitIngredientApprovalModal = openSubmitIngredientApprovalModal;
+
+  function submitIngredientApprovalConfirm() {
+    var select = document.getElementById("submit-ingredient-approval-user-select");
+    var targetId = select ? select.value : "";
+    var reviewerName = select && select.selectedOptions.length ? select.selectedOptions[0].textContent : "Technical";
+    if (!targetId || !editIngredientId) { closeModal("modal-submit-ingredient-approval"); return; }
+    var ingId = editIngredientId;
+    fetch("/api/ingredients/" + ingId + "/submit-for-approval", {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ userId: targetId })
+    }).then(function (r) {
+      if (!r.ok) return r.json().then(function (j) { throw new Error(j.error || "Failed"); });
+      var i2 = Ingredients.getIngredients().find(function (i) { return i.id === ingId; });
+      if (i2) {
+        i2.pendingApproval = true;
+        i2.pendingApprovalReviewerName = reviewerName;
+        i2.pendingApprovalAt = new Date().toISOString();
+      }
+      closeModal("modal-submit-ingredient-approval");
+      renderIngredientLifecycleUI(i2);
+      renderAll();
+      showToast("Submitted for approval");
+    }).catch(function (e) { showToast(e.message || "Could not submit for approval"); });
+  }
+  window.submitIngredientApprovalConfirm = submitIngredientApprovalConfirm;
+
+  function openMergeIngredientModal() {
+    if (!editIngredientId) return;
+    var searchInput = document.getElementById("merge-ingredient-search");
+    if (searchInput) searchInput.value = "";
+    renderMergeIngredientResults("");
+    openModal("modal-merge-ingredient");
+  }
+  window.openMergeIngredientModal = openMergeIngredientModal;
+
+  function filterMergeIngredientResults() {
+    var searchInput = document.getElementById("merge-ingredient-search");
+    renderMergeIngredientResults(searchInput ? searchInput.value : "");
+  }
+  window.filterMergeIngredientResults = filterMergeIngredientResults;
+
+  function renderMergeIngredientResults(query) {
+    var list = document.getElementById("merge-ingredient-results");
+    if (!list) return;
+    var q = (query || "").trim().toLowerCase();
+    var ingredients = Ingredients.getIngredients().filter(function (i) { return i.id !== editIngredientId; });
+    if (q) {
+      ingredients = ingredients.filter(function (i) {
+        return (i.name || "").toLowerCase().indexOf(q) !== -1 || (i.code || "").toLowerCase().indexOf(q) !== -1;
+      });
+    }
+    ingredients = ingredients.slice(0, 30);
+    list.innerHTML = ingredients.length
+      ? ingredients.map(function (i) {
+          return "<div class=\"card\" style=\"padding:8px 12px;display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px\">" +
+            "<div><div style=\"font-weight:600;font-size:13px\">" + escapeHtml(i.name) + "</div>" +
+            "<div style=\"font-size:11.5px;color:var(--nc-gray-500)\">Code: " + escapeHtml(i.code || "—") + "</div></div>" +
+            "<button type=\"button\" class=\"btn btn-sm btn-primary\" onclick=\"mergeIngredientConfirm('" + i.id + "')\">Merge</button>" +
+            "</div>";
+        }).join("")
+      : "<p style=\"font-size:12px;color:var(--nc-gray-500)\">No matching ingredients.</p>";
+  }
+
+  function mergeIngredientConfirm(targetId) {
+    var ingredients = Ingredients.getIngredients();
+    var keep = ingredients.find(function (i) { return i.id === editIngredientId; });
+    var target = ingredients.find(function (i) { return i.id === targetId; });
+    if (!keep || !target) return;
+    if (!confirm("Merge \"" + target.name + "\" (code " + (target.code || "—") + ") into this ingredient? This ingredient's nutrition/cost are kept; its name and code are replaced with the selected ingredient's, and the selected ingredient is deleted.")) return;
+    keep.code = target.code;
+    keep.name = target.name;
+    keep.approved = true;
+    keep.approvedForCodeCreation = false;
+    var tagSet = {};
+    (keep.descriptionTags || []).concat(target.descriptionTags || []).forEach(function (t) { tagSet[t] = true; });
+    keep.descriptionTags = Object.keys(tagSet);
+    Ingredients.saveIngredient(keep);
+    if (Ingredients.deleteIngredient) Ingredients.deleteIngredient(target.id);
+    closeModal("modal-merge-ingredient");
+    renderAll();
+    editIngredient(keep.id);
+    showToast("Ingredients merged");
+  }
+  window.mergeIngredientConfirm = mergeIngredientConfirm;
 
   function parseDescriptionTags(el) {
     if (!el || !el.value) return [];
@@ -3137,7 +3337,7 @@
         wuList.innerHTML = "<p style=\"margin:0;color:var(--nc-gray-500);font-size:13px\">Not used in any recipes yet.</p>";
       } else {
         wuList.innerHTML = usedIn.map(function (r) {
-          var status = r.approved ? "<span class=\"badge badge-approved\" style=\"font-size:9px;margin-left:8px\">Approved</span>" : "<span class=\"badge badge-development\" style=\"font-size:9px;margin-left:8px\">In development</span>";
+          var status = statusBadgeHtml(r, "font-size:9px;margin-left:8px");
           var code = (r.code && r.code.trim()) ? "<span style=\"font-family:var(--nc-mono);font-size:12px;color:var(--nc-gray-500);margin-right:8px\">[" + r.code + "]</span>" : "";
           return "<div class=\"card row-clickable\" style=\"padding:12px;cursor:pointer\" onclick=\"closeModal('modal-ingredient');openRecipe('" + r.id.replace(/'/g, "\\'") + "')\">" +
             "<div style=\"display:flex;align-items:center;justify-content:space-between;gap:12px\">" +
@@ -3152,6 +3352,7 @@
     loadIngredientVersionPicker(id);
     var titleEl = document.getElementById("modal-ingredient-title-text");
     if (titleEl) titleEl.textContent = "Ingredient details";
+    renderIngredientLifecycleUI(ing);
     setIngredientModalViewMode(false);
     openModal("modal-ingredient");
   }
@@ -3198,8 +3399,7 @@
     var filterVal = (document.getElementById("ingredient-filter") && document.getElementById("ingredient-filter").value) || "all";
     var typeFilterVal = (document.getElementById("ingredient-type-filter") && document.getElementById("ingredient-type-filter").value) || "all";
     var filtered = ingredients;
-    if (filterVal === "approved") filtered = ingredients.filter(function (i) { return !!i.approved; });
-    if (filterVal === "development") filtered = ingredients.filter(function (i) { return !i.approved; });
+    if (filterVal !== "all") filtered = ingredients.filter(function (i) { return statusOf(i) === filterVal; });
     // "Ingredients only" = not packaging, full stop. It used to also require a populated,
     // non-"Other" category — but the real dataset's cat field is only ever "Other" or
     // "Packaging" (no finer taxonomy has actually been entered), so that extra condition never
@@ -3211,8 +3411,7 @@
     if (typeFilterVal === "other") filtered = filtered.filter(function (i) { return (i.cat || "").trim() === "Other" && !isPackagingItem(i); });
     if (!includeDelistedIngredients()) filtered = filtered.filter(function (i) { return !isDelisted(i.name); });
     var singleIngRecipes = recipes.filter(isSingleIngredientRecipe);
-    if (filterVal === "approved") singleIngRecipes = singleIngRecipes.filter(function (r) { return !!r.approved; });
-    if (filterVal === "development") singleIngRecipes = singleIngRecipes.filter(function (r) { return !r.approved; });
+    if (filterVal !== "all") singleIngRecipes = singleIngRecipes.filter(function (r) { return statusOf(r) === filterVal; });
     if (typeFilterVal === "ingredients") singleIngRecipes = singleIngRecipes.filter(function (r) {
       var baseIng = ingredients.find(function (i) { return i.id === (r.ingredients || [])[0].ingredientId; });
       return !baseIng || !isPackagingItem(baseIng);
@@ -3262,13 +3461,13 @@
         var codePart = (i.code && i.code.trim()) ? "<span style=\"font-size:11px;color:var(--nc-gray-500);font-family:var(--nc-mono);margin-right:8px\">" + i.code + "</span>" : "";
         var noNutBadge = (hasNoNutrition(i) && !isPackagingItem(i)) ? "<span title=\"No nutritional values\" style=\"margin-left:4px;color:var(--nc-amber);font-size:11px;cursor:help\">⚠</span>" : "";
         var tagsPart = (i.descriptionTags || []).length ? "<span style=\"font-size:11px;color:var(--nc-gray-500);margin-left:6px\">" + (i.descriptionTags || []).join(", ") + "</span>" : "";
-        var statusBadge = i.approved ? "<span class=\"badge badge-approved\" style=\"font-size:9px;margin-left:6px\">Approved</span>" : "<span class=\"badge badge-development\" style=\"font-size:9px;margin-left:6px\">In development</span>";
+        var statusBadge = statusBadgeHtml(i, "font-size:9px;margin-left:6px");
         var onclick = "editIngredient('" + i.id.replace(/'/g, "\\'") + "', true); document.getElementById('ingredient-library-dropdown').classList.remove('open');";
         return "<div class=\"ingredient-dropdown-item\" onclick=\"" + onclick + "\">" + codePart + "<span>" + i.name + "</span>" + noNutBadge + tagsPart + "<span class=\"cat\">" + (i.cat || "") + "</span>" + statusBadge + "</div>";
       } else {
         var r = m.item;
         var codePart = (r.code && r.code.trim()) ? "<span style=\"font-size:11px;color:var(--nc-gray-500);font-family:var(--nc-mono);margin-right:8px\">" + r.code + "</span>" : "";
-        var statusBadge = r.approved ? "<span class=\"badge badge-approved\" style=\"font-size:9px;margin-left:6px\">Approved</span>" : "<span class=\"badge badge-development\" style=\"font-size:9px;margin-left:6px\">In development</span>";
+        var statusBadge = statusBadgeHtml(r, "font-size:9px;margin-left:6px");
         var onclick = "openSingleIngredientRecipeView('" + r.id.replace(/'/g, "\\'") + "'); document.getElementById('ingredient-library-dropdown').classList.remove('open');";
         return "<div class=\"ingredient-dropdown-item\" onclick=\"" + onclick + "\">" + codePart + "<span>" + r.name + "</span><span class=\"badge badge-subrecipe\" style=\"font-size:9px;margin-left:6px\">1 ing</span>" + statusBadge + "</div>";
       }
@@ -3286,7 +3485,7 @@
   function rowHtml(i, usedInCount) {
     var tagsStr = (i.descriptionTags || []).join(" ");
     var isPkg = isPackagingItem(i);
-    var approvedLabel = i.approved ? "<span class=\"badge badge-approved\" style=\"font-size:10px;margin-right:6px\">Approved</span>" : "";
+    var approvedLabel = (i.pendingApproval || i.approved || i.approvedForCodeCreation) ? statusBadgeHtml(i, "font-size:10px;margin-right:6px") : "";
     var typeLabel = isPkg ? "<span class=\"badge badge-pkg\" style=\"font-size:10px;margin-right:6px\">PKG</span>" : "<span class=\"badge badge-rm\" style=\"font-size:10px;margin-right:6px\">RM</span>";
     var noNutBadge = (hasNoNutrition(i) && !isPackagingItem(i)) ? "<span class=\"ingredient-no-nutrition\" title=\"No nutritional values\" style=\"margin-left:4px;color:var(--nc-amber);font-size:12px;cursor:help\">⚠</span>" : "";
     var usedInBadge = (usedInCount || 0) > 0 ? "<span style=\"font-size:10px;color:var(--nc-gray-500);margin-left:4px\" title=\"Used in " + usedInCount + " recipe(s)\">(" + usedInCount + " recipes)</span>" : "";
@@ -3424,7 +3623,7 @@
         wuList.innerHTML = "<p style=\"margin:0;color:var(--nc-gray-500);font-size:13px\">Not used as a sub recipe in any other recipe yet.</p>";
       } else {
         wuList.innerHTML = usedIn.map(function (rec) {
-          var status = rec.approved ? "<span class=\"badge badge-approved\" style=\"font-size:9px;margin-left:8px\">Approved</span>" : "<span class=\"badge badge-development\" style=\"font-size:9px;margin-left:8px\">In development</span>";
+          var status = statusBadgeHtml(rec, "font-size:9px;margin-left:8px");
           var kind = (rec.recipeType || "finishedProduct") === "subRecipe" ? "Sub recipe" : "Finished";
           var code = (rec.code && rec.code.trim()) ? "<span style=\"font-family:var(--nc-mono);font-size:12px;color:var(--nc-gray-500);margin-right:8px\">[" + rec.code + "]</span>" : "";
           return "<div class=\"card row-clickable\" style=\"padding:12px;cursor:pointer\" onclick=\"closeModal('modal-single-ingredient-recipe');openRecipe('" + rec.id.replace(/'/g, "\\'") + "')\">" +
@@ -3592,9 +3791,7 @@
         }
       } else {
         list.innerHTML = usedIn.map(function (rec) {
-          var status = rec.approved
-            ? "<span class=\"badge badge-approved\" style=\"font-size:9px;margin-left:8px\">Approved</span>"
-            : "<span class=\"badge badge-development\" style=\"font-size:9px;margin-left:8px\">In development</span>";
+          var status = statusBadgeHtml(rec, "font-size:9px;margin-left:8px");
           var kind = (rec.recipeType || "finishedProduct") === "subRecipe" ? "Sub recipe" : "Finished";
           var code = (rec.code && rec.code.trim()) ? "<span style=\"font-family:var(--nc-mono);font-size:12px;color:var(--nc-gray-500);margin-right:8px\">[" + rec.code + "]</span>" : "";
           return "<div class=\"card row-clickable\" style=\"padding:12px;cursor:pointer\" onclick=\"openRecipe('" + rec.id.replace(/'/g, "\\'") + "'); closeModal('modal-ingredient-where-used');\">" +
@@ -3629,9 +3826,7 @@
         list.innerHTML = "<p style=\"margin:0;color:var(--nc-gray-500);font-size:13px\">Not used in any recipes yet.</p>";
       } else {
         list.innerHTML = usedIn.map(function (r) {
-          var status = r.approved
-            ? "<span class=\"badge badge-approved\" style=\"font-size:9px;margin-left:8px\">Approved</span>"
-            : "<span class=\"badge badge-development\" style=\"font-size:9px;margin-left:8px\">In development</span>";
+          var status = statusBadgeHtml(r, "font-size:9px;margin-left:8px");
           var code = (r.code && r.code.trim()) ? "<span style=\"font-family:var(--nc-mono);font-size:12px;color:var(--nc-gray-500);margin-right:8px\">[" + r.code + "]</span>" : "";
           return "<div class=\"card row-clickable\" style=\"padding:12px;cursor:pointer\" onclick=\"openRecipe('" + r.id.replace(/'/g, "\\'") + "'); closeModal('modal-ingredient-where-used');\">" +
             "<div style=\"display:flex;align-items:center;justify-content:space-between;gap:12px\">" +
@@ -3681,8 +3876,7 @@
     var filterVal = (document.getElementById("ingredient-filter") && document.getElementById("ingredient-filter").value) || "all";
     var typeFilterVal = (document.getElementById("ingredient-type-filter") && document.getElementById("ingredient-type-filter").value) || "all";
     var filteredIng = ingredients;
-    if (filterVal === "approved") filteredIng = ingredients.filter(function (i) { return !!i.approved; });
-    if (filterVal === "development") filteredIng = ingredients.filter(function (i) { return !i.approved; });
+    if (filterVal !== "all") filteredIng = ingredients.filter(function (i) { return statusOf(i) === filterVal; });
     if (typeFilterVal === "ingredients") filteredIng = filteredIng.filter(function (i) { return !isPackagingItem(i); });
     if (typeFilterVal === "packaging") filteredIng = filteredIng.filter(isPackagingItem);
     if (typeFilterVal === "other") filteredIng = filteredIng.filter(function (i) { return (i.cat || "").trim() === "Other" && !isPackagingItem(i); });
@@ -3695,8 +3889,7 @@
       return dateInRange(i.created, createdFromVal, createdToVal) && dateInRange(i.updatedAt, modifiedFromVal, modifiedToVal);
     });
     var singleIngRecipes = recipes.filter(isSingleIngredientRecipe);
-    if (filterVal === "approved") singleIngRecipes = singleIngRecipes.filter(function (r) { return !!r.approved; });
-    if (filterVal === "development") singleIngRecipes = singleIngRecipes.filter(function (r) { return !r.approved; });
+    if (filterVal !== "all") singleIngRecipes = singleIngRecipes.filter(function (r) { return statusOf(r) === filterVal; });
     if (typeFilterVal === "ingredients") singleIngRecipes = singleIngRecipes.filter(function (r) {
       var baseIng = ingredients.find(function (i) { return i.id === (r.ingredients || [])[0].ingredientId; });
       return !baseIng || !isPackagingItem(baseIng);
@@ -3745,7 +3938,7 @@
   function rowHtmlForSingleIngredientRecipe(r, ingredients, usedInCount) {
     var baseIng = ingredients.find(function (i) { return i.id === (r.ingredients || [])[0].ingredientId; });
     var tagsStr = (r.descriptionTags || []).join(" ");
-    var approvedLabel = r.approved ? "<span class=\"badge badge-approved\" style=\"font-size:10px;margin-right:6px\">Approved</span>" : "";
+    var approvedLabel = (r.pendingApproval || r.approved || r.approvedForCodeCreation) ? statusBadgeHtml(r, "font-size:10px;margin-right:6px") : "";
     var isPkg = !!(baseIng && isPackagingItem(baseIng));
     var typeLabel = isPkg ? "<span class=\"badge badge-pkg\" style=\"font-size:10px;margin-right:6px\">PKG</span>" : "<span class=\"badge badge-rm\" style=\"font-size:10px;margin-right:6px\">RM</span>";
     var usedInBadge = (usedInCount || 0) > 0 ? "<span style=\"font-size:10px;color:var(--nc-gray-500);margin-left:4px\" title=\"Used in " + usedInCount + " recipe(s)\">(" + usedInCount + " recipes)</span>" : "";
@@ -4069,7 +4262,7 @@
     }
 
     function ingRow(i, norm) {
-      var status = i.approved ? "<span class=\"badge badge-approved\" style=\"font-size:9px\">Approved</span>" : "<span class=\"badge badge-development\" style=\"font-size:9px\">In development</span>";
+      var status = statusBadgeHtml(i, "font-size:9px");
       var code = (i.code && i.code.trim()) ? i.code : "—";
       var sup = (i.supplier && i.supplier.trim()) ? i.supplier : "—";
       var safeNorm = (norm || "").replace(/'/g, "\\'");
@@ -4085,7 +4278,7 @@
     }
 
     function recRow(r, norm) {
-      var status = r.approved ? "<span class=\"badge badge-approved\" style=\"font-size:9px\">Approved</span>" : "<span class=\"badge badge-development\" style=\"font-size:9px\">In development</span>";
+      var status = statusBadgeHtml(r, "font-size:9px");
       var code = (r.code && r.code.trim()) ? r.code : "—";
       var safeNorm = (norm || "").replace(/'/g, "\\'");
       var safeId = (r.id || "").replace(/'/g, "\\'");
@@ -4401,27 +4594,31 @@
     switchMethodSource(window._currentMethodSource || "kitchen");
     var badge = document.getElementById("recipe-detail-status-badge");
     var toggleBtn = document.getElementById("recipe-detail-toggle-approved");
+    var recipeStatus = statusOf(r);
     if (badge) {
-      if (r.approved) {
-        badge.textContent = "Approved for code creation";
-        badge.className = "badge badge-status badge-approved";
-      } else if (r.pendingApproval) {
-        badge.textContent = "Pending Technical Approval" + (r.pendingApprovalReviewerName ? " (" + r.pendingApprovalReviewerName + ")" : "");
-        badge.className = "badge badge-status badge-pending";
-      } else {
-        badge.textContent = "In development";
-        badge.className = "badge badge-status badge-development";
-      }
+      var labels = {
+        approved: "Approved", approved_for_code_creation: "Approved for Code Creation",
+        pending_approval: "Pending Technical Approval" + (r.pendingApprovalReviewerName ? " (" + r.pendingApprovalReviewerName + ")" : ""),
+        development: "In development"
+      };
+      var classes = {
+        approved: "badge-approved", approved_for_code_creation: "badge-code-creation",
+        pending_approval: "badge-pending", development: "badge-development"
+      };
+      badge.textContent = labels[recipeStatus];
+      badge.className = "badge badge-status " + classes[recipeStatus];
     }
     if (toggleBtn) {
-      toggleBtn.textContent = r.approved ? "Mark as in development" : "Approve for code creation";
+      toggleBtn.textContent = (recipeStatus === "approved" || recipeStatus === "approved_for_code_creation") ? "Mark as in development" : "Approve for code creation";
       toggleBtn.style.display = canApproveRecipes() ? "" : "none";
     }
     var mergeBtn = document.getElementById("recipe-detail-merge-btn");
-    if (mergeBtn) mergeBtn.style.display = (canApproveRecipes() && r.approved) ? "" : "none";
+    // Merge is how a recipe reaches the final locked Approved — only offered once Technical has
+    // approved it for code creation, and not yet merged.
+    if (mergeBtn) mergeBtn.style.display = (canApproveRecipes() && recipeStatus === "approved_for_code_creation") ? "" : "none";
     var submitApprovalBtn = document.getElementById("recipe-detail-submit-approval");
     if (submitApprovalBtn) {
-      submitApprovalBtn.style.display = (!canApproveRecipes() && !r.approved && !r.pendingApproval) ? "" : "none";
+      submitApprovalBtn.style.display = (!canApproveRecipes() && recipeStatus === "development") ? "" : "none";
     }
     // Approved recipes are locked: the Edit modal (name/code/type/UOM/weight) must not be
     // reachable until someone explicitly unlocks the recipe via toggleRecipeApproved().
@@ -4467,7 +4664,7 @@
           : "<p style=\"margin:0;color:var(--nc-gray-500);font-size:13px\">Not used as a sub recipe in any other recipe yet.</p>";
       } else {
         wuList.innerHTML = usedIn.map(function (rec) {
-          var status = rec.approved ? "<span class=\"badge badge-approved\" style=\"font-size:9px;margin-left:8px\">Approved</span>" : "<span class=\"badge badge-development\" style=\"font-size:9px;margin-left:8px\">In development</span>";
+          var status = statusBadgeHtml(rec, "font-size:9px;margin-left:8px");
           var kind = (rec.recipeType || "finishedProduct") === "subRecipe" ? "Sub recipe" : "Finished";
           var code = (rec.code && rec.code.trim()) ? "<span style=\"font-family:var(--nc-mono);font-size:12px;color:var(--nc-gray-500);margin-right:8px\">[" + rec.code + "]</span>" : "";
           return "<div class=\"card row-clickable\" style=\"padding:12px;cursor:pointer\" onclick=\"openRecipe('" + rec.id.replace(/'/g, "\\'") + "')\">" +
@@ -4491,52 +4688,110 @@
   // offered a button that will only 403). Signed-out / homepage-JWT / auth-disabled sessions
   // have no role concept at all, so the restriction only applies once we actually know a role.
   function canApproveRecipes() { return !currentAuthUser || currentAuthUser.siteRole === "admin"; }
+  // Same check, just named for ingredients too — role gate is identical either way.
+  var canApproveIngredients = canApproveRecipes;
 
+  // Shared 4-status model for both recipes and ingredients: In Development -> Technical Approval
+  // Pending -> Approved for Code Creation -> Approved. A recipe/ingredient can't reach the final
+  // locked Approved except via Merge — approving from the pending queue only ever gets you to
+  // "Approved for Code Creation" (see approveForCodeCreation() below and the matching server
+  // endpoints), which stays editable. More statuses may be added to this pipeline later.
+  function statusOf(item) {
+    if (item.pendingApproval) return "pending_approval";
+    if (item.approved) return "approved";
+    if (item.approvedForCodeCreation) return "approved_for_code_creation";
+    return "development";
+  }
+  var STATUS_LABELS = {
+    approved: "Approved", approved_for_code_creation: "Approved for Code Creation",
+    pending_approval: "Pending Technical Approval", development: "In development"
+  };
+  function statusLabel(item) { return STATUS_LABELS[statusOf(item)]; }
+  function statusBadgeHtml(item, styleExtra) {
+    var style = styleExtra ? " style=\"" + styleExtra + "\"" : "";
+    var status = statusOf(item);
+    if (status === "pending_approval") {
+      return "<span class=\"badge badge-pending\"" + style + " title=\"Sent to " + escapeHtml(item.pendingApprovalReviewerName || "Technical") + "\">Pending Technical Approval</span>";
+    }
+    if (status === "approved") return "<span class=\"badge badge-approved\"" + style + ">Approved</span>";
+    if (status === "approved_for_code_creation") return "<span class=\"badge badge-code-creation\"" + style + ">Approved for Code Creation</span>";
+    return "<span class=\"badge badge-development\"" + style + ">In development</span>";
+  }
+
+  // Four-status lifecycle: development -> pending_approval -> approved_for_code_creation ->
+  // approved. The final locked "approved" is only ever reached via Merge Recipe (see below) —
+  // this toggle handles every other transition, including unlocking back to development from
+  // either of the two approved states.
   function toggleRecipeApproved() {
     if (!currentRecipeId) return;
     if (!canApproveRecipes()) { showToast("Only Technical can approve or un-approve a recipe"); return; }
     var recipes = Recipes.getRecipes();
     var r = recipes.find(function (rec) { return rec.id === currentRecipeId; });
     if (!r) return;
-    // Approved recipes are locked for editing (see renderRecipeIngredients). Moving one back
-    // to "in development" reopens it to editing, so confirm first rather than silently
-    // unlocking an approved recipe from a stray click.
-    if (r.approved) {
-      if (!confirm("This recipe is approved for code creation and currently locked. Mark it as in development so it can be edited again?")) return;
-    }
-    var approving = !r.approved;
+    var status = statusOf(r);
     var recipeId = currentRecipeId;
-    // Approving a recipe that was sent to a specific reviewer is enforced server-side (only that
-    // reviewer can do it) — go through the dedicated endpoint so a mismatch is actually reported
-    // instead of silently overwritten by the generic save.
-    if (approving && r.pendingApproval && currentAuthUser) {
-      fetch("/api/recipes/" + recipeId + "/approve", { method: "POST" }).then(function (resp) {
-        if (!resp.ok) return resp.json().then(function (j) { throw new Error(j.error || "Failed"); });
-        return resp.json();
-      }).then(function (updated) {
-        var r2 = Recipes.getRecipes().find(function (rec) { return rec.id === recipeId; });
-        if (r2) {
-          r2.approved = true;
-          r2.pendingApproval = false;
-          r2.pendingApprovalReviewerName = null;
-          r2.pendingApprovalAt = null;
-          r2.updatedAt = updated.updatedAt;
-        }
-        showToast("Recipe approved for code creation");
-        if (currentRecipeId === recipeId) openRecipe(recipeId);
-        renderAll();
-      }).catch(function (e) { showToast(e.message || "Could not approve"); });
+
+    if (status === "approved") {
+      // Locked for editing (see renderRecipeIngredients) — confirm before reopening it.
+      if (!confirm("This recipe is approved and currently locked. Mark it as in development so it can be edited again?")) return;
+      r.approved = false;
+      r.approvedForCodeCreation = false;
+      Recipes.saveRecipe(r);
+      showToast("Recipe marked as in development — now editable");
+      openRecipe(recipeId);
+      renderAll();
       return;
     }
-    r.approved = approving;
-    // Acting on it either way (approve, or send back to development) resolves whatever
-    // submission was pending — Technical has now actually looked at it.
-    r.pendingApproval = false;
-    r.pendingApprovalReviewerName = null;
-    r.pendingApprovalAt = null;
+
+    if (status === "approved_for_code_creation") {
+      r.approvedForCodeCreation = false;
+      Recipes.saveRecipe(r);
+      showToast("Recipe marked as in development — now editable");
+      openRecipe(recipeId);
+      renderAll();
+      return;
+    }
+
+    if (status === "pending_approval") {
+      // Approving a recipe that was sent to a specific reviewer is enforced server-side (only
+      // that reviewer can do it) — go through the dedicated endpoint so a mismatch is actually
+      // reported instead of silently overwritten by the generic save.
+      if (currentAuthUser) {
+        fetch("/api/recipes/" + recipeId + "/approve-for-code-creation", { method: "POST" }).then(function (resp) {
+          if (!resp.ok) return resp.json().then(function (j) { throw new Error(j.error || "Failed"); });
+          return resp.json();
+        }).then(function (updated) {
+          var r2 = Recipes.getRecipes().find(function (rec) { return rec.id === recipeId; });
+          if (r2) {
+            r2.approvedForCodeCreation = true;
+            r2.pendingApproval = false;
+            r2.pendingApprovalReviewerName = null;
+            r2.pendingApprovalAt = null;
+            r2.updatedAt = updated.updatedAt;
+          }
+          showToast("Recipe approved for code creation");
+          if (currentRecipeId === recipeId) openRecipe(recipeId);
+          renderAll();
+        }).catch(function (e) { showToast(e.message || "Could not approve"); });
+        return;
+      }
+      r.approvedForCodeCreation = true;
+      r.pendingApproval = false;
+      r.pendingApprovalReviewerName = null;
+      r.pendingApprovalAt = null;
+      Recipes.saveRecipe(r);
+      showToast("Recipe approved for code creation");
+      openRecipe(recipeId);
+      renderAll();
+      return;
+    }
+
+    // development -> approve for code creation directly (a Technical account skipping the
+    // submit/review step entirely, e.g. their own recipe).
+    r.approvedForCodeCreation = true;
     Recipes.saveRecipe(r);
-    showToast(r.approved ? "Recipe approved for code creation" : "Recipe marked as in development — now editable");
-    openRecipe(currentRecipeId);
+    showToast("Recipe approved for code creation");
+    openRecipe(recipeId);
     renderAll();
   }
 
@@ -4595,6 +4850,10 @@
     if (!confirm("Merge \"" + target.name + "\" (code " + (target.code || "—") + ") into this recipe? This recipe's ingredients and nutrition are kept; its name and code are replaced with the selected recipe's, and the selected recipe is deleted.")) return;
     keep.code = target.code;
     keep.name = target.name;
+    // A real code from the official system is exactly what makes this recipe finally, fully
+    // Approved (locked) — before this, it could only ever reach Approved for Code Creation.
+    keep.approved = true;
+    keep.approvedForCodeCreation = false;
     // Union, not overwrite — keeps this recipe's own Project-folder tag(s) as well as any the
     // incoming (real-coded) recipe already picked up on import, so neither side's tagging is lost.
     var tagSet = {};
@@ -5125,8 +5384,7 @@
     var filterVal = (document.getElementById("recipe-filter") && document.getElementById("recipe-filter").value) || "all";
     var typeFilterVal = (document.getElementById("recipe-type-filter") && document.getElementById("recipe-type-filter").value) || "all";
     var filtered = recipes;
-    if (filterVal === "approved") filtered = filtered.filter(function (r) { return !!r.approved; });
-    if (filterVal === "development") filtered = filtered.filter(function (r) { return !r.approved; });
+    if (filterVal !== "all") filtered = filtered.filter(function (r) { return statusOf(r) === filterVal; });
     if (typeFilterVal === "finishedProduct") filtered = filtered.filter(function (r) { return (r.recipeType || "finishedProduct") === "finishedProduct"; });
     if (typeFilterVal === "subRecipe") filtered = filtered.filter(function (r) { return (r.recipeType || "finishedProduct") === "subRecipe"; });
     if (!includeDelistedRecipes()) filtered = filtered.filter(function (r) { return !isDelisted(r.name); });
@@ -5149,9 +5407,7 @@
       var hfss = HFSS.calcHFSS(r, ingredients);
       var codePart = (r.code && r.code.trim()) ? "<span style=\"font-size:11px;color:var(--nc-gray-500);font-family:var(--nc-mono);margin-right:8px\">[" + r.code + "]</span>" : "";
       var tagsPart = (r.descriptionTags || []).length ? "<span style=\"font-size:11px;color:var(--nc-gray-500);margin-left:6px\">" + (r.descriptionTags || []).join(", ") + "</span>" : "";
-      var statusBadge = r.approved
-        ? "<span class=\"badge badge-approved\" style=\"font-size:9px;margin-left:6px\">Approved</span>"
-        : "<span class=\"badge badge-development\" style=\"font-size:9px;margin-left:6px\">In development</span>";
+      var statusBadge = statusBadgeHtml(r, "font-size:9px;margin-left:6px");
       var onclick = "openRecipe('" + r.id.replace(/'/g, "\\'") + "'); document.getElementById('recipe-library-dropdown').classList.remove('open');";
       return "<div class=\"ingredient-dropdown-item\" onclick=\"" + onclick + "\">" + codePart + "<span>" + r.name + "</span>" + tagsPart + "<span class=\"cat\">" + r.type + " · " + Data.round(nut.kcal) + " kcal/100g</span>" + statusBadge + "</div>";
     }).join("");
@@ -5165,7 +5421,7 @@
   function recipeCardHtml(r, ingredients) {
     var nut = Recipes.calcRecipeNutrition(r, ingredients);
     var hfss = HFSS.calcHFSS(r, ingredients);
-    var statusBadge = r.approved ? '<span class="badge badge-approved" style="font-size:10px;margin-right:6px">Approved</span>' : '<span class="badge badge-development" style="font-size:10px;margin-right:6px">In development</span>';
+    var statusBadge = statusBadgeHtml(r, "font-size:10px;margin-right:6px");
     var kindBadge = (r.recipeType || "finishedProduct") === "subRecipe"
       ? '<span class="badge badge-subrecipe" style="margin-right:6px">Sub recipe</span>'
       : '<span class="badge badge-finishedproduct" style="margin-right:6px">Finished product</span>';
@@ -5184,11 +5440,7 @@
     fromView = fromView || "recipes";
     var nut = Recipes.calcRecipeNutrition(r, ingredients);
     var hfss = HFSS.calcHFSS(r, ingredients);
-    var statusBadge = r.approved
-      ? "<span class=\"badge badge-approved\" style=\"font-size:10px;margin-right:6px\">Approved</span>"
-      : (r.pendingApproval
-          ? "<span class=\"badge badge-pending\" style=\"font-size:10px;margin-right:6px\" title=\"Sent to " + escapeHtml(r.pendingApprovalReviewerName || "Technical") + "\">Pending Technical Approval</span>"
-          : "<span class=\"badge badge-development\" style=\"font-size:10px;margin-right:6px\">In development</span>");
+    var statusBadge = statusBadgeHtml(r, "font-size:10px;margin-right:6px");
     var kindBadge = (r.recipeType || "finishedProduct") === "subRecipe"
       ? "<span class=\"badge badge-subrecipe\" style=\"font-size:10px;margin-right:6px\">Sub</span>"
       : "<span class=\"badge badge-finishedproduct\" style=\"font-size:10px;margin-right:6px\">Finished</span>";
@@ -5225,8 +5477,7 @@
     var filterVal = (document.getElementById("recipe-filter") && document.getElementById("recipe-filter").value) || "all";
     var typeFilterVal = (document.getElementById("recipe-type-filter") && document.getElementById("recipe-type-filter").value) || "all";
     var filtered = recipes;
-    if (filterVal === "approved") filtered = filtered.filter(function (r) { return !!r.approved; });
-    if (filterVal === "development") filtered = filtered.filter(function (r) { return !r.approved; });
+    if (filterVal !== "all") filtered = filtered.filter(function (r) { return statusOf(r) === filterVal; });
     if (typeFilterVal === "finishedProduct") filtered = filtered.filter(function (r) { return (r.recipeType || "finishedProduct") === "finishedProduct"; });
     if (typeFilterVal === "subRecipe") filtered = filtered.filter(function (r) { return (r.recipeType || "finishedProduct") === "subRecipe"; });
     if (!includeDelistedRecipes()) filtered = filtered.filter(function (r) { return !isDelisted(r.name); });
@@ -5472,8 +5723,7 @@
       if (typeFilterVal === "finishedProduct") filtered = filtered.filter(function (r) { return (r.recipeType || "finishedProduct") === "finishedProduct"; });
       if (typeFilterVal === "subRecipe") filtered = filtered.filter(function (r) { return (r.recipeType || "finishedProduct") === "subRecipe"; });
     }
-    if (filterVal === "approved") filtered = filtered.filter(function (r) { return !!r.approved; });
-    if (filterVal === "development") filtered = filtered.filter(function (r) { return !r.approved; });
+    if (filterVal !== "all") filtered = filtered.filter(function (r) { return statusOf(r) === filterVal; });
     if (!includeProjectDelistedRecipes()) filtered = filtered.filter(function (r) { return !isDelisted(r.name); });
     var body = document.getElementById("project-recipes-body");
     var emptyEl = document.getElementById("project-recipes-empty");
@@ -5498,9 +5748,8 @@
     var recipes = Recipes.getRecipes();
     var r = recipes.find(function (rec) { return rec.id === currentRecipeId; });
     function statusMatches(item) {
-      if (statusFilter === "approved") return !!item.approved;
-      if (statusFilter === "development") return !item.approved;
-      return true;
+      if (statusFilter === "all") return true;
+      return statusOf(item) === statusFilter;
     }
     // Ingredients only ever come back as "rm"/"packaging"/"other" here — sub-recipes here are
     // always recipeType "subRecipe" (finished products can't be added as a component today, see
@@ -5542,9 +5791,7 @@
     var allMatches = ingMatches.length + subMatches.length;
     if (allMatches === 0) { dd.innerHTML = "<div style=\"padding:10px;color:var(--nc-gray-400);font-size:13px\">No matches</div>"; dd.classList.add("open"); return; }
     function statusBadgeFor(item) {
-      return item.approved
-        ? "<span class=\"badge badge-approved\" style=\"font-size:9px\" title=\"Approved\">Approved</span>"
-        : "<span class=\"badge badge-development\" style=\"font-size:9px\" title=\"In development\">In dev</span>";
+      return statusBadgeHtml(item, "font-size:9px");
     }
     var html = subMatches.map(function (rec) {
       var codePart = (rec.code && rec.code.trim()) ? rec.code : "";
@@ -7932,6 +8179,12 @@ desc: "Imported from " + (fname || "spreadsheet"),
       openRecipe(n.link.slice("reviewrecipe:".length));
       return;
     }
+    if (n.link && n.link.indexOf("reviewingredient:") === 0) {
+      closeNotifPanel();
+      switchView("ingredients");
+      editIngredient(n.link.slice("reviewingredient:".length));
+      return;
+    }
     if (n.link) { closeNotifPanel(); switchView(n.link); }
   }
 
@@ -8161,8 +8414,15 @@ desc: "Imported from " + (fname || "spreadsheet"),
     var deepLinkRecipe = deepLinkId
       ? Recipes.getRecipes().find(function (r) { return r.id === deepLinkId; })
       : (deepLinkCode ? Recipes.getRecipes().find(function (r) { return r.code === deepLinkCode; }) : null);
+    var deepLinkIngredientId = deepLinkParams.get("ingredientId");
+    var deepLinkIngredient = deepLinkIngredientId
+      ? Ingredients.getIngredients().find(function (i) { return i.id === deepLinkIngredientId; })
+      : null;
     if (deepLinkRecipe) {
       openRecipe(deepLinkRecipe.id);
+    } else if (deepLinkIngredient) {
+      switchView("ingredients");
+      editIngredient(deepLinkIngredient.id);
     } else if (sessionStorage.getItem("ncJustSignedIn")) {
       // Set by the /login and /signup pages right before they redirect here — a fresh sign-in
       // always lands on the Dashboard, but reloading/refreshing an already-open session (no such

@@ -37,6 +37,16 @@ public sealed class Ingredient
     public List<string> Allergens { get; set; } = [];
     public bool Fvn { get; set; }
     public bool Approved { get; set; }
+    /// <summary>True once Technical has reviewed and approved this ingredient for code
+    /// creation — a real code hasn't been assigned yet (still editable, not locked). Becomes
+    /// fully Approved (locked) once merged with the officially-coded duplicate. Mirrors the
+    /// same lifecycle on Recipe.</summary>
+    public bool ApprovedForCodeCreation { get; set; }
+    public bool PendingApproval { get; set; }
+    public string? PendingApprovalReviewerId { get; set; }
+    public string? PendingApprovalReviewerName { get; set; }
+    public string? PendingApprovalSubmittedByName { get; set; }
+    public DateTimeOffset? PendingApprovalAt { get; set; }
     public string Created { get; set; } = DateTimeOffset.UtcNow.ToString("O");
     public List<string> VersionHistory { get; set; } = [];
     /// <summary>Optimistic-concurrency stamp — the server's last-saved time for this row. A
@@ -72,6 +82,10 @@ public sealed class Recipe
     public decimal Serving { get; set; } = 100;
     public string Uom { get; set; } = "G";
     public bool Approved { get; set; }
+    /// <summary>True once Technical has reviewed and approved this recipe for code creation —
+    /// a real code hasn't been assigned yet (still editable, not locked). Becomes fully Approved
+    /// (locked) only via Merge Recipe once the officially-coded duplicate is imported.</summary>
+    public bool ApprovedForCodeCreation { get; set; }
     public List<string> DescriptionTags { get; set; } = [];
     public List<RecipeLine> Ingredients { get; set; } = [];
     public string Created { get; set; } = DateTimeOffset.UtcNow.ToString("O");

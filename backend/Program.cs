@@ -670,9 +670,14 @@ document.getElementById('f').addEventListener('submit', async (ev) => {
     // ever shows name/code/who-it's-with, never the recipe's ingredients/method, so it has no
     // business sending a full recipe payload the way the main recipe PUT endpoint expects.
     // Technical-only (same rule as the approved-field guard on the main PUT), and it's the only
-    // place clearing PendingApproval on the way to Approved rather than back to development —
-    // toggleRecipeApproved handles that direction from inside NutriCost itself.
-    app.MapPost("/api/recipes/{id}/approve", async (AppDbContext db, HttpContext ctx, string id) =>
+    // place clearing PendingApproval on the way to "Approved for Code Creation" rather than back
+    // to development — toggleRecipeApproved handles that direction from inside NutriCost itself.
+    // This moves the recipe to ApprovedForCodeCreation, NOT the final locked Approved — a recipe
+    // can't be marked fully Approved until it's actually merged with its officially-coded
+    // duplicate (see Merge Recipe on the frontend, which is the only thing that sets Approved).
+    // Kept at both routes: /approve is the original name the Approval Process app already calls;
+    // /approve-for-code-creation is the clearer name going forward.
+    Func<AppDbContext, HttpContext, string, Task<IResult>> approveForCodeCreation = async (db, ctx, id) =>
     {
         if (!(ctx.User?.Identity?.IsAuthenticated ?? false)) return Results.Unauthorized();
         if ((ctx.User.FindFirstValue("site_role") ?? "user") != "admin") return Results.Json(new { error = "Only Technical can approve a recipe" }, statusCode: 403);
@@ -688,7 +693,7 @@ document.getElementById('f').addEventListener('submit', async (ev) => {
                 return Results.Json(new { error = "This recipe was sent to " + (recipe.PendingApprovalReviewerName ?? "someone else") + " — only they can approve it." }, statusCode: 403);
             }
         }
-        recipe.Approved = true;
+        recipe.ApprovedForCodeCreation = true;
         recipe.PendingApproval = false;
         recipe.PendingApprovalReviewerId = null;
         recipe.PendingApprovalReviewerName = null;
@@ -697,7 +702,9 @@ document.getElementById('f').addEventListener('submit', async (ev) => {
         recipe.UpdatedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync();
         return Results.Ok(recipe.ToModel());
-    });
+    };
+    app.MapPost("/api/recipes/{id}/approve", approveForCodeCreation);
+    app.MapPost("/api/recipes/{id}/approve-for-code-creation", approveForCodeCreation);
 }
 
 // Ensure DB has latest schema
@@ -817,13 +824,29 @@ app.MapPost("/api/recipes", async (AppDbContext db, Recipe recipe) =>
 // fetched for this row; if the row has moved on since (someone else saved it in between), this
 // rejects with 409 and returns the current server copy rather than silently overwriting it — the
 // bulk PUT has no such check, which is exactly the multi-user data-loss risk this exists to close.
-app.MapPut("/api/ingredients/{id}", async (AppDbContext db, string id, Ingredient ingredient) =>
+app.MapPut("/api/ingredients/{id}", async (AppDbContext db, HttpContext ctx, string id, Ingredient ingredient) =>
 {
     var entity = await db.Ingredients.FirstOrDefaultAsync(x => x.Id == id);
     if (entity == null) return Results.NotFound();
     if (ingredient.UpdatedAt.HasValue && ingredient.UpdatedAt.Value != entity.UpdatedAt)
     {
         return Results.Conflict(entity.ToModel());
+    }
+    // Same approval-authority rules as the matching recipe PUT — see that endpoint for the
+    // full rationale. An ingredient can't be fully Approved (locked) until it's actually merged
+    // with its officially-coded duplicate; ApprovedForCodeCreation is the pre-merge review stage.
+    if ((ingredient.Approved != entity.Approved || ingredient.ApprovedForCodeCreation != entity.ApprovedForCodeCreation)
+        && (ctx.User?.Identity?.IsAuthenticated ?? false)
+        && (ctx.User.FindFirstValue("site_role") ?? "user") != "admin")
+    {
+        return Results.Json(new { error = "Only an admin can approve or un-approve an ingredient." }, statusCode: 403);
+    }
+    var approvingNow = (ingredient.ApprovedForCodeCreation && !entity.ApprovedForCodeCreation) || (ingredient.Approved && !entity.Approved);
+    if (approvingNow && entity.PendingApproval && !string.IsNullOrEmpty(entity.PendingApprovalReviewerId)
+        && (ctx.User?.Identity?.IsAuthenticated ?? false)
+        && ctx.User.FindFirstValue(ClaimTypes.NameIdentifier) != entity.PendingApprovalReviewerId)
+    {
+        return Results.Json(new { error = "This ingredient was sent to " + (entity.PendingApprovalReviewerName ?? "someone else") + " — only they can approve it." }, statusCode: 403);
     }
     ingredient.Id = id;
     db.Entry(entity).CurrentValues.SetValues(ingredient.ToEntity());
@@ -832,7 +855,7 @@ app.MapPut("/api/ingredients/{id}", async (AppDbContext db, string id, Ingredien
     return Results.Ok(entity.ToModel());
 });
 
-app.MapPut("/api/ingredients", async (AppDbContext db, List<Ingredient> ingredients) =>
+app.MapPut("/api/ingredients", async (AppDbContext db, HttpContext ctx, List<Ingredient> ingredients) =>
 {
     if (ingredients == null) ingredients = [];
 
@@ -880,6 +903,20 @@ app.MapPut("/api/ingredients", async (AppDbContext db, List<Ingredient> ingredie
     // now only happens via the dedicated DELETE endpoint below.
     var idsToUpsert = ingredients.Select(i => i.Id).Where(id => !string.IsNullOrWhiteSpace(id)).ToHashSet();
     var trackedExisting = await db.Ingredients.Where(x => idsToUpsert.Contains(x.Id)).ToDictionaryAsync(x => x.Id);
+    var isAdminBulk = !(ctx.User?.Identity?.IsAuthenticated ?? false) || (ctx.User.FindFirstValue("site_role") ?? "user") == "admin";
+    if (!isAdminBulk && ingredients.Any(i => trackedExisting.TryGetValue(i.Id, out var existing)
+        && (i.Approved != existing.Approved || i.ApprovedForCodeCreation != existing.ApprovedForCodeCreation)))
+        return Results.Json(new { error = "Only an admin can approve or un-approve an ingredient." }, statusCode: 403);
+    var currentUserIdBulk = ctx.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+    var reviewerMismatchIng = ingredients.FirstOrDefault(i => trackedExisting.TryGetValue(i.Id, out var existing)
+        && ((i.ApprovedForCodeCreation && !existing.ApprovedForCodeCreation) || (i.Approved && !existing.Approved))
+        && existing.PendingApproval && !string.IsNullOrEmpty(existing.PendingApprovalReviewerId)
+        && (ctx.User?.Identity?.IsAuthenticated ?? false) && currentUserIdBulk != existing.PendingApprovalReviewerId);
+    if (reviewerMismatchIng != null)
+    {
+        var reviewerName = trackedExisting[reviewerMismatchIng.Id].PendingApprovalReviewerName ?? "someone else";
+        return Results.Json(new { error = "This ingredient was sent to " + reviewerName + " — only they can approve it." }, statusCode: 403);
+    }
     foreach (var ing in ingredients)
     {
         if (string.IsNullOrWhiteSpace(ing.Id)) continue;
@@ -903,6 +940,80 @@ app.MapDelete("/api/ingredients/{id}", async (AppDbContext db, string id) =>
     db.Ingredients.Remove(entity);
     await db.SaveChangesAsync();
     return Results.NoContent();
+});
+
+// Single-ingredient fetch — mirrors GET /api/recipes/{id}, used to refresh one ingredient's
+// approval/pending state against the server when opening it (a long-lived tab's local cache can
+// go stale the same way a recipe's can).
+app.MapGet("/api/ingredients/{id}", async (AppDbContext db, string id) =>
+{
+    var entity = await db.Ingredients.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
+    if (entity == null) return Results.NotFound();
+    return Results.Ok(entity.ToModel());
+});
+
+// ─── Submit an ingredient for approval — mirrors POST /api/recipes/{id}/submit-for-approval ──
+app.MapPost("/api/ingredients/{id}/submit-for-approval", async (AppDbContext db, HttpContext ctx, string id, JsonElement body) =>
+{
+    var userId = ctx.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+    if (string.IsNullOrEmpty(userId)) return Results.Unauthorized();
+    var ingredient = await db.Ingredients.FirstOrDefaultAsync(x => x.Id == id);
+    if (ingredient == null) return Results.NotFound();
+    var targetUserId = body.TryGetProperty("userId", out var uEl) ? uEl.GetString() : null;
+    if (string.IsNullOrWhiteSpace(targetUserId)) return Results.BadRequest(new { error = "Pick who to submit to" });
+    var targetRoleRows = await db.Database.SqlQueryRaw<string>("SELECT site_role AS \"Value\" FROM nutri_users WHERE id = {0} LIMIT 1", targetUserId).ToListAsync();
+    if (targetRoleRows.Count == 0) return Results.NotFound(new { error = "Account not found" });
+    if (targetRoleRows[0] != "admin") return Results.BadRequest(new { error = "Pick a Technical team member" });
+
+    var reviewerNameRows = await db.Database.SqlQueryRaw<string>("SELECT display_name AS \"Value\" FROM nutri_users WHERE id = {0} LIMIT 1", targetUserId).ToListAsync();
+    var reviewerName = reviewerNameRows.Count > 0 && !string.IsNullOrWhiteSpace(reviewerNameRows[0]) ? reviewerNameRows[0] : "Technical";
+    var submitterNameRows = await db.Database.SqlQueryRaw<string>("SELECT display_name AS \"Value\" FROM nutri_users WHERE id = {0} LIMIT 1", userId).ToListAsync();
+    var submitterName = submitterNameRows.Count > 0 && !string.IsNullOrWhiteSpace(submitterNameRows[0]) ? submitterNameRows[0] : "Someone";
+
+    ingredient.PendingApproval = true;
+    ingredient.PendingApprovalReviewerId = targetUserId;
+    ingredient.PendingApprovalReviewerName = reviewerName;
+    ingredient.PendingApprovalSubmittedByName = submitterName;
+    ingredient.PendingApprovalAt = DateTimeOffset.UtcNow;
+
+    db.Notifications.Add(new NotificationEntity
+    {
+        Id = Guid.NewGuid().ToString("N"),
+        UserId = targetUserId!,
+        Title = submitterName + " submitted an ingredient for approval",
+        Body = ingredient.Name,
+        Link = "reviewingredient:" + id
+    });
+    await db.SaveChangesAsync();
+    return Results.Ok(new { ok = true });
+});
+
+// One-click approve for the Approval Process app / in-app toggle — mirrors the recipe version.
+// Moves the ingredient to ApprovedForCodeCreation (editable, not locked), never straight to the
+// final locked Approved — that only happens via Merge Ingredient once a real code exists.
+app.MapPost("/api/ingredients/{id}/approve-for-code-creation", async (AppDbContext db, HttpContext ctx, string id) =>
+{
+    if (!(ctx.User?.Identity?.IsAuthenticated ?? false)) return Results.Unauthorized();
+    if ((ctx.User.FindFirstValue("site_role") ?? "user") != "admin") return Results.Json(new { error = "Only Technical can approve an ingredient" }, statusCode: 403);
+    var ingredient = await db.Ingredients.FirstOrDefaultAsync(x => x.Id == id);
+    if (ingredient == null) return Results.NotFound();
+    if (!string.IsNullOrEmpty(ingredient.PendingApprovalReviewerId))
+    {
+        var userId = ctx.User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId != ingredient.PendingApprovalReviewerId)
+        {
+            return Results.Json(new { error = "This ingredient was sent to " + (ingredient.PendingApprovalReviewerName ?? "someone else") + " — only they can approve it." }, statusCode: 403);
+        }
+    }
+    ingredient.ApprovedForCodeCreation = true;
+    ingredient.PendingApproval = false;
+    ingredient.PendingApprovalReviewerId = null;
+    ingredient.PendingApprovalReviewerName = null;
+    ingredient.PendingApprovalSubmittedByName = null;
+    ingredient.PendingApprovalAt = null;
+    ingredient.UpdatedAt = DateTimeOffset.UtcNow;
+    await db.SaveChangesAsync();
+    return Results.Ok(ingredient.ToModel());
 });
 
 app.MapGet("/api/ingredients/{id}/versions", async (AppDbContext db, string id) =>
@@ -949,14 +1060,18 @@ app.MapPut("/api/recipes/{id}", async (AppDbContext db, HttpContext ctx, string 
     // particular re-opens an otherwise-locked recipe for editing. Only enforceable where we have
     // real accounts (local auth mode); homepage-JWT/disabled modes have no site_role concept, so
     // this only blocks the change once IsAuthenticated is actually true.
-    if (recipe.Approved != entity.Approved && (ctx.User?.Identity?.IsAuthenticated ?? false)
+    if ((recipe.Approved != entity.Approved || recipe.ApprovedForCodeCreation != entity.ApprovedForCodeCreation)
+        && (ctx.User?.Identity?.IsAuthenticated ?? false)
         && (ctx.User.FindFirstValue("site_role") ?? "user") != "admin")
     {
         return Results.Json(new { error = "Only an admin can approve or un-approve a recipe." }, statusCode: 403);
     }
     // Approving (not un-approving) a recipe that was sent to a specific reviewer is restricted
-    // to that reviewer — same rule as the Approval Process app's one-click Approve.
-    if (recipe.Approved && !entity.Approved && entity.PendingApproval && !string.IsNullOrEmpty(entity.PendingApprovalReviewerId)
+    // to that reviewer — same rule as the Approval Process app's one-click Approve. Applies to
+    // both the code-creation stage and going straight to fully Approved (e.g. an already
+    // code-creation-approved recipe re-submitted and approved again some other way).
+    var approvingNow = (recipe.ApprovedForCodeCreation && !entity.ApprovedForCodeCreation) || (recipe.Approved && !entity.Approved);
+    if (approvingNow && entity.PendingApproval && !string.IsNullOrEmpty(entity.PendingApprovalReviewerId)
         && (ctx.User?.Identity?.IsAuthenticated ?? false)
         && ctx.User.FindFirstValue(ClaimTypes.NameIdentifier) != entity.PendingApprovalReviewerId)
     {
@@ -981,11 +1096,13 @@ app.MapPut("/api/recipes", async (AppDbContext db, HttpContext ctx, List<Recipe>
     var idsToUpsert = recipes.Select(r => r.Id).Where(id => !string.IsNullOrWhiteSpace(id)).ToHashSet();
     var trackedExisting = await db.Recipes.Include(r => r.Lines).Where(r => idsToUpsert.Contains(r.Id)).ToDictionaryAsync(r => r.Id);
     var isAdmin = !(ctx.User?.Identity?.IsAuthenticated ?? false) || (ctx.User.FindFirstValue("site_role") ?? "user") == "admin";
-    if (!isAdmin && recipes.Any(r => trackedExisting.TryGetValue(r.Id, out var existing) && r.Approved != existing.Approved))
+    if (!isAdmin && recipes.Any(r => trackedExisting.TryGetValue(r.Id, out var existing)
+        && (r.Approved != existing.Approved || r.ApprovedForCodeCreation != existing.ApprovedForCodeCreation)))
         return Results.Json(new { error = "Only an admin can approve or un-approve a recipe." }, statusCode: 403);
     var currentUserId = ctx.User?.FindFirstValue(ClaimTypes.NameIdentifier);
     var reviewerMismatch = recipes.FirstOrDefault(r => trackedExisting.TryGetValue(r.Id, out var existing)
-        && r.Approved && !existing.Approved && existing.PendingApproval && !string.IsNullOrEmpty(existing.PendingApprovalReviewerId)
+        && ((r.ApprovedForCodeCreation && !existing.ApprovedForCodeCreation) || (r.Approved && !existing.Approved))
+        && existing.PendingApproval && !string.IsNullOrEmpty(existing.PendingApprovalReviewerId)
         && (ctx.User?.Identity?.IsAuthenticated ?? false) && currentUserId != existing.PendingApprovalReviewerId);
     if (reviewerMismatch != null)
     {

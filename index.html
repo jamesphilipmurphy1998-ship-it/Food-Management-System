@@ -7,7 +7,7 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect fill='%235d8c3e' width='32' height='32' rx='4'/><text x='16' y='22' font-size='18' font-weight='bold' fill='white' text-anchor='middle' font-family='system-ui,sans-serif'>W</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=20260925-pending-approval">
+<link rel="stylesheet" href="styles.css?v=20260928-code-creation-badge">
 </head>
 <body>
 
@@ -412,6 +412,8 @@
         <select class="form-select" id="project-recipe-filter" onchange="setProjectRecipeFilter(this.value)" style="width:auto;min-width:160px" title="Filter by status">
           <option value="all">All</option>
           <option value="approved">Approved only</option>
+          <option value="approved_for_code_creation">Approved for Code Creation only</option>
+          <option value="pending_approval">Pending Technical Approval only</option>
           <option value="development">Development only</option>
         </select>
         <select class="form-select" id="project-recipe-type-filter" onchange="setProjectRecipeFilter()" style="width:auto;min-width:160px" title="Filter by recipe kind">
@@ -490,6 +492,8 @@
         <select class="form-select" id="ingredient-filter" onchange="setIngredientFilter(this.value)" style="width:auto;min-width:160px" title="Filter by status">
           <option value="all">All ingredients</option>
           <option value="approved">Approved only</option>
+          <option value="approved_for_code_creation">Approved for Code Creation only</option>
+          <option value="pending_approval">Pending Technical Approval only</option>
           <option value="development">Development only</option>
         </select>
         <select class="form-select" id="ingredient-type-filter" onchange="setIngredientFilter()" style="width:auto;min-width:160px" title="Filter by type">
@@ -581,6 +585,8 @@
         <select class="form-select" id="recipe-filter" onchange="setRecipeFilter(this.value)" style="width:auto;min-width:160px" title="Filter by status">
           <option value="all">All recipes</option>
           <option value="approved">Approved only</option>
+          <option value="approved_for_code_creation">Approved for Code Creation only</option>
+          <option value="pending_approval">Pending Technical Approval only</option>
           <option value="development">Development only</option>
         </select>
         <select class="form-select" id="recipe-type-filter" onchange="setRecipeFilter()" style="width:auto;min-width:160px" title="Filter by recipe kind">
@@ -717,6 +723,8 @@
             <select class="form-input" id="recipe-ing-status-filter" style="width:170px;flex:none" onchange="searchIngredientForRecipe()">
               <option value="all">All statuses</option>
               <option value="approved">Approved only</option>
+              <option value="approved_for_code_creation">Approved for Code Creation only</option>
+              <option value="pending_approval">Pending Technical Approval only</option>
               <option value="development">In development only</option>
             </select>
             <select class="form-input" id="recipe-ing-type-filter" style="width:150px;flex:none" onchange="searchIngredientForRecipe()">
@@ -1018,6 +1026,8 @@
           <select class="form-select" id="comparison-search-status-filter" onchange="filterComparisonSearch()" style="width:auto;flex:none">
             <option value="all">All statuses</option>
             <option value="approved">Approved</option>
+            <option value="approved_for_code_creation">Approved for Code Creation</option>
+            <option value="pending_approval">Pending Technical Approval</option>
             <option value="development">In development</option>
           </select>
           <select class="form-select" id="comparison-search-type-filter" onchange="filterComparisonSearch()" style="width:auto;flex:none">
@@ -1225,11 +1235,13 @@
         <input type="checkbox" id="new-ing-fvn"> Fruit, Vegetable or Nut (FVN eligible for HFSS)
       </label>
     </div>
-    <div class="form-group">
-      <label class="form-label" style="display:flex;align-items:center;gap:8px;font-weight:600">
-        <input type="checkbox" id="new-ing-approved"> Approved (production use)
-      </label>
-      <p style="font-size:11px;color:var(--nc-gray-400);margin-top:2px">Unchecked = development ingredient (kept separate from approved list)</p>
+    <div class="form-group ingredient-lifecycle-row" style="border-top:1px solid var(--nc-gray-200);margin-top:8px;padding-top:12px;display:none">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span id="ingredient-status-badge" class="badge badge-status badge-development">In development</span>
+        <button type="button" class="btn btn-sm" id="ingredient-toggle-approved-btn" onclick="toggleIngredientApproved()" style="display:none">Approve for code creation</button>
+        <button type="button" class="btn btn-sm" id="ingredient-submit-approval-btn" onclick="openSubmitIngredientApprovalModal()" style="display:none">Submit for Approval</button>
+        <button type="button" class="btn btn-sm" id="ingredient-merge-btn" onclick="openMergeIngredientModal()" style="display:none">Merge Ingredient</button>
+      </div>
     </div>
     <div class="form-group ingredient-detail-sections" style="border-top:1px solid var(--nc-gray-200);margin-top:12px;padding-top:12px">
       <details id="ingredient-where-used-details" style="cursor:pointer">
@@ -1454,6 +1466,36 @@
     <div class="modal-footer">
       <button type="button" class="btn" onclick="closeModal('modal-submit-approval')">Cancel</button>
       <button type="button" class="btn btn-primary" onclick="submitForApprovalConfirm()">Submit</button>
+    </div>
+  </div>
+</div>
+
+<!-- Merge Ingredient Modal -->
+<div class="modal-overlay" id="modal-merge-ingredient">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header"><h3>Merge into this ingredient</h3></div>
+    <div class="modal-body">
+      <p style="font-size:12.5px;color:var(--nc-gray-500);margin-bottom:10px">This ingredient's nutrition/cost are kept. Pick the real-coded ingredient to take the code and name from — it will be deleted once merged.</p>
+      <input type="text" class="form-input" id="merge-ingredient-search" placeholder="Search by name or code…" oninput="filterMergeIngredientResults()" style="margin-bottom:10px">
+      <div id="merge-ingredient-results" style="max-height:320px;overflow-y:auto"></div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn" onclick="closeModal('modal-merge-ingredient')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Submit Ingredient For Approval Modal -->
+<div class="modal-overlay" id="modal-submit-ingredient-approval">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-header"><h3>Submit for approval</h3></div>
+    <div class="modal-body">
+      <label class="form-label">Send to</label>
+      <select class="form-input" id="submit-ingredient-approval-user-select"></select>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn" onclick="closeModal('modal-submit-ingredient-approval')">Cancel</button>
+      <button type="button" class="btn btn-primary" onclick="submitIngredientApprovalConfirm()">Submit</button>
     </div>
   </div>
 </div>
@@ -1854,7 +1896,7 @@
 <script src="hfss.js?v=20260923-cache-buster"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="app.js?v=20260928-refresh-on-open"></script>
+<script src="app.js?v=20260928-4status-lifecycle"></script>
 <script src="excel-import.js?v=20260916-parentnoofportions-col-k"></script>
 <script src="reports.js?v=20260923-cache-buster"></script>
 </body>

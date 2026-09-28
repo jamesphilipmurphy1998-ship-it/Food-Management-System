@@ -26,6 +26,12 @@ public sealed class IngredientEntity
     public List<string> Allergens { get; set; } = [];
     public bool Fvn { get; set; }
     public bool Approved { get; set; }
+    public bool ApprovedForCodeCreation { get; set; }
+    public bool PendingApproval { get; set; }
+    public string? PendingApprovalReviewerId { get; set; }
+    public string? PendingApprovalReviewerName { get; set; }
+    public string? PendingApprovalSubmittedByName { get; set; }
+    public DateTimeOffset? PendingApprovalAt { get; set; }
     public string Created { get; set; } = "";
     public List<string> VersionHistory { get; set; } = [];
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
@@ -57,6 +63,7 @@ public sealed class RecipeEntity
     public decimal Serving { get; set; } = 100;
     public string Uom { get; set; } = "G";
     public bool Approved { get; set; }
+    public bool ApprovedForCodeCreation { get; set; }
     public List<string> DescriptionTags { get; set; } = [];
     public string Created { get; set; } = "";
     public List<string> VersionHistory { get; set; } = [];
