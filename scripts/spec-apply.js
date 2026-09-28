@@ -95,6 +95,38 @@ if (!namesLookRelated) {
   process.exit(1);
 }
 
+// --- Flow-up flag: nutrition needs no propagation code at all -- calcRecipeNutrition() in
+// recipes.js always recomputes a recipe's nutrition live from its ingredient lines, recursing
+// through every sub-recipe layer, with no cached "own nutrition" value that could go stale
+// (unlike cost's ownCost). So writing this ingredient's nutrition already updates every recipe
+// that uses it, at any depth, the instant it's saved -- nothing to trigger. This section is
+// purely informational: find every recipe (direct or nested) that uses the matched ingredient
+// and say so, so whoever's running this upload isn't surprised that one ingredient change just
+// rippled into several recipes' labels/HFSS scores without any separate action on their part.
+const allRecipes = curlGet(`${API_BASE}/api/recipes`);
+const recipeById = {};
+allRecipes.forEach((r) => { recipeById[r.id] = r; });
+function recipeUsesIngredient(recipe, ingredientId, visited) {
+  visited = visited || {};
+  if (visited[recipe.id]) return false;
+  visited[recipe.id] = true;
+  return (recipe.ingredients || []).some((ri) => {
+    if (ri.ingredientId === ingredientId) return true;
+    if (ri.subRecipeId) {
+      const sub = recipeById[ri.subRecipeId];
+      if (sub && recipeUsesIngredient(sub, ingredientId, visited)) return true;
+    }
+    return false;
+  });
+}
+const usedInRecipes = allRecipes.filter((r) => recipeUsesIngredient(r, matched.id));
+if (usedInRecipes.length > 0) {
+  console.log(`\nℹ Used in ${usedInRecipes.length} recipe(s) (directly or via a sub-recipe) -- their nutrition already reflects this ingredient's current values live, no separate action needed, but worth a glance if anything user-facing depends on them:`);
+  usedInRecipes.forEach((r) => console.log(`  - ${r.name}${r.code ? " (" + r.code + ")" : ""}`));
+} else {
+  console.log("\nℹ Not currently used in any recipe.");
+}
+
 const nutritionFields = ["kj", "kcal", "fat", "sat", "carb", "sugar", "protein", "fibre", "salt"];
 const diff = [];
 nutritionFields.forEach((f) => {

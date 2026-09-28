@@ -273,6 +273,25 @@ let alone write anything.** "Warning" means `status: "extracted_with_warnings"`,
 allowed through with a warning still attached. Every run either comes back completely clean
 (`status: "ok"`) or is refused outright.
 
+## Nutrition flow-up (built — informational only, writes nothing)
+
+Unlike cost (which can have a cached `ownCost` that overrides live calculation and can go
+stale), a recipe's nutrition has **no cache at all** — `calcRecipeNutrition()` in `recipes.js`
+always recomputes it live from the recipe's ingredient lines, recursing through every
+sub-recipe layer. So **writing an ingredient's nutrition already updates every recipe that uses
+it, at any depth, the instant it's saved — nothing needs to be triggered or propagated in code.**
+
+What `spec-apply.js` adds on top of that is purely informational: after a successful match, it
+fetches every recipe, recursively finds every one that uses the matched ingredient (directly or
+buried in nested sub-recipes — same traversal the app's own "where used" feature uses), and
+prints the list. This isn't a warning and doesn't block anything — it's a heads-up so whoever's
+running the upload knows a single ingredient change may have just rippled into several recipes'
+labels/HFSS scores, in case anything user-facing depends on them.
+
+**Verified against Black Bean Paste:** found in 78 recipes, including several layers deep (e.g.
+`HR BLACK BEAN SAUCE` uses it directly, and `WASABI KOREAN BLACK BEAN CHICKEN WITH RICE` uses
+`HR BLACK BEAN SAUCE` as a sub-recipe — both correctly surfaced).
+
 ## Post-upload verification (built)
 
 After `--apply` writes successfully, `spec-apply.js` immediately re-fetches that exact
@@ -487,3 +506,16 @@ flagged, never silently produce a wrong upload (allergen mismatch risk):**
   `"RM Black Bean Paste"` (live) — correctly recognised as related after prefix-stripping,
   full pipeline still runs clean through to "no changes" (everything already applied from
   earlier runs).
+
+**Same day, added the nutrition flow-up flag:**
+
+- Confirmed (by reading `calcRecipeNutrition()` in `recipes.js`) that recipe nutrition has no
+  equivalent to cost's `ownCost` cache — it's always recomputed live from ingredient lines,
+  recursing through every sub-recipe layer. So no propagation code was actually needed for
+  nutrition to "flow up"; it already does, automatically, the moment an ingredient is saved.
+- Added a purely informational step instead: after a match, recursively find every recipe using
+  the matched ingredient (direct or nested) and list them, so the person running the upload
+  knows what just changed downstream. Writes nothing, blocks nothing.
+- Verified against Black Bean Paste: correctly found 78 recipes, including multi-layer nesting
+  (`HR BLACK BEAN SAUCE` uses it directly; `WASABI KOREAN BLACK BEAN CHICKEN WITH RICE` uses
+  `HR BLACK BEAN SAUCE` as a sub-recipe — both surfaced correctly).
