@@ -22,6 +22,15 @@ If it's 1, this is expected and correct — not a finding. Only a **multi-line**
 `ownCost <= 0` AND a live tally that also comes back at ≤0 is a genuine gap (see "Genuinely
 zero-cost" in the table below — that's the only bucket where this is real).
 
+## ⚠️ Stay in scope — this checks cost vs. the sheet, nothing else
+
+This script's entire job is comparing a recipe's cost against the BOM sheet. It is not a
+general data-quality auditor. Don't report an unrelated observation (a `name` field, a missing
+category, anything not cost) as a "finding" from this scan just because it was visible in the
+same JSON pull — a `name === code` recipe was reported here once as a gap and it turned out to
+be an existing, intentional display rule, not a data problem. If something outside cost looks
+worth checking, say so as a separate question rather than folding it into this scan's results.
+
 ## How it works
 
 The script (`scripts/accuracy-scan.js`) doesn't reimplement the costing formula — it loads the
@@ -156,20 +165,18 @@ The script now dumps a named list (not just a count) for every bucket — see
 | **Excluded — delisted** | 126 | Name contains "delist" — no longer a live product, cost accuracy doesn't matter |
 | **No code / placeholder** | 9 | Blank or `"NEW"` code — draft recipes, most are genuine in-progress work; 2 are confirmed leftover test data from this session (`Merge Recipe`, `HR CHILLI COATED CHICKEN WINGS (Copy)`) |
 | **Single-component pass-through, no cached cost** | 116 | 1-line wrapper around one ingredient/sub-recipe — cost is trivially correct by construction, nothing to compare |
-| **Multi-line, no cached cost** | 12 | 2+ lines, no stored `ownCost` yet, live-tallied cost used directly — worth a look since there's no BOM value to cross-check against yet (see "name = code" finding below, several of these are the same recipes) |
+| **Multi-line, no cached cost** | 12 | 2+ lines, no stored `ownCost` yet, live-tallied cost used directly — not a gap, just nothing to cross-check against yet |
 | **Genuinely zero-cost** | 3 | No stored cost AND live tally is also £0 — real gaps: `CPU RM Water` (legitimately free), `Merge Recipe` (test data), `erfg` (test data) |
 | **Tally failed / errored** | 0 | None this run |
 | **Total** | **1109** | Reconciles exactly — every recipe accounted for in exactly one bucket |
 
-**Separately flagged (not part of the bucket count above, found via direct inspection):** 117
-recipes across the dataset have their `name` field literally equal to their `code` (e.g.
-`"106488-2"`, `"P00060"`) — no real product name at all. All 117 are `approved: true` (locked).
-**This is a naming/identification gap only — it is NOT a cost problem.** Many of these are
-single-ingredient `P00xxx` wrappers whose cost flows through correctly from their one
-underlying ingredient (see the standing caution at the top of this file — checked directly
-against the live app for `P00060`, confirmed correct: £1.003, matching exactly). The actual,
-real gap here is purely that the recipe has no real product name anywhere in the app — search,
-lists, and exports all show the raw code instead of something a person would recognize.
+**RETRACTED — not a finding.** An earlier version of this file reported 117 recipes whose
+`name` field equals their `code` as a real gap. This was scope creep: this script's job is
+*recipe cost vs. the BOM sheet*, nothing else — a `name` observation was never something it was
+built or asked to check, and it turned out to be wrong anyway. There is an existing, intentional
+rule that a recipe with no real name falls through to displaying its code — this is expected
+behavior, not missing data. Leaving this note here (rather than deleting it outright) so a
+future run doesn't independently rediscover the same non-issue and re-report it.
 
 ### Ingredient audit — all 463 ingredients
 
