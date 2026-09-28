@@ -780,6 +780,16 @@ app.MapGet("/api/recipes", async (AppDbContext db) =>
     return Results.Ok(recipes.Select(r => r.ToModel()));
 });
 
+// Single-recipe fetch — used by the frontend to refresh one recipe's approval/pending state
+// against the server when opening it, since a long-lived tab's local cache can go stale (e.g.
+// someone approves the recipe from the separate Approval Process app while this tab stays open).
+app.MapGet("/api/recipes/{id}", async (AppDbContext db, string id) =>
+{
+    var recipe = await db.Recipes.AsNoTracking().Include(r => r.Lines).FirstOrDefaultAsync(r => r.Id == id);
+    if (recipe == null) return Results.NotFound();
+    return Results.Ok(recipe.ToModel());
+});
+
 app.MapPost("/api/ingredients", async (AppDbContext db, Ingredient ingredient) =>
 {
     ingredient.Id = string.IsNullOrWhiteSpace(ingredient.Id) ? "id_" + Guid.NewGuid().ToString("N")[..9] : ingredient.Id;

@@ -4356,6 +4356,30 @@
     var recipes = Recipes.getRecipes();
     var r = recipes.find(function (rec) { return rec.id === id; });
     if (!r) return;
+    // A long-lived tab's local cache can go stale — e.g. someone approves this recipe from the
+    // separate Approval Process app while this tab stays open, so its badge/lock state here would
+    // silently keep showing the old value until a full page reload. Quietly check the server for
+    // this one recipe and re-render in place if it's drifted, so Recipe Centre and Approval
+    // Process never disagree for more than a moment.
+    fetch("/api/recipes/" + encodeURIComponent(id)).then(function (resp) {
+      return resp.ok ? resp.json() : null;
+    }).then(function (fresh) {
+      if (!fresh || currentRecipeId !== id) return;
+      var cached = Recipes.getRecipes().find(function (rec) { return rec.id === id; });
+      if (!cached) return;
+      var changed = !!cached.approved !== !!fresh.approved || !!cached.pendingApproval !== !!fresh.pendingApproval
+        || cached.code !== fresh.code || cached.pendingApprovalReviewerName !== fresh.pendingApprovalReviewerName;
+      if (!changed) return;
+      cached.approved = fresh.approved;
+      cached.pendingApproval = fresh.pendingApproval;
+      cached.pendingApprovalReviewerName = fresh.pendingApprovalReviewerName;
+      cached.pendingApprovalSubmittedByName = fresh.pendingApprovalSubmittedByName;
+      cached.pendingApprovalAt = fresh.pendingApprovalAt;
+      cached.code = fresh.code;
+      cached.updatedAt = fresh.updatedAt;
+      openRecipe(id, fromView, true);
+      renderAll();
+    }).catch(function () {});
     document.getElementById("recipe-detail-title").textContent = r.name;
     var codeEl = document.getElementById("recipe-detail-code");
     if (codeEl) {
