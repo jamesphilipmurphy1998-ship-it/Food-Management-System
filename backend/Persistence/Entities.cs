@@ -23,6 +23,7 @@ public sealed class IngredientEntity
     public decimal Density { get; set; } = 1;
     public decimal UnitWeightG { get; set; }
     public string Supplier { get; set; } = "";
+    public string PackSize { get; set; } = "";
     public string PackFormat { get; set; } = "";
     public string StorageConditions { get; set; } = "";
     public List<string> Allergens { get; set; } = [];

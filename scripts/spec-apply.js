@@ -86,14 +86,14 @@ const afterAllergens = (extraction.allergens || []).slice().sort();
 const allergensChanged = JSON.stringify(beforeAllergens) !== JSON.stringify(afterAllergens);
 if (allergensChanged) diff.push({ field: "allergens", before: beforeAllergens, after: afterAllergens });
 
-["packFormat", "storageConditions"].forEach((f) => {
+["packSize", "packFormat", "storageConditions"].forEach((f) => {
   const after = extraction[f];
   if (after == null) return; // not extracted from this spec -- don't touch it
   const before = matched[f] || "";
   if (before !== after) diff.push({ field: f, before, after });
 });
 
-console.log("\n--- Diff (nutrition + allergens + pack format/storage only; cost, supplier, code, everything else untouched) ---");
+console.log("\n--- Diff (nutrition + allergens + pack size/format/storage only; cost, supplier, code, everything else untouched) ---");
 if (diff.length === 0) {
   console.log("No changes -- live ingredient already matches the spec.");
   process.exit(0);
@@ -110,7 +110,7 @@ const intendedNutrition = {};
 nutritionFields.forEach((f) => { if (extraction.nutrition[f] != null) { updated[f] = extraction.nutrition[f]; intendedNutrition[f] = extraction.nutrition[f]; } });
 if (allergensChanged) updated.allergens = afterAllergens;
 const intendedPackFields = {};
-["packFormat", "storageConditions"].forEach((f) => { if (extraction[f] != null) { updated[f] = extraction[f]; intendedPackFields[f] = extraction[f]; } });
+["packSize", "packFormat", "storageConditions"].forEach((f) => { if (extraction[f] != null) { updated[f] = extraction[f]; intendedPackFields[f] = extraction[f]; } });
 
 const result = curlPut(`${API_BASE}/api/ingredients/${matched.id}`, updated);
 console.log(`\nPUT status: ${result.status}`);

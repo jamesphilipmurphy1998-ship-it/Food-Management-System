@@ -187,6 +187,42 @@ def extract(path):
                 "condition (expected something like Ambient/Chilled/Frozen/Cool Dry Place) -- "
                 "flagging for manual review rather than assuming it's correct." % value)
 
+    def check_pack_size_plausible(value):
+        if any(ch.isdigit() for ch in value):
+            return None
+        return ("Pack Size extracted as %r, but it has no digit in it (expected something like "
+                "'5 kg' or '480g') -- flagging for manual review rather than assuming it's "
+                "correct." % value)
+
+    # --- Pack Size ("1&2 Manufacturer Detail", row "1-d) Weight or Volume") -- this sheet uses
+    # a DIFFERENT label layout than every other section extracted so far: the item number
+    # ("1-d)") is in column A, the question text is a SEPARATE cell in column B, and the actual
+    # answer is in column C. The generic "scan columns left-to-right for the first non-empty
+    # cell" approach used below for Pack Format/Storage Conditions would wrongly grab column B's
+    # label text here, since it's non-empty -- this section must read column C specifically, not
+    # scan for it. Verified against Black Bean Paste: A15="1-d)", B15="Weight or Volume : *",
+    # C15="5 kg" -- if B is ever empty for a future spec, this would misread that spec's actual
+    # value as coming from the wrong place, so this is intentionally narrower/more literal than
+    # the generic pattern rather than trying to generalise across two different label layouts.
+    pack_size = None
+    manufacturer_sheet_name = next((n for n in wb.sheetnames if "Manufacturer Detail" in n), None)
+    if manufacturer_sheet_name:
+        ms = wb[manufacturer_sheet_name]
+        row = find_row_starting_with(ms, "1-d)")
+        if row is None:
+            warnings.append("Could not find the '1-d) Weight or Volume' row in '%s' -- Pack Size not extracted" % manufacturer_sheet_name)
+        else:
+            v = ms.cell(row=row, column=3).value  # column C
+            if v is not None and str(v).strip():
+                pack_size = str(v).strip()
+                implausible = check_pack_size_plausible(pack_size)
+                if implausible:
+                    warnings.append(implausible)
+            else:
+                warnings.append("Row '1-d)' in '%s', column C is empty -- Pack Size not extracted" % manufacturer_sheet_name)
+    else:
+        warnings.append("No sheet matching 'Manufacturer Detail' found -- Pack Size not extracted")
+
     pack_format = None
     storage_conditions = None
     packaging_sheet_name = next((n for n in wb.sheetnames if "Packaging Detail" in n), None)
@@ -286,6 +322,7 @@ def extract(path):
         "altCode": alt_code,
         "nutrition": nutrition,
         "allergens": allergens,
+        "packSize": pack_size,
         "packFormat": pack_format,
         "storageConditions": storage_conditions,
         "errors": errors,

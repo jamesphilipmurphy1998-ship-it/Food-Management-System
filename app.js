@@ -2746,7 +2746,7 @@
 
   function openNewIngredientModal() {
     editIngredientId = null;
-    ["new-ing-name", "new-ing-code", "new-ing-secondary-code", "new-ing-kj", "new-ing-kcal", "new-ing-fat", "new-ing-sat", "new-ing-carb", "new-ing-sugar", "new-ing-fibre", "new-ing-protein", "new-ing-salt", "new-ing-cost", "new-ing-supplier", "new-ing-description-tags", "new-ing-density", "new-ing-unit-weight", "new-ing-pack-format", "new-ing-storage-conditions"].forEach(function (id) {
+    ["new-ing-name", "new-ing-code", "new-ing-secondary-code", "new-ing-kj", "new-ing-kcal", "new-ing-fat", "new-ing-sat", "new-ing-carb", "new-ing-sugar", "new-ing-fibre", "new-ing-protein", "new-ing-salt", "new-ing-cost", "new-ing-supplier", "new-ing-description-tags", "new-ing-density", "new-ing-unit-weight", "new-ing-pack-size", "new-ing-pack-format", "new-ing-storage-conditions"].forEach(function (id) {
       var el = document.getElementById(id);
       if (el) el.value = "";
     });
@@ -2826,6 +2826,8 @@
     if (unitWeightEl) unitWeightEl.value = (data.unitWeightG != null && data.unitWeightG > 0) ? data.unitWeightG : "";
     var supplierEl = document.getElementById("new-ing-supplier");
     if (supplierEl) supplierEl.value = data.supplier || "";
+    var packSizeEl = document.getElementById("new-ing-pack-size");
+    if (packSizeEl) packSizeEl.value = data.packSize || "";
     var packFormatEl = document.getElementById("new-ing-pack-format");
     if (packFormatEl) packFormatEl.value = data.packFormat || "";
     var storageConditionsEl = document.getElementById("new-ing-storage-conditions");
@@ -2974,6 +2976,7 @@
       density: (function () { var el = document.getElementById("new-ing-density"); var v = el ? parseFloat(el.value) : NaN; return (v != null && !isNaN(v) && v > 0) ? v : 1; })(),
       unitWeightG: (function () { var el = document.getElementById("new-ing-unit-weight"); var v = el ? parseFloat(el.value) : NaN; return (v != null && !isNaN(v) && v > 0) ? v : 0; })(),
       supplier: supplierEl ? supplierEl.value.trim() : "",
+      packSize: (function () { var el = document.getElementById("new-ing-pack-size"); return el ? el.value.trim() : ""; })(),
       packFormat: (function () { var el = document.getElementById("new-ing-pack-format"); return el ? el.value.trim() : ""; })(),
       storageConditions: (function () { var el = document.getElementById("new-ing-storage-conditions"); return el ? el.value.trim() : ""; })(),
       allergens: allergens,

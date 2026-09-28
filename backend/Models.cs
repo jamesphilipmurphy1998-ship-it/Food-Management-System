@@ -34,6 +34,7 @@ public sealed class Ingredient
     /// (the same way packaging is excluded), rather than inventing a number.</summary>
     public decimal UnitWeightG { get; set; }
     public string Supplier { get; set; } = "";
+    public string PackSize { get; set; } = "";
     public string PackFormat { get; set; } = "";
     public string StorageConditions { get; set; } = "";
     public List<string> Allergens { get; set; } = [];
