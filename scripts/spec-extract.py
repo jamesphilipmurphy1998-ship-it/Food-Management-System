@@ -155,10 +155,38 @@ def extract(path):
         if actual > 0 and abs(expected - actual) / actual > 0.15:
             warnings.append("Sanity check failed: kcal (%.1f) doesn't match 4*protein+4*carb+9*fat (%.1f) within 15%% -- verify against the source spec before trusting" % (actual, expected))
 
-    # --- Pack Format ("4 Packaging Detail", row "4-a) Inner packaging format/description")
-    # and Storage Conditions ("5&6 Durability...", row "5-f) Storage conditions") -- not
-    # allergen-safety-critical, so missing/unrecognised here is a WARNING, not an error; it
-    # still blocks --apply (same as any other warning), but for a different, non-safety reason.
+    # Recognised container/pack-format words -- a plausibility check, not a hard whitelist. The
+    # cell being found and non-empty doesn't mean the *value* actually makes sense as a pack
+    # format: this row's free-text answer could describe the product's physical state ("Liquid",
+    # "Frozen", "Powder") instead of what it's packaged IN, especially if a future template
+    # moves this question or a supplier answers the wrong thing. If none of these words appear
+    # anywhere in the extracted text, flag it rather than trust it blindly.
+    PLAUSIBLE_PACK_FORMAT_WORDS = [
+        "bag", "box", "bottle", "tub", "pouch", "sachet", "jar", "can", "carton", "tray",
+        "drum", "pallet", "sack", "pot", "bucket", "container", "roll", "wrap", "film",
+        "keg", "cartridge", "tube", "crate", "blister", "barrel", "canister", "pail",
+        "sleeve", "case", "vac pack", "vacuum",
+    ]
+
+    def check_pack_format_plausible(value):
+        v = value.lower()
+        if any(word in v for word in PLAUSIBLE_PACK_FORMAT_WORDS):
+            return None
+        return ("Pack Format extracted as %r, but that doesn't read like a container/pack type "
+                "(expected something like Bag/Box/Bottle/Tub/Pouch/etc.) -- it may actually "
+                "describe the product's physical state or something else entirely. Flagging "
+                "for manual review rather than assuming it's correct." % value)
+
+    PLAUSIBLE_STORAGE_WORDS = ["ambient", "chilled", "frozen", "refrigerat", "cool", "dry", "room temperature"]
+
+    def check_storage_conditions_plausible(value):
+        v = value.lower()
+        if any(word in v for word in PLAUSIBLE_STORAGE_WORDS):
+            return None
+        return ("Storage Conditions extracted as %r, but that doesn't read like a storage "
+                "condition (expected something like Ambient/Chilled/Frozen/Cool Dry Place) -- "
+                "flagging for manual review rather than assuming it's correct." % value)
+
     pack_format = None
     storage_conditions = None
     packaging_sheet_name = next((n for n in wb.sheetnames if "Packaging Detail" in n), None)
@@ -175,6 +203,10 @@ def extract(path):
                     break
             if pack_format is None:
                 warnings.append("Row '4-a)' in '%s' has no value in any column -- Pack Format not extracted" % packaging_sheet_name)
+            else:
+                implausible = check_pack_format_plausible(pack_format)
+                if implausible:
+                    warnings.append(implausible)
     else:
         warnings.append("No sheet matching 'Packaging Detail' found -- Pack Format not extracted")
 
@@ -192,6 +224,10 @@ def extract(path):
                     break
             if storage_conditions is None:
                 warnings.append("Row '5-f)' in '%s' has no value in any column -- Storage Conditions not extracted" % durability_sheet_name)
+            else:
+                implausible = check_storage_conditions_plausible(storage_conditions)
+                if implausible:
+                    warnings.append(implausible)
     else:
         warnings.append("No sheet matching 'Durability' found -- Storage Conditions not extracted")
 

@@ -288,6 +288,56 @@ Per the earlier discussion on reliability: **propose, don't auto-write.** Two sc
    `spec-extract.py` hits this, retry, or copy the file to a local path first and point the
    script at the copy.
 
+## Worked example — Black Bean Paste, every field traced to its exact cell
+
+The single real extraction this pipeline has actually run, with the precise sheet + cell/row
+each value came from — use this as the reference trace when extending or debugging the
+extraction logic, not just the general field-mapping tables above.
+
+Source file: `107168 (P00018) Black Bean Paste RM Spec V3 (06.02.25).xlsx`
+
+| Field | Sheet | Cell / row | Value found |
+|---|---|---|---|
+| Product Name | `3 Ingredient & Recipe` | `C3` | `Black Bean Paste` |
+| Product Code (primary) | `3 Ingredient & Recipe` | `C4`, text before the `(` | `107168` |
+| Product Code (alt) | `3 Ingredient & Recipe` | `C4`, text inside the `(...)` | `P00018` |
+| Energy (kJ) | `7 Nutrition Information` | row labelled `Energy (KJ)*`, "Per 100g" column | `470.7` |
+| Energy (kcal) | `7 Nutrition Information` | row labelled `Energy (Kcal)*` | `112.3` |
+| Fat (g) | `7 Nutrition Information` | row labelled `Fat (g)*` | `3.1` |
+| Saturates (g) | `7 Nutrition Information` | row labelled `*of which saturate fat (g)*` | `0` |
+| Carbohydrate (g) | `7 Nutrition Information` | row labelled `Carbohydrate (g)*` | `8.9` |
+| Sugar (g) | `7 Nutrition Information` | row labelled `*of which sugar (g)*` | `0.5` |
+| Protein (g) | `7 Nutrition Information` | row labelled `Protein (g)*` | `9.3` |
+| Fibre (g) | `7 Nutrition Information` | row labelled `Fiber (g)*` | `5.8` |
+| Salt (g) | `7 Nutrition Information` | row labelled `Salt (g)*` | `5.1` |
+| Allergens | `8&9 Intolerance & Dietary` | every row's "contains?" column, scanned | Only the `Soya/soya derivatives:*` row had `Y` **and** mapped to an EU allergen → `["Soya"]` |
+| Pack Format | `4 Packaging Detail` | row `4-a) Inner packaging format/description:*` | `Bag` — passed the plausibility check (contains a recognised container word) |
+| Storage Conditions | `5&6 Durability & Micro Standard` | row `5-f) Storage conditions :*` | `Ambient` — passed the plausibility check |
+
+**On the allergen row:** four other rows in that sheet also had `Y` — `Vegetable/vegetable
+derivatives`, `Seed/seed derivatives`, `Yeast/yeast derivatives`, `Maize/maize derivatives`.
+None of these are on the EU-14 allergen list this system tracks (see the allergen mapping table
+above), so none of them became an entry in `Allergens` — this is correct behavior, not a gap.
+A fresh AI re-deriving this from scratch should get the exact same single-item `["Soya"]`
+result and should be suspicious of itself if it doesn't.
+
+**Full extraction result for this file** (what `spec-extract.py` actually printed):
+
+```json
+{
+  "status": "ok",
+  "name": "Black Bean Paste",
+  "code": "107168",
+  "altCode": "P00018",
+  "nutrition": { "kj": 470.7, "kcal": 112.3, "fat": 3.1, "sat": 0, "carb": 8.9, "sugar": 0.5, "protein": 9.3, "fibre": 5.8, "salt": 5.1 },
+  "allergens": ["Soya"],
+  "packFormat": "Bag",
+  "storageConditions": "Ambient",
+  "errors": [],
+  "warnings": []
+}
+```
+
 ## Extraction log
 
 Append an entry each time a spec is actually processed (once the write pipeline exists) —
@@ -348,3 +398,18 @@ flagged, never silently produce a wrong upload (allergen mismatch risk):**
 - Also documented the complete, explicit list of every field this pipeline can extract (see
   "Every field an extraction can produce" above) — nothing beyond that list is ever pulled from
   a spec, and any of the nutrition/allergen fields failing to be found is fatal, never partial.
+
+**Same day, added a plausibility check on Pack Format and Storage Conditions:**
+
+- Finding the expected cell non-empty isn't the same as the value actually making sense — a
+  free-text answer could describe the product's physical state ("Liquid", "Frozen", "Powder")
+  rather than what it's packaged in, especially if a future template moves the question. Added
+  `check_pack_format_plausible()` / `check_storage_conditions_plausible()`: each checks the
+  extracted text against a list of words that actually belong in that field (Bag/Box/Bottle/
+  Tub/... for pack format; Ambient/Chilled/Frozen/... for storage) and adds a warning — which,
+  per the existing rule, still blocks `--apply` — if none of them appear.
+- Verified against Black Bean Paste: `"Bag"` and `"Ambient"` both pass cleanly (`status: "ok"`,
+  zero warnings) — the check doesn't false-positive on values that are actually correct.
+- Added the full worked-example trace above (every field's exact sheet + cell/row for this one
+  spec) specifically so a fresh AI has a concrete, checkable reference rather than only the
+  general field-mapping rules.
