@@ -195,7 +195,26 @@ checks real structural data-quality issues instead:
 **Bottom line for ingredients:** the real, actionable finding is **72 approved/production raw
 materials with zero nutrition values entered** — anything costed through one of these will have
 a silently-incomplete nutrition breakdown. Everything else (no-code sample library, the 2
-zero-cost items) is either expected or already-known.
+zero-cost items) is either expected or already-known. Confirmed with the user (2026-09-28):
+nutrition data entry is a separate, not-yet-started workstream — this is expected current
+state, not a new problem, and doesn't need action from this scan.
+
+---
+
+### Site-wide review, 2026-09-28 (strictly re-scoped to cost vs. sheet only)
+
+Re-ran against a fresh live pull, applying the scope discipline above properly this time —
+cost-vs-BOM-sheet only, no side findings folded in.
+
+- **Accuracy: 96.0%**, identical to every prior run this day (680/708, same 28 mismatch codes:
+  `100219, 100246, 100249, 101602, 103792, 103798, 105760, 106341, 106416, 106656, 106658,
+  106659, 106690, 106692, 106693, 106704, 106746, 106766, 106784, 106787, 107060, 107077,
+  107171, 107201, 107370, 107514, 107587, 107726`)
+- All 28 mismatches remain confirmed benign (Business Central cache drift vs. live ingredient
+  prices — see earlier entries for the full trace)
+- No new mismatches, no regressions, reconciliation still exact (1109 = every bucket summed)
+- **Verdict: the site's recipe costing is accurate and stable.** Nothing outstanding within
+  this scan's actual scope (cost vs. sheet) needs action.
 
 Full lists for every row above are in `.scan/*.json` (gitignored — regenerate by re-running
 both scripts) — ask for the actual code/name lists if you want to work through them directly
