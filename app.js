@@ -4557,6 +4557,8 @@
     }
     document.getElementById("recipe-detail-desc").textContent = r.desc || "";
     document.getElementById("serving-size-input").value = r.serving || 100;
+    var nutServingInput = document.getElementById("nutrition-serving-size-input");
+    if (nutServingInput) nutServingInput.value = r.serving || 100;
     var methodKitchenText = document.getElementById("recipe-method-kitchen-text");
     var methodFactoryText = document.getElementById("recipe-method-factory-text");
     if (methodKitchenText) methodKitchenText.value = r.methodKitchen != null ? r.methodKitchen : (r.method || "");
@@ -6542,6 +6544,12 @@
     recalcCurrentRecipe();
   };
 
+  window.updateServingSizeFromNutritionTab = function (value) {
+    var labelInput = document.getElementById("serving-size-input");
+    if (labelInput) labelInput.value = value;
+    recalcCurrentRecipe();
+  };
+
   function recalcCurrentRecipe() {
     var recipes = Recipes.getRecipes();
     var ingredients = Ingredients.getIngredients();
@@ -6549,6 +6557,8 @@
     if (!r) return;
     var servingInput = document.getElementById("serving-size-input");
     if (servingInput) r.serving = parseFloat(servingInput.value) || 100;
+    var nutServingInput = document.getElementById("nutrition-serving-size-input");
+    if (nutServingInput && nutServingInput.value !== servingInput.value) nutServingInput.value = servingInput.value;
     var idx = recipes.findIndex(function (rec) { return rec.id === currentRecipeId; });
     if (idx >= 0) { recipes[idx] = r; Recipes.setRecipes(recipes); }
 
@@ -6599,57 +6609,100 @@
     { key: "salt", label: "Salt (g)", dp: 2 }
   ];
 
-  // Each ingredient/sub-recipe line's actual contribution to the recipe's per-100g totals,
-  // based on the real quantity used -- NOT the ingredient's own unscaled per-100g profile (that
-  // would just repeat the Ingredient Centre data regardless of how much is used). Uses the same
-  // weight-in-grams and scale-to-100g logic as Recipes.calcRecipeNutrition, so each column here
-  // sums to that same field's value in the Full Nutrition Profile table above.
+  var NUTRITION_TOTAL_MODES = [
+    { key: "recipe", label: "Total (per recipe)" },
+    { key: "per100", label: "Total (per 100g)" },
+    { key: "serving", label: "Total (per serving)" }
+  ];
+  var nutritionTotalMode = "recipe";
+
+  window.toggleNutritionTotalMode = function (ev) {
+    ev.stopPropagation();
+    var menu = document.getElementById("nutrition-total-mode-menu");
+    if (!menu) return;
+    if (menu.style.display === "block") { menu.style.display = "none"; return; }
+    // Fixed positioning anchored to the trigger's own on-screen rect -- the table wrapper has
+    // overflow-x:auto for horizontal scrolling, which would otherwise clip an absolutely
+    // positioned dropdown living inside it (it rendered but was invisible, off the visible
+    // scroll area, until this fix).
+    var rect = ev.currentTarget.getBoundingClientRect();
+    menu.style.position = "fixed";
+    menu.style.top = rect.bottom + "px";
+    menu.style.left = rect.left + "px";
+    menu.style.display = "block";
+  };
+  window.setNutritionTotalMode = function (mode) {
+    nutritionTotalMode = mode;
+    var recipes = Recipes.getRecipes();
+    var r = recipes.find(function (rec) { return rec.id === currentRecipeId; });
+    if (r) renderNutritionByIngredient(r);
+  };
+  document.addEventListener("click", function () {
+    var menu = document.getElementById("nutrition-total-mode-menu");
+    if (menu) menu.style.display = "none";
+  });
+
+  // Body rows show each ingredient/sub-recipe line's actual contribution to the recipe's
+  // per-100g totals, based on the real quantity used -- NOT the ingredient's own unscaled
+  // per-100g profile (that would just repeat the Ingredient Centre data regardless of how much
+  // is used). Uses the same weight-in-grams and scale-to-100g logic as
+  // Recipes.calcRecipeNutrition. The Total row is a user-toggled view of the same underlying
+  // per-100g totals, scaled three ways: "per recipe" (the whole batch as made, i.e. what's
+  // actually in the bowl -- totalWeight grams' worth), "per 100g" (what the totals would be if
+  // the recipe made exactly 100g -- matches the Full Nutrition Profile table above), and
+  // "per serving" (scaled to the user-set Serving Size).
   function renderNutritionByIngredient(recipe) {
     var ingredients = Ingredients.getIngredients();
     var recipes = Recipes.getRecipes();
     var table = document.getElementById("nutrition-by-ingredient-matrix");
     var totalWeight = (recipe.ingredients || []).reduce(function (s, ri) { return s + recipeLineWeightForTotal(ri); }, 0);
-    var html = "<thead><tr><th>Ingredient</th>";
-    NUTRITION_BREAKDOWN_COLUMNS.forEach(function (c) { html += '<th style="font-size:9px;writing-mode:vertical-lr;text-align:center;padding:4px 2px">' + c.label + "</th>"; });
-    html += "</tr></thead><tbody>";
-    if (totalWeight <= 0) {
-      html += "</tbody><tfoot><tr><td class=\"bold\" style=\"font-size:12px\">Total</td>";
-      NUTRITION_BREAKDOWN_COLUMNS.forEach(function () { html += '<td class="bold" style="text-align:center;font-size:12px">0</td>'; });
-      html += "</tr></tfoot>";
-      table.innerHTML = html;
-      return;
-    }
-    var scale = 100 / totalWeight;
-    var totals = {};
-    NUTRITION_BREAKDOWN_COLUMNS.forEach(function (c) { totals[c.key] = 0; });
-    (recipe.ingredients || []).forEach(function (ri) {
-      var name; var lineNut = null; var ingBadge;
-      var qtyG = recipeLineWeightForTotal(ri);
-      if (ri.subRecipeId) {
-        var subRec = recipes.find(function (r) { return r.id === ri.subRecipeId; });
-        if (!subRec) return;
-        name = subRec.name;
-        lineNut = Recipes.calcRecipeNutrition(subRec, ingredients);
-      } else {
-        var ing = ingredients.find(function (i) { return i.id === ri.ingredientId; });
-        if (!ing) return;
-        name = ing.name;
-        lineNut = ing;
-      }
-      ingBadge = getRecipeLineBadge(ri, ingredients, recipes);
-      html += "<tr><td style=\"font-size:12px\">" + ingBadge + name + "</td>";
-      var f = qtyG / 100 * scale;
-      NUTRITION_BREAKDOWN_COLUMNS.forEach(function (c) {
-        var contribution = (Number(lineNut[c.key]) || 0) * f;
-        if (qtyG > 0) totals[c.key] += contribution;
-        html += '<td style="text-align:center;font-size:12px">' + (qtyG > 0 ? Data.round(contribution, c.dp) : '<span style="color:var(--nc-gray-200)">—</span>') + "</td>";
+    var serving = recipe.serving || 100;
+    var modeLabel = NUTRITION_TOTAL_MODES.filter(function (m) { return m.key === nutritionTotalMode; })[0].label;
+    var html = "<tbody>";
+    var totals100 = {};
+    NUTRITION_BREAKDOWN_COLUMNS.forEach(function (c) { totals100[c.key] = 0; });
+    if (totalWeight > 0) {
+      var scale = 100 / totalWeight;
+      (recipe.ingredients || []).forEach(function (ri) {
+        var name; var lineNut = null; var ingBadge;
+        var qtyG = recipeLineWeightForTotal(ri);
+        if (ri.subRecipeId) {
+          var subRec = recipes.find(function (r) { return r.id === ri.subRecipeId; });
+          if (!subRec) return;
+          name = subRec.name;
+          lineNut = Recipes.calcRecipeNutrition(subRec, ingredients);
+        } else {
+          var ing = ingredients.find(function (i) { return i.id === ri.ingredientId; });
+          if (!ing) return;
+          name = ing.name;
+          lineNut = ing;
+        }
+        ingBadge = getRecipeLineBadge(ri, ingredients, recipes);
+        html += "<tr><td style=\"font-size:12px\">" + ingBadge + name + "</td>";
+        var f = qtyG / 100 * scale;
+        NUTRITION_BREAKDOWN_COLUMNS.forEach(function (c) {
+          var contribution = (Number(lineNut[c.key]) || 0) * f;
+          if (qtyG > 0) totals100[c.key] += contribution;
+          html += '<td style="text-align:center;font-size:12px">' + (qtyG > 0 ? Data.round(contribution, c.dp) : '<span style="color:var(--nc-gray-200)">—</span>') + "</td>";
+        });
+        html += "</tr>";
       });
-      html += "</tr>";
-    });
-    html += "</tbody><tfoot><tr><td class=\"bold\" style=\"font-size:12px\">Total</td>";
+    }
+    html += "</tbody><tfoot><tr><td class=\"bold\" style=\"font-size:12px;position:relative;cursor:pointer\" onclick=\"toggleNutritionTotalMode(event)\">" +
+      modeLabel + ' <span style="font-size:9px">▾</span>' +
+      '<div id="nutrition-total-mode-menu" style="display:none;position:absolute;top:100%;left:0;background:#fff;border:1px solid var(--nc-gray-200);border-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,.15);z-index:10;min-width:170px">' +
+      NUTRITION_TOTAL_MODES.map(function (m) {
+        return '<div style="padding:6px 10px;font-size:12px;font-weight:400;white-space:nowrap" onmouseover="this.style.background=\'var(--nc-gray-100)\'" onmouseout="this.style.background=\'\'" onclick="event.stopPropagation();setNutritionTotalMode(\'' + m.key + '\')">' + m.label + '</div>';
+      }).join("") +
+      "</div></td>";
     NUTRITION_BREAKDOWN_COLUMNS.forEach(function (c) {
-      html += '<td class="bold" style="text-align:center;font-size:12px">' + Data.round(totals[c.key], c.dp) + "</td>";
+      var val = totals100[c.key];
+      if (nutritionTotalMode === "recipe") val = totals100[c.key] * (totalWeight / 100);
+      else if (nutritionTotalMode === "serving") val = totals100[c.key] * (serving / 100);
+      html += '<td class="bold" style="text-align:center;font-size:12px">' + Data.round(val, c.dp) + "</td>";
     });
+    html += "</tr><tr><th>Ingredient</th>";
+    NUTRITION_BREAKDOWN_COLUMNS.forEach(function (c) { html += '<th style="font-size:9px;writing-mode:vertical-lr;text-align:center;padding:4px 2px">' + c.label + "</th>"; });
     html += "</tr></tfoot>";
     table.innerHTML = html;
   }

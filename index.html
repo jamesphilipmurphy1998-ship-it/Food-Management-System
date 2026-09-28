@@ -797,11 +797,19 @@
           <p style="font-size:11px;color:var(--nc-gray-400);margin-top:4px">UK Front of Pack colour coding per 100g (food thresholds)</p>
         </div>
         <div class="card">
+          <div class="card-header"><h2>Serving Size</h2></div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Serving Size (g)</label>
+            <input class="form-input" type="number" id="nutrition-serving-size-input" value="100" min="1" oninput="updateServingSizeFromNutritionTab(this.value)">
+          </div>
+          <p style="font-size:11px;color:var(--nc-gray-400);margin-top:8px;">Used for the "per Serving" values throughout this recipe (Full Nutrition Profile, Label, and the Total row below). Same value as Label → Label Settings.</p>
+        </div>
+        <div class="card">
           <div class="card-header"><h2>Nutrition Breakdown by Ingredient</h2></div>
           <div style="overflow-x:auto">
             <table class="data-table" id="nutrition-by-ingredient-matrix"></table>
           </div>
-          <p style="font-size:11px;color:var(--nc-gray-400);margin-top:8px;">Each ingredient's actual contribution to the recipe's per-100g totals above, based on the quantity used — rows sum to the Full Nutrition Profile row.</p>
+          <p style="font-size:11px;color:var(--nc-gray-400);margin-top:8px;">Each ingredient's actual contribution to the recipe's per-100g totals above, based on the quantity used — the Total row sums to the Full Nutrition Profile row.</p>
         </div>
       </div>
 
@@ -1890,7 +1898,7 @@
 <script src="hfss.js?v=20260923-cache-buster"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="app.js?v=20260928-nutrition-breakdown-total"></script>
+<script src="app.js?v=20260928-nutrition-total-toggle"></script>
 <script src="excel-import.js?v=20260916-parentnoofportions-col-k"></script>
 <script src="reports.js?v=20260923-cache-buster"></script>
 </body>
