@@ -35,8 +35,33 @@ function load(file) {
   (0, eval)(code);
 }
 
-const recipesData = JSON.parse(fs.readFileSync(path.join(root, ".scan", "live_recipes_final.json"), "utf8"));
+const rawRecipesData = JSON.parse(fs.readFileSync(path.join(root, ".scan", "live_recipes_final.json"), "utf8"));
 const ingredientsData = JSON.parse(fs.readFileSync(path.join(root, ".scan", "live_ingredients_final.json"), "utf8"));
+
+// The real app never costs a recipe against the raw server JSON directly — storage.js's
+// setRecipes() always runs every recipe through this normalization first (see
+// storage.js:normalizeRecipeIngredientUoms), forcing each line's uom to match its ingredient's
+// actual cost UOM. Skipping this step here would silently cost recipes against stale/incorrect
+// line UOMs the browser never actually uses, producing false mismatches. Copied verbatim rather
+// than reimplemented so this can never quietly drift from the real behavior.
+function normalizeRecipeIngredientUoms(recipes, ingredients) {
+  if (!Array.isArray(recipes) || !Array.isArray(ingredients)) return recipes;
+  var byId = new Map();
+  ingredients.forEach(function (i) { byId.set(i.id, i); });
+  return recipes.map(function (r) {
+    if (!r || !Array.isArray(r.ingredients)) return r;
+    var lines = r.ingredients.map(function (ri) {
+      if (!ri.ingredientId) return ri;
+      var ing = byId.get(ri.ingredientId);
+      if (!ing) return ri;
+      var costUom = (ing.costUOM || ing.costUom || ing.CostUom || ing.CostUOM || "").toString().trim().toUpperCase();
+      if (!costUom) return ri;
+      return Object.assign({}, ri, { uom: costUom });
+    });
+    return Object.assign({}, r, { ingredients: lines });
+  });
+}
+const recipesData = normalizeRecipeIngredientUoms(rawRecipesData, ingredientsData);
 
 global.NutriCalcStorage = {
   getRecipes: function () { return recipesData; },

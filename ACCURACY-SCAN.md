@@ -80,23 +80,32 @@ seeing whether accuracy is trending up, flat, or regressing after a change.
 - Checked 708 · Excluded (known-bad) 21 · Tainted 114 · Delisted 126 · No code 9 · Genuinely
   zero-cost 3 · Single-component pass-through 116 · Multi-line no cached cost 12 · Tally
   failed 0 · **Total 1109, reconciles: true**
-- 28 remaining mismatches. Root-caused the largest cluster (~16 of the 28, everything above
-  ~0.9% diff except "Mini Breakfast Bento") to one shared pattern: **Chicken Katsu family
-  recipes** (`Chicken Katsu Piece`, `Chicken Katsu Box HC`, `Chicken Katsu Yakisoba` and its
-  variants, `Chk Kat Curry + *` line) all trace back to `HR DRY PANKO CHICKEN KATSU` (105299),
-  a **5-line** recipe where every line carries **heavy scrap%** (81%, 14.9%, 19.1%, 27%, 22%).
-  The additive tally formula was only verified up to 3-line recipes (see
-  `getSubRecipeTotalCostAdditive`'s comment in `app.js`) — for a 5-line, high-scrap recipe like
-  this one, the additive check formula itself is the thing diverging from Business Central's
-  real (weight-ratio-based) cost, not the stored `ownCost`, which is trusted directly and is
-  what's actually shown to users. **Conclusion: not a data or app bug** — a known blind spot of
-  this verification script's approximation for recipes with 4+ lines and large cumulative
-  scrap. Left un-excluded (not added to `KNOWN_BAD_RECIPE_CODES`) since the stored cost itself
-  hasn't been confirmed wrong against the raw sheet the way the other exclusions were — flagged
-  here instead so it doesn't get re-investigated as if it were new.
-- Remaining ~12 small mismatches (all under 0.8%) are scattered across other multi-line sauce/
-  pack recipes (Hot Wings Sauce, Korean BBQ Sauce, Chilli Oil, Turmeric Noodles, Shiitake Rice)
-  — same 4-line-plus-scrap shape, not independently investigated this run given how small the
-  drift is (all within rounding-adjacent territory).
-- No new `KNOWN_BAD_RECIPE_CODES` entries added this run — nothing found that was confirmed bad
-  *source* data rather than the tool's own additive-formula limitation.
+- 28 remaining mismatches. **First pass at the root cause was wrong and got corrected the same
+  day** (caught by a screenshot showing `HR DRY PANKO CHICKEN KATSU`'s own totals row matching
+  exactly, £4.196 = £4.196, contradicting the original write-up) — see below for what's
+  actually going on. Also fixed a real gap in the script itself while investigating: it was
+  costing recipes against the raw `/api/recipes` JSON, but the real app never does that —
+  `storage.js`'s `normalizeRecipeIngredientUoms` always forces each line's UOM to match its
+  ingredient's actual cost UOM first. `scripts/accuracy-scan.js` now replicates that step
+  before running any comparison (verbatim copy, not reimplemented). Re-running with the fix
+  produced the *same* 96.0% / 28 mismatches for this dataset — this particular gap wasn't
+  actually the cause of anything in this run, but it was a real correctness bug in the script
+  and needed fixing regardless (a future dataset could easily have recipe lines whose stored
+  UOM doesn't match the ingredient's cost UOM, where this would have mattered).
+- **Corrected root cause:** the Chicken Katsu family mismatches are *not* a multi-line/high-scrap
+  formula limitation. `HR DRY PANKO CHICKEN KATSU` (105299, the 5-line high-scrap recipe)
+  tallies fine and isn't even in the mismatch list. The actual divergence starts one level up,
+  at `Chicken Katsu Piece` (100249): it's `approved: true` with its own stored `ownCost`
+  (£0.43598) straight from the BOM sheet, so the app just uses that value directly rather than
+  deriving it from its child sub-recipe. The tally script instead recomputes it bottom-up from
+  today's live ingredient prices through 4 nested sub-recipe levels. Those two numbers —
+  "Business Central's cached cost from whenever it was last synced" vs. "recalculated from
+  current ingredient prices" — have simply drifted ~2.6% apart over time, same as several other
+  entries already in `KNOWN_BAD_RECIPE_CODES` (marked "same stale-BC-cost class"). This is
+  ordinary cost drift, not a data error or a calc bug — **no fix needed**, and every recipe
+  built on top of `Chicken Katsu Piece` inherits the same expected drift.
+- Remaining ~12 small mismatches (all under 0.8%, sauce/pack recipes — Hot Wings Sauce, Korean
+  BBQ Sauce, Chilli Oil, Turmeric Noodles, Shiitake Rice) not individually re-traced this run;
+  likely the same ordinary stale-BC-cost pattern given the size of the drift, but not confirmed
+  case-by-case.
+- No new `KNOWN_BAD_RECIPE_CODES` entries added this run.
