@@ -116,3 +116,10 @@ seeing whether accuracy is trending up, flat, or regressing after a change.
   today's live ingredient prices would produce, which is expected and harmless (the displayed
   cost is correct; it just isn't the *newest possible* recompute).
 - No new `KNOWN_BAD_RECIPE_CODES` entries added this run.
+
+**Re-confirmation run, same day, fresh data pull:** re-ran against a new live pull from prod
+using the current script (post UOM-normalization fix) — **identical result**: 96.0% accuracy,
+the exact same 28 recipe codes flagged (`100219, 100246, 100249, 101602, 103792, 103798,
+105760, 106341, 106416, 106656, 106658, 106659, 106690, 106692, 106693, 106704, 106746,
+106766, 106784, 106787, 107060, 107077, 107171, 107201, 107370, 107514, 107587, 107726`).
+Nothing drifted, no new issues, confirming the analysis above is stable and not a one-off.
