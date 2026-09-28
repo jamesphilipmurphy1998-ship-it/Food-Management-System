@@ -6658,7 +6658,7 @@
     var totalWeight = (recipe.ingredients || []).reduce(function (s, ri) { return s + recipeLineWeightForTotal(ri); }, 0);
     var serving = recipe.serving || 100;
     var modeLabel = NUTRITION_TOTAL_MODES.filter(function (m) { return m.key === nutritionTotalMode; })[0].label;
-    var html = "<tbody>";
+    var html = "<thead><tr><th>Ingredient</th>" + NUTRITION_BREAKDOWN_COLUMNS.map(function () { return "<th></th>"; }).join("") + "</tr></thead><tbody>";
     var totals100 = {};
     NUTRITION_BREAKDOWN_COLUMNS.forEach(function (c) { totals100[c.key] = 0; });
     if (totalWeight > 0) {
@@ -6701,8 +6701,8 @@
       else if (nutritionTotalMode === "serving") val = totals100[c.key] * (serving / 100);
       html += '<td class="bold" style="text-align:center;font-size:12px">' + Data.round(val, c.dp) + "</td>";
     });
-    html += "</tr><tr><th>Ingredient</th>";
-    NUTRITION_BREAKDOWN_COLUMNS.forEach(function (c) { html += '<th style="font-size:9px;writing-mode:vertical-lr;text-align:center;padding:4px 2px">' + c.label + "</th>"; });
+    html += '</tr><tr><th style="border-top:2px solid var(--nc-gray-300)"></th>';
+    NUTRITION_BREAKDOWN_COLUMNS.forEach(function (c) { html += '<th style="border-top:2px solid var(--nc-gray-300);font-size:9px;writing-mode:vertical-lr;text-align:center;padding:8px 2px 4px">' + c.label + "</th>"; });
     html += "</tr></tfoot>";
     table.innerHTML = html;
   }
