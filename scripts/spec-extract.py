@@ -31,6 +31,13 @@ import json
 import re
 import openpyxl
 
+# Windows' console defaults stdout to cp1252, which crashes outright on a real degree-Celsius
+# character (U+2103, seen in a real spec -- Breaded Prawns, 2026-09-28) or any other character
+# outside that codepage. Force UTF-8 so a spec containing genuine Unicode text never takes the
+# whole extraction down -- this is an I/O fix, not a data interpretation change.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+
 # Every category this template's allergen sheet is expected to carry, and which EU-14 allergen
 # it maps to (several spec rows -> one EU allergen; several spec rows aren't EU allergens at
 # all and are intentionally not mapped -- see SPEC-EXTRACTION.md). ALL of these must be found

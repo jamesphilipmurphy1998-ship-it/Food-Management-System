@@ -921,3 +921,37 @@ make alone.
   Worth checking whether a future spec's inner-only answer ("Liner", "Bag", etc.) should
   prompt the same "check for an outer material too" question by default -- but per the standing
   rule, still ask each time rather than silently assume the combined format is always wanted.
+
+### 2026-09-28 — Kale, Chives, Breaded Prawns, Frozen Fried Tofu, Burnt Sugar Syrup; a real script-crashing Unicode bug found and fixed
+
+- **A real bug, not a data issue:** `spec-extract.py` crashed outright (unhandled
+  `UnicodeEncodeError`) on the Breaded Prawns spec, which contains a genuine single-glyph
+  degree-Celsius character (U+2103, "℃") in its Storage Conditions text. Windows' console
+  defaults Python's stdout to cp1252, which can't represent that character at all -- this
+  wasn't a spec formatting quirk to flag, it was the script's own I/O breaking on legitimate
+  Unicode text. Fixed once, generally: `sys.stdout.reconfigure(encoding="utf-8")` at the top
+  of the script. This is an I/O fix, not a data-interpretation change, so it didn't need the
+  same "ask every time" treatment the parsing rules get -- there's no judgment call in making
+  the script not crash on valid text.
+- **Chopped Kale (106127/106073) → `RM Chopped Kale TCK Bag`.** Same "code blank on the usual
+  sheet, correct on Manufacturer Detail (older template)" pattern as Xanthan Gum/Diced Potato,
+  confirmed. Same missing-Fibre-row gap as those two, confirmed. Clean name match, no mismatch
+  flag. Applied, verified.
+- **Chives (106128) → live ingredient.** Clean extraction except Storage Conditions contained a
+  corrupted character where a degree symbol should be (encoding artifact in the source file,
+  not the U+2103 case above -- a different, garbled byte). Confirmed and written cleanly as
+  "+2°C".
+- **Breaded Prawns (106131/105007) → `RM Prawn Breaded`.** Another manufacturer-code case (spec
+  consistently states "YK70704", Yutaka's own code) -- same `--override-code` handling as Java
+  Curry, confirmed. Fibre explicitly "N/A" in the spec, confirmed via `--allow-blank-nutrition`.
+  Name mismatch ("Yutaka Ebi Fry Panko Prawns..." vs "RM Prawn Breaded") confirmed. Applied,
+  verified.
+- **Frozen Fried Tofu (106243) → `RM Fried Tofu NEW`.** Fibre explicitly "N/A", confirmed same
+  as above. Storage Conditions ("Keep under -18℃") failed the plausibility check purely because
+  it doesn't contain a recognised keyword (frozen/chilled/etc) -- phrased as "keep under" +
+  temperature instead. Confirmed as genuine, written as entered. Name mismatch ("Frozen Fried
+  Tofu(4 x 4cm)" vs "RM Fried Tofu NEW") confirmed. Applied, verified.
+- **Burnt Sugar Syrup (107330/P00036) → `RM Plain Caramel (Burnt Sugar Syrup)`.** Clean
+  extraction, `status: "ok"`. Name mismatch ("Burnt Sugar Syrup NC0020 - CARAMEL13" vs "RM
+  Plain Caramel (Burnt Sugar Syrup)" -- both key phrases present, reordered, supplier codes
+  added) confirmed. Applied, verified.
