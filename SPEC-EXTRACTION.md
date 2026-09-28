@@ -76,6 +76,22 @@ picking the wrong ingredient silently, while an exact code match is unambiguous 
   ingredient code. If a bare code with no parenthetical doesn't match anything, try any
   parenthetical portion as a fallback before giving up.
 
+### Code matched, but the name doesn't look related — always flagged, never auto-confirmed
+
+A code matching an ingredient is not, by itself, proof it's the *right* ingredient — the code
+could be typo'd in the spec and happen to hit something unrelated, or a code could have been
+reassigned since. So `spec-apply.js` also compares the spec's product name against the matched
+ingredient's name after every match, and **refuses to show a diff or write anything** if they
+don't look related — this needs a person to look and decide, not an automatic pass.
+
+The comparison strips this site's own naming-prefix convention first (`RM`/`FG`/`BHP`/`GR`/
+`CPU`/`SUB`/`HR`/`LR`/`NF`) before comparing, so a spec titled `"Black Bean Paste"` matching a
+live ingredient named `"RM Black Bean Paste"` is correctly recognised as the same product, not
+a false alarm — verified against the real spec. After stripping prefixes, the two normalized
+names must contain one another (either direction) to pass; anything looser is refused with a
+clear `⚠ NAME MISMATCH` message naming both the spec's name and the live ingredient's name, so
+whoever's reviewing can see immediately what didn't line up.
+
 ## Source template structure
 
 Every spec seen so far uses the same standard multi-tab "Raw Material Specification" template
@@ -458,3 +474,16 @@ flagged, never silently produce a wrong upload (allergen mismatch risk):**
 - Updated the field mapping table, the "every field an extraction can produce" list, and the
   worked-example trace/JSON above to include this field — this log entry is the record that
   those sections were brought current alongside the code, not left behind it.
+
+**Same day, added a name-mismatch check on top of the code match:**
+
+- A code matching in the live system doesn't guarantee it's the right ingredient — a typo'd
+  code in the spec could coincidentally hit something unrelated, or a code could have been
+  reassigned. `spec-apply.js` now compares the spec's product name against the matched
+  ingredient's name (after stripping the site's `RM`/`FG`/`BHP`/`GR`/`CPU`/`SUB`/`HR`/`LR`/`NF`
+  naming prefixes) and refuses to proceed — no diff shown, nothing written — if they don't look
+  related, printing a `⚠ NAME MISMATCH` message with both names for a person to review.
+- Verified no false positive on the real case: `"Black Bean Paste"` (spec) vs.
+  `"RM Black Bean Paste"` (live) — correctly recognised as related after prefix-stripping,
+  full pipeline still runs clean through to "no changes" (everything already applied from
+  earlier runs).

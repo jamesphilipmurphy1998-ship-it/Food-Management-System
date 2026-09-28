@@ -73,6 +73,28 @@ if (!matched) {
 
 console.log(`Matched on code "${matchedOn}" -> "${matched.name}" (id ${matched.id})`);
 
+// A code matching but the PRODUCT NAME not matching is a real red flag -- could mean a typo'd
+// code happened to hit a different, unrelated ingredient, or a code got reused/reassigned.
+// Never silently proceed on this; always make a person decide. Strip the site's own naming
+// prefixes (RM/FG/BHP/GR/CPU/SUB/HR/LR/NF -- e.g. "RM Black Bean Paste" for a spec titled
+// just "Black Bean Paste") before comparing, so the normal prefix convention doesn't produce
+// false alarms -- only flag when the actual product name looks unrelated.
+function normalizeIngredientName(name) {
+  return (name || "")
+    .toUpperCase()
+    .replace(/^\s*(RM|FG|BHP|GR|CPU|SUB|HR|LR|NF)\b\.?\s*/, "")
+    .replace(/[^A-Z0-9]+/g, " ")
+    .trim();
+}
+const specNameNorm = normalizeIngredientName(extraction.name);
+const liveNameNorm = normalizeIngredientName(matched.name);
+const namesLookRelated = specNameNorm && liveNameNorm && (specNameNorm.includes(liveNameNorm) || liveNameNorm.includes(specNameNorm));
+if (!namesLookRelated) {
+  console.log(`\n⚠ NAME MISMATCH — code "${matchedOn}" matched, but the spec's product name ("${extraction.name}") doesn't look related to the live ingredient's name ("${matched.name}").`);
+  console.log("This could mean the code was typo'd in the spec and happened to match a different, unrelated ingredient, or the code has been reassigned. Refusing to proceed — a person needs to confirm this is actually the right ingredient before anything is matched or written.");
+  process.exit(1);
+}
+
 const nutritionFields = ["kj", "kcal", "fat", "sat", "carb", "sugar", "protein", "fibre", "salt"];
 const diff = [];
 nutritionFields.forEach((f) => {
