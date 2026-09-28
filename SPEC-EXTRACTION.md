@@ -6,9 +6,56 @@ and allergen data matched to the live NutriCost ingredient by **code** and writt
 the database — no manual re-typing, and the source document itself is never stored on the site
 (only the matched values persist, on the ingredient row that already exists).
 
-**Status: pipeline built and proven on one real ingredient (Black Bean Paste, 2026-09-28).**
-Deliberately not yet run against the rest of the ingredient library — first confirming the
-extraction/matching/write approach is right on this one before doing more.
+**Status: pipeline built and proven on one real ingredient (Black Bean Paste, 2026-09-28), then
+hardened for safety the same day (see below).** Deliberately not yet run against the rest of
+the ingredient library — first confirming the extraction/matching/write approach is right on
+this one before doing more.
+
+## ⚠️ Safety requirement — refuse, never guess
+
+**An allergen written wrong is a consumer safety incident, not a cosmetic bug.** If a future
+spec uses a layout this code doesn't recognise, the pipeline must say so clearly and refuse to
+proceed — never fall back to a partial extraction, a best guess, or silently skip a field and
+write the rest. Getting this wrong could mean an allergen the product actually contains isn't
+flagged, which can kill someone.
+
+**How this is enforced (`scripts/spec-extract.py` + `scripts/spec-apply.js`), as of the
+2026-09-28 hardening pass:**
+
+1. Every sheet, header row, and column `spec-extract.py` reads is **located by searching for
+   its label text**, never assumed to be at a fixed cell address. If a header/label it expects
+   (`"Typical Values"`, `"Per 100g"`, `"Potential Component"`, `"Product contains?"`, any of the
+   9 nutrition field labels) can't be found, that's an **error**, not a warning.
+2. **Every one of the 19 allergen category rows this template defines must be found as an
+   actual row in the sheet**, matched by the row label **starting with** the category name
+   (never a loose "contains" substring match — see the false-positive this caught below). If
+   any expected category is missing, extraction is refused outright — a missing row could mean
+   the format changed and that category was silently dropped, and a missing allergen category
+   can never be assumed "N."
+3. **Every sheet in the workbook must agree on the same Product Code** (cross-checked against
+   every other sheet's own header, not just the one sheet the code came from) — a mismatch is
+   refused as looking like corrupted or mixed-up data, not treated as a minor warning.
+4. A Y/N cell that isn't literally `"Y"` or `"N"` is refused, not interpreted either way.
+5. **Output carries an explicit `status` field: `"ok"`, `"extracted_with_warnings"`, or
+   `"cannot_extract"`.** `spec-apply.js` checks this before doing anything else — `--apply`
+   (and even the dry-run diff) is hard-refused unless `status` is exactly `"ok"`. Warnings
+   block just as hard as errors do; there is no `--force` override.
+6. A structural problem (missing sheet, missing header, wrong file type entirely) goes in
+   `errors` and always blocks. A softer signal that's still worth a human's attention (the
+   kcal-vs-macros sanity check failing) goes in `warnings` — but as of this hardening pass,
+   **both block `--apply` identically**. The distinction exists for a person reading the output
+   to understand *why* it was refused, not to let warnings through where errors are blocked.
+
+**A real false-positive this caught, same day it was built:** the first version matched
+allergen category keys with a loose "is this text anywhere in the row" check. Section 9 of the
+template (Dietary Requirement, not allergens) has a row literally worded *"Vegetarians
+(Contains no animal product, but may animal by-product e.g. milk/egg)"* — the loose match read
+"milk" and "egg" out of that description text and (correctly, as it happens, since it failed
+safe rather than writing anything) refused the whole extraction with an unrecognised-value
+error. Fixed by (a) restricting the row range actually scanned to end before "Section 9"
+starts, and (b) requiring the row label to *start with* the category name rather than merely
+contain it anywhere. Documented here specifically so a future change to this matching logic
+doesn't reintroduce the same class of bug.
 
 ## Matching rule: exact code, never fuzzy
 
@@ -143,6 +190,13 @@ Per the earlier discussion on reliability: **propose, don't auto-write.** Two sc
    didn't need to be.
 4. The source `.xlsx` is never uploaded, stored, or referenced by the server — read once,
    locally, at extraction time.
+5. **Known environment quirk:** reading the spec file directly from the live OneDrive-synced
+   `Ingredient Specs` folder path has intermittently thrown `PermissionError: [Errno 13]` from
+   Python (openpyxl), even though the same file copies and reads fine a moment later — looks
+   like a transient OneDrive cloud-sync lock, not a bug in the extraction logic (verified: the
+   exact same file, copied to a local temp path, extracts cleanly every time). If
+   `spec-extract.py` hits this, retry, or copy the file to a local path first and point the
+   script at the copy.
 
 ## Extraction log
 
@@ -165,3 +219,22 @@ mirrors `ACCURACY-SCAN.md`'s results-log pattern.
   untouched).
 - Deliberately stopping here rather than running the rest of the library — first confirming
   this one is right, then testing more ingredients once satisfied.
+
+**Same day, hardening pass — user explicitly required that an unrecognised format must be
+flagged, never silently produce a wrong upload (allergen mismatch risk):**
+
+- Rewrote `spec-extract.py` to locate every sheet/header/column by searching for its label text
+  rather than assuming fixed positions, require all 19 allergen category rows to be found
+  before trusting any of them, cross-check every sheet's Product Code, and reject any
+  non-Y/N allergen cell — added an explicit `status` field (`ok` / `extracted_with_warnings` /
+  `cannot_extract`).
+- Updated `spec-apply.js` to hard-refuse `--apply` (and even the dry-run diff) unless
+  `status === "ok"` — no override flag exists.
+- **Caught and fixed a real false-positive during this hardening**, on the very spec already
+  proven above: a loose substring match briefly misread "milk" and "egg" out of an unrelated
+  Section 9 dietary-requirement row's description text. Failed safe (blocked rather than wrote
+  wrong data) but was still a real bug — fixed by restricting the scanned row range and
+  requiring an exact row-label prefix match. See the safety section above for the full account.
+- Re-ran extraction against Black Bean Paste after the fix: `status: "ok"`, identical
+  nutrition/allergen values as the original successful run — confirms the hardening didn't
+  change correct behavior, only closed the gap around incorrect/unrecognised input.
