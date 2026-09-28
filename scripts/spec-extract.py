@@ -46,16 +46,43 @@ EXPECTED_ALLERGEN_ROWS = {
 }
 
 NUTRITION_FIELDS = [
-    ("Energy (KJ)", "kj"),
-    ("Energy (Kcal)", "kcal"),
-    ("Fat (g)", "fat"),
-    ("*of which saturate fat (g)", "sat"),
-    ("Carbohydrate (g)", "carb"),
-    ("*of which sugar (g)", "sugar"),
-    ("Protein (g)", "protein"),
-    ("Fiber (g)", "fibre"),
-    ("Salt (g)", "salt"),
+    ("Energy (KJ)", "kj", "kj"),
+    ("Energy (Kcal)", "kcal", "kcal"),
+    ("Fat (g)", "fat", "g"),
+    ("*of which saturate fat (g)", "sat", "g"),
+    ("Carbohydrate (g)", "carb", "g"),
+    ("*of which sugar (g)", "sugar", "g"),
+    ("Protein (g)", "protein", "g"),
+    ("Fiber (g)", "fibre", "g"),
+    ("Salt (g)", "salt", "g"),
 ]
+
+import re as _re
+
+def parse_nutrition_value(val, expected_unit):
+    """Accept a bare number, OR a number immediately followed by its own column's stated unit
+    (e.g. "1.24g" in a "Fat (g)" column) -- some suppliers write the unit inline rather than
+    leaving a pure number. Deliberately narrow: the suffix must match THIS field's own unit
+    (case-insensitively), never any arbitrary trailing text -- "1.24ml" in a "Fat (g)" column
+    would still be refused, since that's a real discrepancy worth a human's attention, not a
+    formatting quirk to silently paper over."""
+    if isinstance(val, (int, float)):
+        return val, None
+    if val is None:
+        return None, "blank"
+    s = str(val).strip()
+    if not s or s.upper() == "N/A":
+        return None, "blank"
+    m = _re.match(r"^([\d.]+)\s*([A-Za-z]*)$", s)
+    if not m:
+        return None, "unparseable"
+    number_part, suffix = m.group(1), m.group(2).strip().lower()
+    if suffix and suffix != expected_unit.lower():
+        return None, "unit mismatch (found %r, expected %r)" % (suffix, expected_unit)
+    try:
+        return float(number_part), None
+    except ValueError:
+        return None, "unparseable"
 
 def find_row_starting_with(ws, prefix, max_col=1):
     for row in ws.iter_rows(min_row=1, max_row=ws.max_row, max_col=max_col):
@@ -135,19 +162,20 @@ def extract(path):
                 cell = row[0]
                 if cell.value:
                     labels[str(cell.value).strip().rstrip("*").strip().lower()] = cell.row
-            for label, field in NUTRITION_FIELDS:
+            for label, field, unit in NUTRITION_FIELDS:
                 target = label.rstrip("*").strip().lower()
                 found_row = labels.get(target)
                 if found_row is None:
                     errors.append("Nutrition row for %r not found in '%s' -- template may have changed" % (label, nut_sheet_name))
                     continue
-                val = ns.cell(row=found_row, column=per100_col).value
-                if isinstance(val, (int, float)):
-                    nutrition[field] = val
-                elif val is not None and str(val).strip().upper() not in ("N/A", ""):
-                    errors.append("Nutrition value for %r is not a number: %r -- refusing to write a non-numeric value" % (label, val))
-                else:
+                raw_val = ns.cell(row=found_row, column=per100_col).value
+                parsed, problem = parse_nutrition_value(raw_val, unit)
+                if parsed is not None:
+                    nutrition[field] = parsed
+                elif problem == "blank":
                     errors.append("Nutrition value for %r is blank/N-A in the spec" % label)
+                else:
+                    errors.append("Nutrition value for %r is not usable: %r (%s) -- refusing to write it" % (label, raw_val, problem))
 
     if "kcal" in nutrition and "protein" in nutrition and "carb" in nutrition and "fat" in nutrition:
         expected = 4 * nutrition["protein"] + 4 * nutrition["carb"] + 9 * nutrition["fat"]
