@@ -163,15 +163,15 @@ function isTainted(r, visited) {
 }
 
 let checked = 0, within = 0, excluded = 0, delisted = 0, tainted = 0, noCode = 0, noOwnCost = 0, liveTallyWorks = 0, singleComponentTrivial = 0, multiLineNoOwnCost = 0, tallyFailed = 0;
-const mismatches = [];
-const noCodeList = [], noOwnCostList = [], taintedList = [], multiLineNoOwnCostList = [];
+const mismatches = [], withinList = [];
+const noCodeList = [], noOwnCostList = [], taintedList = [], multiLineNoOwnCostList = [], delistedList = [], excludedList = [], singleComponentTrivialList = [];
 
 recipes.forEach(function (r) {
   if (!r.code) { noCode++; noCodeList.push({ code: r.code || "", name: r.name, id: r.id }); return; }
   if (r.code === "NEW" || /^new$/i.test(r.code.trim())) { noCode++; noCodeList.push({ code: r.code, name: r.name, id: r.id }); return; } // draft/placeholder, not a real catalogue item
-  if (KNOWN_BAD_RECIPE_CODES.has(r.code)) { excluded++; return; }
+  if (KNOWN_BAD_RECIPE_CODES.has(r.code)) { excluded++; excludedList.push({ code: r.code, name: r.name, id: r.id }); return; }
   if (isTainted(r)) { tainted++; taintedList.push({ code: r.code, name: r.name, id: r.id }); return; }
-  if (/delist/i.test(r.name || "")) { delisted++; return; }
+  if (/delist/i.test(r.name || "")) { delisted++; delistedList.push({ code: r.code, name: r.name, id: r.id }); return; }
   if (!r.ownCost || r.ownCost <= 0) {
     // IMPORTANT: no stored ownCost does NOT mean "no cost"/"broken" — the app already falls
     // back to live-tallying from the recipe's own ingredient lines whenever ownCost is unset
@@ -191,6 +191,7 @@ recipes.forEach(function (r) {
         multiLineNoOwnCostList.push({ code: r.code, name: r.name, id: r.id, lines: r.ingredients.length, liveTally: +liveFallback.toFixed(4) });
       } else {
         singleComponentTrivial++;
+        singleComponentTrivialList.push({ code: r.code, name: r.name, id: r.id, liveTally: +liveFallback.toFixed(4) });
       }
       return;
     }
@@ -212,6 +213,7 @@ recipes.forEach(function (r) {
   const diffPct = Math.abs(used - tally) / used * 100;
   if (diffPct <= 0.5) {
     within++;
+    withinList.push({ code: r.code, name: r.name, used: +used.toFixed(4), tally: +tally.toFixed(4), diffPct: +diffPct.toFixed(2) });
   } else {
     mismatches.push({ code: r.code, name: r.name, used: +used.toFixed(4), tally: +tally.toFixed(4), diffPct: +diffPct.toFixed(2) });
   }
@@ -232,6 +234,10 @@ fs.writeFileSync(path.join(root, ".scan", "no_code_list.json"), JSON.stringify(n
 fs.writeFileSync(path.join(root, ".scan", "no_owncost_list.json"), JSON.stringify(noOwnCostList, null, 2));
 fs.writeFileSync(path.join(root, ".scan", "multi_line_no_owncost_list.json"), JSON.stringify(multiLineNoOwnCostList, null, 2));
 fs.writeFileSync(path.join(root, ".scan", "tainted_list.json"), JSON.stringify(taintedList, null, 2));
+fs.writeFileSync(path.join(root, ".scan", "delisted_list.json"), JSON.stringify(delistedList, null, 2));
+fs.writeFileSync(path.join(root, ".scan", "excluded_known_bad_list.json"), JSON.stringify(excludedList, null, 2));
+fs.writeFileSync(path.join(root, ".scan", "single_component_trivial_list.json"), JSON.stringify(singleComponentTrivialList, null, 2));
+fs.writeFileSync(path.join(root, ".scan", "within_list.json"), JSON.stringify(withinList, null, 2));
 
 // CSV export
 const baseUrl = "http://localhost:5055/?recipe=";

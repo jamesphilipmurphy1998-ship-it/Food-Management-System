@@ -123,3 +123,54 @@ the exact same 28 recipe codes flagged (`100219, 100246, 100249, 101602, 103792,
 105760, 106341, 106416, 106656, 106658, 106659, 106690, 106692, 106693, 106704, 106746,
 106766, 106784, 106787, 107060, 107077, 107171, 107201, 107370, 107514, 107587, 107726`).
 Nothing drifted, no new issues, confirming the analysis above is stable and not a one-off.
+
+### Full reconciliation — every one of the 1109 recipes, no bucket left unexplained
+
+The script now dumps a named list (not just a count) for every bucket — see
+`scripts/accuracy-scan.js`'s `fs.writeFileSync` calls at the bottom for the full set of
+`.scan/*.json` files this produces.
+
+| Bucket | Count | What it means |
+|---|---|---|
+| **Checked & within 0.5%** | 680 | Matches the BOM sheet cost closely — the real accuracy number |
+| **Checked & mismatched** | 28 | See above — all 28 confirmed to be ordinary stale-BC-cost drift, not a bug |
+| **Excluded — known-bad source data** | 21 | Confirmed-broken BOM entries (malformed lines, stale sheet cost vs. the sheet's own totals) — each has a one-line reason in `KNOWN_BAD_RECIPE_CODES` |
+| **Excluded — tainted by a known-bad component** | 114 | Not broken themselves, but built on one of the 21 above (at any nesting depth) — inherits the same known issue, not separate |
+| **Excluded — delisted** | 126 | Name contains "delist" — no longer a live product, cost accuracy doesn't matter |
+| **No code / placeholder** | 9 | Blank or `"NEW"` code — draft recipes, most are genuine in-progress work; 2 are confirmed leftover test data from this session (`Merge Recipe`, `HR CHILLI COATED CHICKEN WINGS (Copy)`) |
+| **Single-component pass-through, no cached cost** | 116 | 1-line wrapper around one ingredient/sub-recipe — cost is trivially correct by construction, nothing to compare |
+| **Multi-line, no cached cost** | 12 | 2+ lines, no stored `ownCost` yet, live-tallied cost used directly — worth a look since there's no BOM value to cross-check against yet (see "name = code" finding below, several of these are the same recipes) |
+| **Genuinely zero-cost** | 3 | No stored cost AND live tally is also £0 — real gaps: `CPU RM Water` (legitimately free), `Merge Recipe` (test data), `erfg` (test data) |
+| **Tally failed / errored** | 0 | None this run |
+| **Total** | **1109** | Reconciles exactly — every recipe accounted for in exactly one bucket |
+
+**Separately flagged (not part of the bucket count above, found via direct inspection):** 117
+recipes across the dataset have their `name` field literally equal to their `code` (e.g.
+`"106488-2"`) — no real product name at all. All 117 are `approved: true` (locked) with
+`ownCost: 0`. This overlaps with the "multi-line, no cached cost" and "single-component"
+buckets above but is worth calling out on its own: it's the most actionable real data gap in
+the whole recipe library — 117 locked, production-status recipes that are effectively
+unidentifiable by name anywhere in the app.
+
+### Ingredient audit — all 463 ingredients
+
+Ingredients don't have a "tally vs. sheet" concept the way recipes do (an ingredient's cost
+*is* the source value — nothing separate to compare it against), so `scripts/ingredient-audit.js`
+checks real structural data-quality issues instead:
+
+| Check | Count | Detail |
+|---|---|---|
+| **No name** | 0 | Clean |
+| **No code** | 60 | All 60 are `approved: false` (in development) with names like "Semi-Skimmed Milk", "Golden Syrup", "Baking Powder" — this is the app's built-in sample/seed ingredient library (`SAMPLE_INGREDIENTS` in `data.js`), never a real imported ingredient. Not a data problem. |
+| **Zero/missing cost** (excl. packaging) | 2 | `103004` Water (legitimately free) and `P00040` (blank name/code — already known, same BOM export gap already excluded on the recipe side) |
+| **No nutrition values at all** (excl. packaging, all 8 fields checked) | 231 | Real gap. Of these, **72 are `approved: true`** (production/locked) raw materials with completely empty nutrition — e.g. `RM Baked Beans`, `RM Cooked Back Bacon`, `RM Twinings Pure Green Tea`, `RM Sauce Sweet Chilli Yutaka`. These are genuine production ingredients missing nutrition data entirely. The remaining 159 are in-development. |
+| **Duplicate codes** | 0 | Clean — no two ingredients share a code |
+
+**Bottom line for ingredients:** the real, actionable finding is **72 approved/production raw
+materials with zero nutrition values entered** — anything costed through one of these will have
+a silently-incomplete nutrition breakdown. Everything else (no-code sample library, the 2
+zero-cost items) is either expected or already-known.
+
+Full lists for every row above are in `.scan/*.json` (gitignored — regenerate by re-running
+both scripts) — ask for the actual code/name lists if you want to work through them directly
+rather than just the counts.
