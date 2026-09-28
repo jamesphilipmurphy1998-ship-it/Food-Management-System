@@ -155,6 +155,46 @@ def extract(path):
         if actual > 0 and abs(expected - actual) / actual > 0.15:
             warnings.append("Sanity check failed: kcal (%.1f) doesn't match 4*protein+4*carb+9*fat (%.1f) within 15%% -- verify against the source spec before trusting" % (actual, expected))
 
+    # --- Pack Format ("4 Packaging Detail", row "4-a) Inner packaging format/description")
+    # and Storage Conditions ("5&6 Durability...", row "5-f) Storage conditions") -- not
+    # allergen-safety-critical, so missing/unrecognised here is a WARNING, not an error; it
+    # still blocks --apply (same as any other warning), but for a different, non-safety reason.
+    pack_format = None
+    storage_conditions = None
+    packaging_sheet_name = next((n for n in wb.sheetnames if "Packaging Detail" in n), None)
+    if packaging_sheet_name:
+        ps = wb[packaging_sheet_name]
+        row = find_row_starting_with(ps, "4-a)")
+        if row is None:
+            warnings.append("Could not find the '4-a) Inner packaging format' row in '%s' -- Pack Format not extracted" % packaging_sheet_name)
+        else:
+            for col in range(2, 15):
+                v = ps.cell(row=row, column=col).value
+                if v is not None and str(v).strip():
+                    pack_format = str(v).strip()
+                    break
+            if pack_format is None:
+                warnings.append("Row '4-a)' in '%s' has no value in any column -- Pack Format not extracted" % packaging_sheet_name)
+    else:
+        warnings.append("No sheet matching 'Packaging Detail' found -- Pack Format not extracted")
+
+    durability_sheet_name = next((n for n in wb.sheetnames if "Durability" in n), None)
+    if durability_sheet_name:
+        ds = wb[durability_sheet_name]
+        row = find_row_starting_with(ds, "5-f)")
+        if row is None:
+            warnings.append("Could not find the '5-f) Storage conditions' row in '%s' -- Storage Conditions not extracted" % durability_sheet_name)
+        else:
+            for col in range(2, 15):
+                v = ds.cell(row=row, column=col).value
+                if v is not None and str(v).strip():
+                    storage_conditions = str(v).strip()
+                    break
+            if storage_conditions is None:
+                warnings.append("Row '5-f)' in '%s' has no value in any column -- Storage Conditions not extracted" % durability_sheet_name)
+    else:
+        warnings.append("No sheet matching 'Durability' found -- Storage Conditions not extracted")
+
     # --- Allergens: locate header row + the actual "contains?" column dynamically, then
     # require EVERY expected category to be present as its own row before trusting any of it.
     allergens = []
@@ -210,6 +250,8 @@ def extract(path):
         "altCode": alt_code,
         "nutrition": nutrition,
         "allergens": allergens,
+        "packFormat": pack_format,
+        "storageConditions": storage_conditions,
         "errors": errors,
         "warnings": warnings,
     }

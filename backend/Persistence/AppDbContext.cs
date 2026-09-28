@@ -44,6 +44,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             e.Property(x => x.Density).HasColumnName("density");
             e.Property(x => x.UnitWeightG).HasColumnName("unit_weight_g").HasDefaultValue(0m);
             e.Property(x => x.Supplier).HasColumnName("supplier");
+            e.Property(x => x.PackFormat).HasColumnName("pack_format").HasDefaultValue("");
+            e.Property(x => x.StorageConditions).HasColumnName("storage_conditions").HasDefaultValue("");
             e.Property(x => x.Allergens).HasColumnName("allergens");
             e.Property(x => x.Fvn).HasColumnName("fvn");
             e.Property(x => x.Approved).HasColumnName("approved");

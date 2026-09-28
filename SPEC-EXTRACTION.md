@@ -86,10 +86,10 @@ Every spec seen so far uses the same standard multi-tab "Raw Material Specificat
 | `1&2 Manufacturer Detail` | Supplier/manufacturer info — not extracted |
 | `1bFarm&Processing Plants-Salmon` | Only relevant for fish/seafood products |
 | `3 Ingredient & Recipe` | Product name, product code, sub-ingredient breakdown — **product code source** |
-| `4 Packaging Detail` | Not extracted |
-| `5&6 Durability & Micro Standard` | Shelf life/microbiological — not extracted |
-| `7 Nutrition Information` | **Nutrition values — primary extraction target** |
-| `8&9 Intolerance & Dietary` | **Allergens + vegetarian/vegan — primary extraction target** |
+| `4 Packaging Detail` | **Pack Format — extracted** (`4-a`) |
+| `5&6 Durability & Micro Standard` | **Storage Conditions — extracted** (`5-f`); shelf life/microbiological not extracted |
+| `7 Nutrition Information` | **Nutrition values — extracted** |
+| `8&9 Intolerance & Dietary` | **Allergens — extracted**; vegetarian/vegan suitability not extracted |
 | `10&11 Additive & GMO` | Not extracted (could be a future field) |
 | `12 Process Flow` | Not extracted |
 | `13&14 Chem & Physical Std` | Not extracted |
@@ -101,9 +101,44 @@ Every sheet repeats the same header block at the top (`Product Name :` in `A3`/n
 `Product Code :` in `A4`/code in `C4`) — a cheap sanity check that every sheet in the file
 agrees on which product it's for before trusting any of them.
 
+### How a sheet is actually located — read this before touching the code
+
+**Sheet names are matched by substring, never by position/index.** The workbook's tab order or
+exact full name could vary between spec versions (`"7 Nutrition Information"` vs. some future
+`"07. Nutrition Info"` would both work) — the code searches every sheet name for a distinctive
+phrase and uses whichever one contains it:
+
+```python
+nut_sheet_name = next((n for n in wb.sheetnames if "Nutrition Information" in n), None)
+allergen_sheet_name = next((n for n in wb.sheetnames if "Intolerance" in n), None)
+recipe_sheet_name = next((n for n in wb.sheetnames if "Ingredient & Recipe" in n), None)
+packaging_sheet_name = next((n for n in wb.sheetnames if "Packaging Detail" in n), None)
+durability_sheet_name = next((n for n in wb.sheetnames if "Durability" in n), None)
+```
+
+If `next(...)` finds nothing, that variable is `None` — **every extraction step checks for
+`None` and adds an error/warning rather than proceeding**, so a renamed or missing sheet is
+reported by name, never silently skipped.
+
+**Within a sheet, rows and columns are located the same way — by searching for the label text
+that row/column is supposed to have, never a hardcoded row/column number.** For example, the
+nutrition sheet's "Per 100g" column isn't assumed to be column C just because it happens to be
+column C in every spec seen so far — the code finds the header row (`"Typical Values"`), then
+scans that row's cells for one containing `"100"`, and uses whichever column that turns out to
+be. Same pattern for every other field: find the row whose first cell matches the expected
+label (`find_row_starting_with` in `spec-extract.py`), then read across that row for the value.
+**This is the whole reason a format change gets flagged instead of silently mis-reading data —
+if the label text this code searches for isn't found anywhere in the sheet, the search returns
+nothing, which is treated as "I can't find this," not "it must be in the usual place."**
+
+A fresh AI picking this up should extend it the same way: never add `ws["C4"]`-style fixed-cell
+reads for anything new — always locate the row/column by searching for its label first, and
+treat "label not found" as a reportable failure, not a fallback to the same address the last
+template used.
+
 ## Field mapping: spec → NutriCost ingredient
 
-### Nutrition (`7 Nutrition Information` sheet, "Per 100g" column — always column C)
+### Nutrition (`7 Nutrition Information` sheet, "Per 100g" column — column C in every spec seen so far, but located dynamically, see above)
 
 | Spec label (column A) | Cell | NutriCost field | Notes |
 |---|---|---|---|
@@ -160,6 +195,61 @@ extracted. So this ingredient's `Allergens` should be set to `["Soya"]`, nothing
 this spec's Vegetable/Fruit rows — those track ingredient composition for allergen/cross-contact
 purposes, not whether the product itself counts as fruit/veg/nut for HFSS scoring. Don't set
 `Fvn` from this spec; leave it to whoever reviews the extraction.
+
+### Pack Format & Storage Conditions
+
+| Spec label | Sheet | NutriCost field | Notes |
+|---|---|---|---|
+| `4-a) Inner packaging format/description` | `4 Packaging Detail` | `packFormat` | e.g. "Bag" |
+| `5-f) Storage conditions` | `5&6 Durability & Micro Standard` | `storageConditions` | e.g. "Ambient" |
+
+Not allergen-safety-critical, so a missing/unrecognised row here is a **warning**, not an
+error — but per the "warnings block just as hard as errors" rule above, it still stops
+`--apply` until a person looks at it. This is deliberately conservative: even a non-safety
+field being wrong or missing means something about this spec's format wasn't what the code
+expected, which is itself worth a human's attention before trusting *anything else* extracted
+from the same file.
+
+## Every field an extraction can produce — the complete list
+
+If any of these can't be found or verified in a given spec, **that field (and depending on
+which one, potentially the whole extraction) is refused, not guessed.** This is the full list —
+nothing is extracted from a spec beyond what's here:
+
+| Field | Source | If not found/verified |
+|---|---|---|
+| Product code (+ alt code if present) | `3 Ingredient & Recipe`, cell C4 | **Fatal** — nothing can be matched or written without this |
+| Energy (kJ) | `7 Nutrition Information` | **Fatal** |
+| Energy (kcal) | `7 Nutrition Information` | **Fatal** |
+| Fat (g) | `7 Nutrition Information` | **Fatal** |
+| Saturates (g) | `7 Nutrition Information` | **Fatal** |
+| Carbohydrate (g) | `7 Nutrition Information` | **Fatal** |
+| Sugar (g) | `7 Nutrition Information` | **Fatal** |
+| Protein (g) | `7 Nutrition Information` | **Fatal** |
+| Fibre (g) | `7 Nutrition Information` | **Fatal** |
+| Salt (g) | `7 Nutrition Information` | **Fatal** |
+| Allergens (all 14 EU categories checked) | `8&9 Intolerance & Dietary` | **Fatal** if even one of the 19 source rows this maps from can't be located — an allergen can never be assumed absent |
+| Pack Format | `4 Packaging Detail` | Warning (still blocks `--apply`, but distinguished as non-safety in the message) |
+| Storage Conditions | `5&6 Durability & Micro Standard` | Warning (same as above) |
+
+**"Fatal" means `status: "cannot_extract"`, and `spec-apply.js` refuses to even show a diff,
+let alone write anything.** "Warning" means `status: "extracted_with_warnings"`, which
+*currently also fully blocks `--apply`* — there is no field in this pipeline today that's
+allowed through with a warning still attached. Every run either comes back completely clean
+(`status: "ok"`) or is refused outright.
+
+## Post-upload verification (built)
+
+After `--apply` writes successfully, `spec-apply.js` immediately re-fetches that exact
+ingredient from the live API (a fresh `GET`, not just trusting the `PUT` response body) and
+re-compares every field it intended to change against what's actually now stored. This catches
+anything a raw "the PUT returned 200" check wouldn't — a partial write, a value the server
+normalized or rejected silently, a race with someone else editing the same ingredient, etc.
+
+- **Every intended field matches live** → prints `POST-UPLOAD VERIFICATION: PASSED` and exits 0.
+- **Anything doesn't match** → prints `POST-UPLOAD VERIFICATION FAILED`, lists exactly which
+  field(s) and what's live vs. what was intended, and **exits non-zero** — this is a hard
+  signal that the upload needs manual investigation, not a "probably fine."
 
 ## Write workflow (built)
 
@@ -238,3 +328,23 @@ flagged, never silently produce a wrong upload (allergen mismatch risk):**
 - Re-ran extraction against Black Bean Paste after the fix: `status: "ok"`, identical
   nutrition/allergen values as the original successful run — confirms the hardening didn't
   change correct behavior, only closed the gap around incorrect/unrecognised input.
+
+**Same day, added Pack Format + Storage Conditions:**
+
+- Added `packFormat`/`storageConditions` fields end-to-end: new columns on the `Ingredient`
+  model/entity (migration `AddIngredientPackFormatAndStorageConditions`), two new inputs in the
+  Ingredient Centre modal, and extraction from `4 Packaging Detail` (`4-a`) /
+  `5&6 Durability & Micro Standard` (`5-f`).
+- Applied to Black Bean Paste: `packFormat` "" → "Bag", `storageConditions` "" → "Ambient".
+  `PUT` returned 200, response confirmed both fields landed alongside the nutrition/allergen
+  data from the first run.
+
+**Same day, added post-upload verification:**
+
+- `spec-apply.js` now re-fetches the ingredient fresh from the live API immediately after a
+  successful `--apply` and re-compares every intended field against what's actually stored —
+  never just trusts the `PUT` response body. Reports `POST-UPLOAD VERIFICATION: PASSED` or
+  `FAILED` (with the exact field-by-field mismatch) and exits accordingly.
+- Also documented the complete, explicit list of every field this pipeline can extract (see
+  "Every field an extraction can produce" above) — nothing beyond that list is ever pulled from
+  a spec, and any of the nutrition/allergen fields failing to be found is fatal, never partial.

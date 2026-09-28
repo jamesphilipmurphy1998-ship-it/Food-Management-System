@@ -86,7 +86,14 @@ const afterAllergens = (extraction.allergens || []).slice().sort();
 const allergensChanged = JSON.stringify(beforeAllergens) !== JSON.stringify(afterAllergens);
 if (allergensChanged) diff.push({ field: "allergens", before: beforeAllergens, after: afterAllergens });
 
-console.log("\n--- Diff (nutrition + allergens only; cost, supplier, code, everything else untouched) ---");
+["packFormat", "storageConditions"].forEach((f) => {
+  const after = extraction[f];
+  if (after == null) return; // not extracted from this spec -- don't touch it
+  const before = matched[f] || "";
+  if (before !== after) diff.push({ field: f, before, after });
+});
+
+console.log("\n--- Diff (nutrition + allergens + pack format/storage only; cost, supplier, code, everything else untouched) ---");
 if (diff.length === 0) {
   console.log("No changes -- live ingredient already matches the spec.");
   process.exit(0);
@@ -99,9 +106,47 @@ if (!apply) {
 }
 
 const updated = Object.assign({}, matched);
-nutritionFields.forEach((f) => { if (extraction.nutrition[f] != null) updated[f] = extraction.nutrition[f]; });
+const intendedNutrition = {};
+nutritionFields.forEach((f) => { if (extraction.nutrition[f] != null) { updated[f] = extraction.nutrition[f]; intendedNutrition[f] = extraction.nutrition[f]; } });
 if (allergensChanged) updated.allergens = afterAllergens;
+const intendedPackFields = {};
+["packFormat", "storageConditions"].forEach((f) => { if (extraction[f] != null) { updated[f] = extraction[f]; intendedPackFields[f] = extraction[f]; } });
 
 const result = curlPut(`${API_BASE}/api/ingredients/${matched.id}`, updated);
 console.log(`\nPUT status: ${result.status}`);
-console.log(result.body);
+if (result.status !== "200") {
+  console.log(result.body);
+  console.log("\nWrite did not return 200 -- treat this as failed, do not assume it partially landed.");
+  process.exit(1);
+}
+
+// --- Post-upload verification: never just trust the PUT response. Re-fetch the ingredient
+// fresh from the live API and confirm every field we intended to change actually landed. ---
+console.log("\n--- Post-upload verification (re-fetching live ingredient, not trusting the PUT response) ---");
+const verifyList = curlGet(`${API_BASE}/api/ingredients?includeUnlinked=true`);
+const verifyIng = verifyList.find((i) => i.id === matched.id);
+if (!verifyIng) {
+  console.log(`POST-UPLOAD VERIFICATION FAILED: ingredient id ${matched.id} not found on re-fetch.`);
+  process.exit(1);
+}
+const mismatches = [];
+Object.keys(intendedNutrition).forEach((f) => {
+  if (verifyIng[f] !== intendedNutrition[f]) mismatches.push({ field: f, intended: intendedNutrition[f], live: verifyIng[f] });
+});
+if (allergensChanged) {
+  const liveAllergens = (verifyIng.allergens || []).slice().sort();
+  if (JSON.stringify(liveAllergens) !== JSON.stringify(afterAllergens)) mismatches.push({ field: "allergens", intended: afterAllergens, live: liveAllergens });
+}
+Object.keys(intendedPackFields).forEach((f) => {
+  if ((verifyIng[f] || "") !== intendedPackFields[f]) mismatches.push({ field: f, intended: intendedPackFields[f], live: verifyIng[f] });
+});
+
+if (mismatches.length === 0) {
+  console.log("POST-UPLOAD VERIFICATION: PASSED — every intended field matches what's live.");
+  process.exit(0);
+} else {
+  console.log("POST-UPLOAD VERIFICATION FAILED — the following field(s) do not match what was intended to be written:");
+  mismatches.forEach((m) => console.log(`  ${m.field}: intended ${JSON.stringify(m.intended)}, but live is ${JSON.stringify(m.live)}`));
+  console.log("\nThis needs manual investigation before trusting this ingredient's data.");
+  process.exit(1);
+}
