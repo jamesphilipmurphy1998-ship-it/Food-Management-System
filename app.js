@@ -6583,7 +6583,64 @@
     renderLabel(n, r);
     renderHFSS(r);
     renderAllergens(r);
+    renderNutritionByIngredient(r);
     renderCosting(r);
+  }
+
+  var NUTRITION_BREAKDOWN_COLUMNS = [
+    { key: "kj", label: "Energy (kJ)", dp: 0 },
+    { key: "kcal", label: "Energy (kcal)", dp: 0 },
+    { key: "fat", label: "Fat (g)", dp: 1 },
+    { key: "sat", label: "Saturates (g)", dp: 1 },
+    { key: "carb", label: "Carbs (g)", dp: 1 },
+    { key: "sugar", label: "Sugars (g)", dp: 1 },
+    { key: "fibre", label: "Fibre (g)", dp: 1 },
+    { key: "protein", label: "Protein (g)", dp: 1 },
+    { key: "salt", label: "Salt (g)", dp: 2 }
+  ];
+
+  // Each ingredient/sub-recipe line's actual contribution to the recipe's per-100g totals,
+  // based on the real quantity used -- NOT the ingredient's own unscaled per-100g profile (that
+  // would just repeat the Ingredient Centre data regardless of how much is used). Uses the same
+  // weight-in-grams and scale-to-100g logic as Recipes.calcRecipeNutrition, so each column here
+  // sums to that same field's value in the Full Nutrition Profile table above.
+  function renderNutritionByIngredient(recipe) {
+    var ingredients = Ingredients.getIngredients();
+    var recipes = Recipes.getRecipes();
+    var table = document.getElementById("nutrition-by-ingredient-matrix");
+    var totalWeight = (recipe.ingredients || []).reduce(function (s, ri) { return s + recipeLineWeightForTotal(ri); }, 0);
+    var html = "<thead><tr><th>Ingredient</th>";
+    NUTRITION_BREAKDOWN_COLUMNS.forEach(function (c) { html += '<th style="font-size:9px;writing-mode:vertical-lr;text-align:center;padding:4px 2px">' + c.label + "</th>"; });
+    html += "</tr></thead><tbody>";
+    if (totalWeight <= 0) {
+      table.innerHTML = html + "</tbody>";
+      return;
+    }
+    var scale = 100 / totalWeight;
+    (recipe.ingredients || []).forEach(function (ri) {
+      var name; var lineNut = null; var ingBadge;
+      var qtyG = recipeLineWeightForTotal(ri);
+      if (ri.subRecipeId) {
+        var subRec = recipes.find(function (r) { return r.id === ri.subRecipeId; });
+        if (!subRec) return;
+        name = subRec.name;
+        lineNut = Recipes.calcRecipeNutrition(subRec, ingredients);
+      } else {
+        var ing = ingredients.find(function (i) { return i.id === ri.ingredientId; });
+        if (!ing) return;
+        name = ing.name;
+        lineNut = ing;
+      }
+      ingBadge = getRecipeLineBadge(ri, ingredients, recipes);
+      html += "<tr><td style=\"font-size:12px\">" + ingBadge + name + "</td>";
+      var f = qtyG / 100 * scale;
+      NUTRITION_BREAKDOWN_COLUMNS.forEach(function (c) {
+        var contribution = (Number(lineNut[c.key]) || 0) * f;
+        html += '<td style="text-align:center;font-size:12px">' + (qtyG > 0 ? Data.round(contribution, c.dp) : '<span style="color:var(--nc-gray-200)">—</span>') + "</td>";
+      });
+      html += "</tr>";
+    });
+    table.innerHTML = html + "</tbody>";
   }
 
   function renderLabel(n, recipe) {

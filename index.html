@@ -796,6 +796,13 @@
           <div class="traffic-lights" id="traffic-lights"></div>
           <p style="font-size:11px;color:var(--nc-gray-400);margin-top:4px">UK Front of Pack colour coding per 100g (food thresholds)</p>
         </div>
+        <div class="card">
+          <div class="card-header"><h2>Nutrition Breakdown by Ingredient</h2></div>
+          <div style="overflow-x:auto">
+            <table class="data-table" id="nutrition-by-ingredient-matrix"></table>
+          </div>
+          <p style="font-size:11px;color:var(--nc-gray-400);margin-top:8px;">Each ingredient's actual contribution to the recipe's per-100g totals above, based on the quantity used — rows sum to the Full Nutrition Profile row.</p>
+        </div>
       </div>
 
       <!-- Tab: Label -->
@@ -1883,7 +1890,7 @@
 <script src="hfss.js?v=20260923-cache-buster"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="app.js?v=20260928-pack-size"></script>
+<script src="app.js?v=20260928-nutrition-breakdown"></script>
 <script src="excel-import.js?v=20260916-parentnoofportions-col-k"></script>
 <script src="reports.js?v=20260923-cache-buster"></script>
 </body>
