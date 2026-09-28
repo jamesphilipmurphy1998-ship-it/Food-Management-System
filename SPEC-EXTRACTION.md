@@ -57,6 +57,16 @@ starts, and (b) requiring the row label to *start with* the category name rather
 contain it anywhere. Documented here specifically so a future change to this matching logic
 doesn't reintroduce the same class of bug.
 
+## Standing rule: ask, always, whenever anything is questionable
+
+Whenever any part of an input is questionable — an unfamiliar format, a name that doesn't
+obviously match, a value that doesn't read as expected, a code that looks wrong, a structural
+oddity in the spec — **the user must always be asked to confirm before proceeding.** Every
+time, regardless of how many similar cases have already been confirmed before, and regardless
+of how routine the question starts to feel. Two specs using the exact same override flag for
+the exact same *kind* of problem still each get their own question, with their own specifics,
+because the specifics are what the person is actually confirming — never the general pattern.
+
 ## Why this stays safe without relying on anyone "thinking carefully"
 
 Everything above — the refuse-on-uncertainty rules, the plausibility checks, the name-mismatch
@@ -763,3 +773,44 @@ four were genuinely `0`, safe to proceed.
   pipeline start deciding these on its own after the first confirmation.
 - Remaining in this batch, still to process one at a time: Tom Yum Paste (106170), SS3 Soy Sauce
   No Added Alcohol Bulk (107170).
+
+### 2026-09-28 — two more specs; --override-code extended to a populated-but-wrong code, and to a genuinely missing nutrition row
+
+**Standing rule, made explicit here per the user:** whenever any part of an input is
+questionable -- an unfamiliar format, a mismatched name, a value that doesn't read as
+expected, a code that looks wrong -- the user must always be asked to confirm before
+proceeding, every single time, regardless of how many times a similar case has already been
+confirmed before. This is not a one-off preference; it's the standing rule this whole pipeline
+is built around (see "Why this stays safe" above). A fresh AI reading only this doc should
+treat *any* moment of "is this right?" as a hard stop for a question, not a judgment call to
+make alone.
+
+- **Java Curry Mix (105950/105006) → `RM Java Curry Mix House Foods`.** The spec's own Product
+  Code cell was **filled in and consistent across every sheet, but with the manufacturer's own
+  code ("F0550"), not ours.** This is a different case from a blank cell (Coconut Milk,
+  previous batch) -- `--override-code` only covered "blank everywhere" until now. Extended it
+  to also cover "populated everywhere but with a different, non-Wasabi code," under the exact
+  same precondition: every sheet must agree with itself first (still refuses outright if sheets
+  disagree with EACH OTHER, regardless of the flag). User confirmed 105950 is correct, F0550 is
+  House Foods' own code. Name mismatch also flagged ("House Java Curry Sauce Mix KB No Milk
+  20kg" vs "RM Java Curry Mix House Foods") -- confirmed same product. Applied, verified.
+- **Xanthan Gum (106251/105019) → `RM Xanthan Gum`.** The most structurally unusual spec seen
+  so far -- an older template variant with THREE separate issues, each confirmed individually:
+  1. The "3 Ingredient & Recipe" sheet's Product Code cell was blank, AND its Name cell
+     mistakenly held the code instead of a real name. The REAL name ("XANTHAN GUM") and REAL
+     code ("106251 (105019)") were both present and correctly labeled on the "1&2 Manufacturer
+     Detail" sheet, just at a shifted row offset (row 2/3 instead of the usual row 3/4) --
+     evidence of an older template revision. User confirmed using those values.
+  2. This template's nutrition panel has **no Fibre row at all** (jumps straight from Protein
+     to Sodium/Potassium/Calcium) -- not blank, genuinely absent from the row layout. Extended
+     `--allow-blank-nutrition` (previously only for a found-but-blank cell) to also cover a row
+     that doesn't exist in the template at all -- still opt-in per field, still requires the
+     row to actually be checked and shown to the user first, still refuses any field NOT
+     explicitly named.
+  3. Salt stated as literal "n/a" with Sodium = 390mg given -- same
+     `--derive-salt-from-sodium` mechanism as Coconut Milk, asked and confirmed again (never
+     assumed from the earlier precedent).
+  4. Pack Format extracted as "CLEAR LINERS" failed the plausibility check (describes the bag's
+     lining material, not the pack type). Initially going to leave it blank, but the user
+     pointed out Pack Size ("25KG BAGS") already tells us the real format -- corrected to write
+     "Bag" instead of leaving it unset. Applied, verified.

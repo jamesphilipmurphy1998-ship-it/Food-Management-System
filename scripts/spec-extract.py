@@ -10,13 +10,18 @@ format the code doesn't recognise must come back as `"status": "cannot_extract"`
 
 Usage: python scripts/spec-extract.py "<path to .xlsx>" [--override-code CODE[/ALTCODE]]
 
---override-code is for the narrow case where the Product Code cell is genuinely blank on
-every sheet of the document itself (nothing to disagree with) and a human has manually
-confirmed, outside this script, what the code should be (e.g. from the filename). It NEVER
-overrides a code that was actually found in the document -- if C4 has a real value, that
-value is what's used/checked, full stop; a blank-vs-supplied conflict never happens because
-the override only fires when every sheet's C4 was empty. The output is stamped with a
-warning so this is never silently indistinguishable from a code the document itself stated.
+--override-code covers two narrow cases, both requiring the document to be internally
+self-consistent (every sheet's C4 either blank or in exact agreement -- a real disagreement
+between sheets is refused regardless of this flag, full stop):
+  1. The Product Code cell is blank on every sheet, and a human has manually confirmed,
+     outside this script, what the code should be (e.g. from the filename).
+  2. The Product Code cell consistently states a DIFFERENT code across every sheet -- e.g. the
+     manufacturer's own product code rather than ours -- and a human has confirmed the correct
+     code to use instead.
+Either way this is a human decision substituting for what the document states, never an
+automatic inference, and the output is always stamped with a warning naming exactly what was
+overridden and why, so it's never silently indistinguishable from a code the document itself
+stated correctly.
 Exit code 0 with status "ok" only when the format was fully recognised and nothing looked off.
 Exit code 1 (status "cannot_extract" or "extracted_with_warnings") otherwise -- spec-apply.js
 refuses --apply unless it sees status "ok".
@@ -147,20 +152,35 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
     # --- Product code + name ---
     ws = wb[recipe_sheet_name]
     name = ws["C3"].value
-    raw_code = str(ws["C4"].value or "").strip()
-    # Every sheet's C4 must be blank for the override to be eligible -- if ANY sheet has a real
-    # value, that's the document's own stated code (or a real disagreement to flag), and the
-    # override never applies. This is checked BEFORE using override_code for anything.
-    all_c4_blank = not raw_code and all(
+    raw_code_from_doc = str(ws["C4"].value or "").strip()
+    # Whether every OTHER sheet agrees with the recipe sheet's own C4 (blank sheets don't count
+    # as disagreeing -- only a sheet with its own different non-blank value does). This is the
+    # single precondition for --override-code, in BOTH its forms below: the document must be
+    # internally self-consistent (every sheet either blank or in agreement) before a human's
+    # override is allowed to substitute a different code. A document where sheets actively
+    # disagree with each other is refused regardless of override_code -- that looks like
+    # corrupted or mixed-up data, not something a single confirmed code can safely paper over.
+    doc_self_consistent = all(
         not (wb[sn]["C4"].value and str(wb[sn]["C4"].value).strip())
+        or str(wb[sn]["C4"].value).strip() == raw_code_from_doc
         for sn in wb.sheetnames if sn != recipe_sheet_name
     )
-    if not raw_code and override_code and all_c4_blank:
+    raw_code = raw_code_from_doc
+    if override_code and doc_self_consistent and not raw_code_from_doc:
         raw_code = override_code
         warnings.append(
             "Product Code cell was blank on every sheet of the document itself -- code %r was "
             "supplied via --override-code (human-confirmed, not read from the spec document). "
             "Flagging so this is never mistaken for a code the document actually stated." % override_code)
+    elif override_code and doc_self_consistent and raw_code_from_doc and raw_code_from_doc != override_code:
+        # The document DOES consistently state a code -- just not ours (e.g. the manufacturer's
+        # own product code). Overriding a populated field is a stronger action than filling a
+        # blank one, so this branch is distinguished in the warning text on purpose.
+        raw_code = override_code
+        warnings.append(
+            "Product Code cell consistently states %r across every sheet of the document -- "
+            "this does NOT look like our own ingredient code, so it was replaced with %r via "
+            "--override-code (human-confirmed: %r is the manufacturer's own code, not ours)." % (raw_code_from_doc, override_code, raw_code_from_doc))
     elif not raw_code:
         errors.append("Product Code cell (C4 on '%s') is empty" % recipe_sheet_name)
     m = re.match(r"^([A-Za-z0-9\-]+)", raw_code) if raw_code else None
@@ -172,9 +192,9 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
 
     # Every sheet must agree on the same product code -- a mismatch means either a corrupted
     # file or (more dangerously) sheets copy-pasted from a different product's spec. Skipped
-    # when the code came from --override-code, since in that case every sheet's C4 was blank
-    # by construction (that's the precondition the override required above).
-    if not (override_code and all_c4_blank):
+    # when the code came from --override-code, since doc_self_consistent (checked above, against
+    # the ORIGINAL document value) already proved every sheet agreed before the override applied.
+    if not (override_code and doc_self_consistent and raw_code != raw_code_from_doc):
         for sn in wb.sheetnames:
             if sn == recipe_sheet_name:
                 continue
@@ -207,7 +227,20 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
                 target = label.rstrip("*").strip().lower()
                 found_row = labels.get(target)
                 if found_row is None:
-                    errors.append("Nutrition row for %r not found in '%s' -- template may have changed" % (label, nut_sheet_name))
+                    # A missing row is normally refused outright (see module docstring -- it
+                    # could mean the format changed and a category silently dropped). The one
+                    # exception is a field a human has explicitly named via
+                    # --allow-blank-nutrition, confirming (after being shown the actual sheet,
+                    # each time) that this specific template genuinely omits it -- e.g. an older
+                    # template with no Fibre row at all. Any field NOT named there still hits the
+                    # hard refusal below, so this doesn't weaken the general protection.
+                    if field in allow_blank_nutrition:
+                        warnings.append(
+                            "Nutrition row for %r not found in '%s' at all (not just blank -- the row itself "
+                            "doesn't exist in this template) -- left unset per --allow-blank-nutrition "
+                            "(human-confirmed this template genuinely omits it)." % (label, nut_sheet_name))
+                    else:
+                        errors.append("Nutrition row for %r not found in '%s' -- template may have changed" % (label, nut_sheet_name))
                     continue
                 raw_val = ns.cell(row=found_row, column=per100_col).value
                 parsed, problem = parse_nutrition_value(raw_val, unit)
