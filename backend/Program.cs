@@ -649,7 +649,16 @@ document.getElementById('f').addEventListener('submit', async (ev) => {
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    try { db.Database.Migrate(); } catch { /* ignore */ }
+    try
+    {
+        db.Database.Migrate();
+    }
+    catch (Exception ex)
+    {
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        logger.LogCritical(ex, "Database migration failed on startup — schema may be out of date.");
+        throw;
+    }
     // Ensure columns exist (Supabase may have stale schema)
     try
     {
