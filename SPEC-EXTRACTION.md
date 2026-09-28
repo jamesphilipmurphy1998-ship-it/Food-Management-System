@@ -305,6 +305,38 @@ normalized or rejected silently, a race with someone else editing the same ingre
   field(s) and what's live vs. what was intended, and **exits non-zero** — this is a hard
   signal that the upload needs manual investigation, not a "probably fine."
 
+## Persistence guarantee: a later cost sync can't delete spec-uploaded nutrition
+
+A real concern: NutriCost's separate Excel/BOM cost-import flow (`excel-import.js`) periodically
+pulls updated **cost** data for existing ingredients from a supplier sheet. If that import ever
+replaced an ingredient's *entire* record wholesale, it would blank out nutrition/allergens the
+spec pipeline had written, every time costs got resynced.
+
+**Verified this is not the case — checked the actual import code, not assumed.** The
+"update existing ingredient" merge path in `excel-import.js` is field-by-field additive, never
+a full overwrite:
+
+```js
+if (kj > 0) existing.kj = kj;
+if (kcal > 0) existing.kcal = kcal;
+// ... same guard for every nutrition field
+```
+
+A cost-only sheet has no nutrition columns mapped, so `kj`/`kcal`/etc. all come out `0` for
+each row — and `0 > 0` is false, so the existing value (including anything the spec pipeline
+wrote) is left alone, not zeroed. Allergens, Pack Size, Pack Format, and Storage Conditions
+aren't in that import path's field list **at all**, so they're preserved by omission — there's
+no code path there that could touch them even accidentally.
+
+This holds symmetrically in the other direction too: `spec-apply.js`'s write starts from
+`Object.assign({}, matched)` — a full copy of the ingredient's *current* live state — and only
+overwrites the specific nutrition/allergen/pack fields it actually extracted. A nutrition
+upload can never touch cost, supplier, code, or anything else on the record.
+
+**Verified live (2026-09-28):** `RM Black Bean Paste` currently carries both — cost `£3.69564`
+(from the original BOM import, untouched by any of today's spec writes) and the nutrition/
+allergen/pack data this pipeline wrote earlier the same day. Neither has erased the other.
+
 ## Write workflow (built)
 
 Per the earlier discussion on reliability: **propose, don't auto-write.** Two scripts:
@@ -519,3 +551,27 @@ flagged, never silently produce a wrong upload (allergen mismatch risk):**
 - Verified against Black Bean Paste: correctly found 78 recipes, including multi-layer nesting
   (`HR BLACK BEAN SAUCE` uses it directly; `WASABI KOREAN BLACK BEAN CHICKEN WITH RICE` uses
   `HR BLACK BEAN SAUCE` as a sub-recipe — both surfaced correctly).
+- While investigating the 78-count with the user, traced one branch precisely to confirm the
+  traversal itself was correct: `HR Fire Sauce` genuinely uses Black Bean Paste via `P00018`
+  (a legitimate single-ingredient wrapper recipe), but the count is inflated by an *already
+  known* separate bug — `RM Wasabi Sachet 1.5g` (107140, already in `KNOWN_BAD_RECIPE_CODES`
+  from the accuracy scan) has a malformed sub-recipe line pointing to an entire chicken dish,
+  and since nearly every sushi set includes that same free sachet, dozens of unrelated sets get
+  transitively pulled in. Confirmed this is a pre-existing data defect, not a bug in the new
+  flow-up code — no fix applied yet (offered, not yet actioned).
+
+**Same day, confirmed (not assumed) that a cost-only import can't delete spec-uploaded
+nutrition:**
+
+- User raised a real integrity concern: does NutriCost's separate Excel/BOM cost-import flow
+  wipe nutrition when it resyncs costs for an existing ingredient? Read the actual import code
+  in `excel-import.js` rather than assuming — its "update existing ingredient" path only
+  overwrites a nutrition field `if (value > 0)`, so a cost-only sheet (nutrition columns blank/
+  unmapped, coming out as `0`) leaves existing nutrition untouched. Allergens/Pack Size/Pack
+  Format/Storage Conditions aren't touched by that import path at all.
+- Holds symmetrically the other way too: `spec-apply.js`'s write starts from a full copy of the
+  live record (`Object.assign({}, matched)`) and only overwrites the fields it extracted, so a
+  nutrition upload can never touch cost/supplier/code either.
+- Verified live: `RM Black Bean Paste` currently carries both its original BOM cost
+  (`£3.69564`) and today's spec-uploaded nutrition/allergen/pack data simultaneously — neither
+  has erased the other.
