@@ -196,6 +196,28 @@ static bool VerifyPassword(string password, string stored)
 
 static bool LooksLikeEmail(string? s) => !string.IsNullOrWhiteSpace(s) && s.Contains('@') && s.Contains('.');
 
+// Lets the homepage (or approval app) send a user to /login?next=<url> and land back where they
+// came from once signed in — accounts are shared across every Wasabi Functions app on this host
+// via the same cookie, this just makes the round-trip convenient. Only allows same-hostname
+// URLs (any port/scheme) so it can't be abused as an open redirect to an external site.
+static bool IsSafeLocalNext(string? next, string requestHost)
+{
+    if (string.IsNullOrWhiteSpace(next)) return false;
+    if (!Uri.TryCreate(next, UriKind.Absolute, out var uri)) return false;
+    if (uri.Scheme != "http" && uri.Scheme != "https") return false;
+    return string.Equals(uri.Host, requestHost, StringComparison.OrdinalIgnoreCase);
+}
+
+// Sign-in now happens once at the Wasabi Functions homepage (port 5000), not separately inside
+// each app — Recipe Center and Approval Process just trust the shared cookie afterwards. Same
+// hostname convention every other cross-app link on this host already uses; Wasabi Timeline is
+// unaffected (it has its own Entra sign-in and never goes through this).
+static string HomepageSignInUrl(HttpContext ctx)
+{
+    var self = $"{ctx.Request.Scheme}://{ctx.Request.Host}{ctx.Request.Path}{ctx.Request.QueryString}";
+    return $"{ctx.Request.Scheme}://{ctx.Request.Host.Host}:5000/?next=" + Uri.EscapeDataString(self);
+}
+
 if (authLocal)
 {
     app.UseAuthentication();
@@ -225,7 +247,8 @@ if (authLocal)
         if (path.Equals("/api/auth/logout", StringComparison.OrdinalIgnoreCase))
         {
             await ctx.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            ctx.Response.Redirect("/login");
+            var logoutNext = ctx.Request.Query["next"].ToString();
+            ctx.Response.Redirect(IsSafeLocalNext(logoutNext, ctx.Request.Host.Host) ? logoutNext : "/login");
             return;
         }
 
@@ -237,7 +260,7 @@ if (authLocal)
         var isEntry = path == "/" || path.Equals("/index.html", StringComparison.OrdinalIgnoreCase);
         var authed = ctx.User?.Identity?.IsAuthenticated ?? false;
 
-        if (isEntry && !authed) { ctx.Response.Redirect("/login"); return; }
+        if (isEntry && !authed) { ctx.Response.Redirect(HomepageSignInUrl(ctx)); return; }
         if (path.StartsWith("/api", StringComparison.OrdinalIgnoreCase) && !authed)
         {
             ctx.Response.StatusCode = 401;
@@ -248,7 +271,7 @@ if (authLocal)
                     && !path.Equals("/styles.css", StringComparison.OrdinalIgnoreCase)
                     && !path.EndsWith(".js", StringComparison.OrdinalIgnoreCase))
         {
-            ctx.Response.Redirect("/login");
+            ctx.Response.Redirect(HomepageSignInUrl(ctx));
             return;
         }
         await next();
@@ -267,14 +290,24 @@ button{margin-top:18px;width:100%;padding:9px;background:#2f7a4d;color:#fff;bord
 <label>Email</label><input id="u" type="email" autocomplete="username" required/>
 <label>Password</label><input id="p" type="password" autocomplete="current-password" required/>
 <button type="submit">Sign in</button><div class="err" id="e"></div>
-<div class="link">No account yet? <a href="/signup">Create one</a></div>
+<div class="link">No account yet? <a id="signup-link" href="/signup">Create one</a></div>
 </form><script>
+(function () {
+  var next = new URLSearchParams(location.search).get('next');
+  if (next) document.getElementById('signup-link').href = '/signup?next=' + encodeURIComponent(next);
+})();
 document.getElementById('f').addEventListener('submit', async (ev) => {
   ev.preventDefault();
   const u = document.getElementById('u').value.trim();
   const p = document.getElementById('p').value;
   const r = await fetch('/api/auth/local/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email:u,password:p})});
-  if (r.ok) { sessionStorage.setItem('ncJustSignedIn','1'); location.href = '/'; return; }
+  if (r.ok) {
+    const next = new URLSearchParams(location.search).get('next');
+    const target = next && /^https?:\/\//i.test(next) && new URL(next).hostname === location.hostname ? next : '/';
+    if (target === '/') sessionStorage.setItem('ncJustSignedIn','1');
+    location.href = target;
+    return;
+  }
   document.getElementById('e').textContent = 'Login failed — check your email and password.';
 });
 </script></body></html>
@@ -295,15 +328,25 @@ button{margin-top:18px;width:100%;padding:9px;background:#2f7a4d;color:#fff;bord
 <label>Email</label><input id="u" type="email" autocomplete="username" required/>
 <label>Password</label><input id="p" type="password" autocomplete="new-password" minlength="6" required/>
 <button type="submit">Create account</button><div class="err" id="e"></div>
-<div class="link">Already have an account? <a href="/login">Log in</a></div>
+<div class="link">Already have an account? <a id="login-link" href="/login">Log in</a></div>
 </form><script>
+(function () {
+  var next = new URLSearchParams(location.search).get('next');
+  if (next) document.getElementById('login-link').href = '/login?next=' + encodeURIComponent(next);
+})();
 document.getElementById('f').addEventListener('submit', async (ev) => {
   ev.preventDefault();
   const d = document.getElementById('d').value.trim();
   const u = document.getElementById('u').value.trim();
   const p = document.getElementById('p').value;
   const r = await fetch('/api/auth/local/signup',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({displayName:d,email:u,password:p})});
-  if (r.ok) { sessionStorage.setItem('ncJustSignedIn','1'); location.href = '/'; return; }
+  if (r.ok) {
+    const next = new URLSearchParams(location.search).get('next');
+    const target = next && /^https?:\/\//i.test(next) && new URL(next).hostname === location.hostname ? next : '/';
+    if (target === '/') sessionStorage.setItem('ncJustSignedIn','1');
+    location.href = target;
+    return;
+  }
   const j = await r.json().catch(() => ({}));
   document.getElementById('e').textContent = j.error || 'Could not create account.';
 });
