@@ -6,9 +6,9 @@ and allergen data matched to the live NutriCost ingredient by **code** and writt
 the database — no manual re-typing, and the source document itself is never stored on the site
 (only the matched values persist, on the ingredient row that already exists).
 
-**Status: methodology documented, matching verified against a real spec. The write pipeline
-(actually calling `PUT /api/ingredients/{id}`) is not built yet** — this file exists so the
-extraction rules are nailed down and repeatable before any code writes to production data.
+**Status: pipeline built and proven on one real ingredient (Black Bean Paste, 2026-09-28).**
+Deliberately not yet run against the rest of the ingredient library — first confirming the
+extraction/matching/write approach is right on this one before doing more.
 
 ## Matching rule: exact code, never fuzzy
 
@@ -114,31 +114,54 @@ this spec's Vegetable/Fruit rows — those track ingredient composition for alle
 purposes, not whether the product itself counts as fruit/veg/nut for HFSS scoring. Don't set
 `Fvn` from this spec; leave it to whoever reviews the extraction.
 
-## Write workflow (not yet built)
+## Write workflow (built)
 
-Per the earlier discussion on reliability: **propose, don't auto-write.**
+Per the earlier discussion on reliability: **propose, don't auto-write.** Two scripts:
 
-1. Read the spec, extract product code + nutrition + allergens as above.
-2. Look up the code in `GET /api/ingredients`. Not found → stop, flag it, don't guess.
-3. Show a before/after diff against the matched ingredient's current values (cost is never
-   touched by this — specs don't carry cost, only nutrition/allergens).
-4. On confirmation, `PUT /api/ingredients/{id}` with only the changed fields — everything else
-   on the record (cost, supplier, code, etc.) stays exactly as it was.
-5. The existing ingredient version-history mechanism (`ingredient_versions` table, already
-   built) captures the before/after automatically as part of that save — no separate audit
-   trail needs building.
-6. The source `.xlsx` itself is never uploaded, stored, or referenced by the server — it stays
-   in the OneDrive folder, read once at extraction time.
+1. **`python scripts/spec-extract.py "<path to .xlsx>"`** — read-only, extracts product code
+   (+ alt/parenthetical code when present — handles specs with one code or two), nutrition
+   (confirmed: ingredient nutrition fields are always per-100g/100ml, same basis the spec's
+   own "Per 100g" column uses — no unit conversion needed), and allergens. Also cross-checks
+   every sheet in the workbook agrees on the same Product Code, and runs the
+   kcal-vs-macros sanity check, both surfaced as `warnings` in the output rather than silently
+   trusted. Outputs JSON.
+2. **`node scripts/spec-apply.js <extraction.json> [--apply]`** — matches the extracted code
+   against the live ingredients (tries the primary code, then the alt code if the primary
+   doesn't match anything — handles both the two-code and one-code cases). No match → stops
+   and says so, never guesses or creates a new ingredient. Prints a before/after diff of just
+   the nutrition + allergen fields (cost, supplier, code, everything else on the record is
+   never touched). Without `--apply` it's a dry run (diff only); with `--apply` it writes via
+   `PUT /api/ingredients/{id}`, sending back the full updated record so the write can be
+   confirmed immediately from the response.
+   - Needs a signed-in session cookie jar (`COOKIE_JAR` env var, default `/tmp/qa_cookies.txt`)
+     — **on Windows, pass the actual Windows path** (e.g.
+     `C:\Users\...\AppData\Local\Temp\qa_cookies.txt`), not the Git-Bash-style `/tmp/...` path
+     — `execSync`'s shell is `cmd.exe`, not Git Bash, so the POSIX-style path silently fails to
+     resolve and curl just doesn't send the cookie (shows up as an unexplained 401).
+3. The existing ingredient version-history mechanism (`ingredient_versions` table) captures the
+   before/after automatically as part of the save — no separate audit trail was built, it
+   didn't need to be.
+4. The source `.xlsx` is never uploaded, stored, or referenced by the server — read once,
+   locally, at extraction time.
 
 ## Extraction log
 
 Append an entry each time a spec is actually processed (once the write pipeline exists) —
 mirrors `ACCURACY-SCAN.md`'s results-log pattern.
 
-### 2026-09-28 — methodology only, no write performed
+### 2026-09-28 — methodology derived, pipeline built, first live write
 
 - Inspected `107168 (P00018) Black Bean Paste RM Spec V3 (06.02.25).xlsx` (the only file in the
-  folder currently) to derive the field mapping and matching rule above.
-- Matched code `107168` → `RM Black Bean Paste` in the live system, confirmed via API.
-- Did not write anything — this run was purely to establish the methodology in this file before
-  any code touches production ingredient data.
+  folder at the time) to derive the field mapping and matching rule above.
+- Built `scripts/spec-extract.py` + `scripts/spec-apply.js`, matching the documented workflow.
+- Ran the full pipeline against this one spec. Matched code `107168` → `RM Black Bean Paste`
+  (id `id_2e978f66f`) on the primary code (didn't need the `P00018` fallback this time). No
+  extraction warnings — sheet cross-check and kcal-sanity-check both passed clean.
+- **Diff shown and confirmed by the user before writing:** kj 0→470.7, kcal 0→112.3, fat
+  0→3.1, sat unchanged (0→0), carb 0→8.9, sugar 0→0.5, protein 0→9.3, fibre 0→5.8, salt 0→5.1,
+  allergens `[]`→`["Soya"]`.
+- **Applied — `PUT` returned 200**, response confirmed every nutrition/allergen field landed
+  correctly and nothing else on the record changed (cost stayed £3.69564, code/supplier
+  untouched).
+- Deliberately stopping here rather than running the rest of the library — first confirming
+  this one is right, then testing more ingredients once satisfied.
