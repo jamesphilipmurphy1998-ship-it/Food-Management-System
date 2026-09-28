@@ -8014,7 +8014,7 @@ desc: "Imported from " + (fname || "spreadsheet"),
   // Display labels only — the stored siteRole values ("admin"/"user") and every server-side
   // permission check stay as-is; this just renames what the tiers are called in the UI to match
   // how the team actually refers to them (same pairing as the Projects folders).
-  var US_ROLE_LABELS = { admin: "Technical", user: "Food Team" };
+  var US_ROLE_LABELS = { admin: "Technical", user: "Food Team", finance: "Finance", operations: "Operations" };
   function usRoleLabel(role) { return US_ROLE_LABELS[role] || role; }
 
   function loadUserSettings() {
@@ -8058,6 +8058,8 @@ desc: "Imported from " + (fname || "spreadsheet"),
           "<select class='us-role-select' onchange=\"changeUserRole('" + u.id + "', this.value)\">" +
             "<option value='user'" + (u.siteRole === "user" ? " selected" : "") + ">Food Team</option>" +
             "<option value='admin'" + (u.siteRole === "admin" ? " selected" : "") + ">Technical</option>" +
+            "<option value='finance'" + (u.siteRole === "finance" ? " selected" : "") + ">Finance</option>" +
+            "<option value='operations'" + (u.siteRole === "operations" ? " selected" : "") + ">Operations</option>" +
           "</select>" +
           "<span class='us-reset-link' onclick=\"resetUserPassword('" + u.id + "')\">Reset password</span>" +
         "</td>" +

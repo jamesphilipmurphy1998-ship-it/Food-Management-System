@@ -436,9 +436,11 @@ document.getElementById('f').addEventListener('submit', async (ev) => {
         if (!(ctx.User?.Identity?.IsAuthenticated ?? false)) return Results.Unauthorized();
         if ((ctx.User.FindFirstValue("site_role") ?? "user") != "admin") return Results.Forbid();
         var role = body.TryGetProperty("siteRole", out var rEl) ? rEl.GetString() : null;
-        if (role is not ("admin" or "user")) return Results.BadRequest(new { error = "siteRole must be 'admin' or 'user'" });
+        // "finance" and "operations" are new tiers, not wired into any permission yet — added
+        // now for the Approval Process work coming later, when each gets its own review stage.
+        if (role is not ("admin" or "user" or "finance" or "operations")) return Results.BadRequest(new { error = "siteRole must be 'admin', 'user', 'finance' or 'operations'" });
 
-        if (role == "user")
+        if (role != "admin")
         {
             var adminCount = await db.Database.SqlQueryRaw<int>("SELECT COUNT(*) AS \"Value\" FROM nutri_users WHERE site_role = 'admin'").FirstOrDefaultAsync();
             var targetIsAdmin = await db.Database.SqlQueryRaw<int>("SELECT 1 AS \"Value\" FROM nutri_users WHERE id = {0} AND site_role = 'admin' LIMIT 1", id).FirstOrDefaultAsync();

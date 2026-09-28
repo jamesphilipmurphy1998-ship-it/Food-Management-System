@@ -310,7 +310,7 @@
           <div class="us-card-header-icon" style="background:var(--nc-accent-light);color:var(--nc-green)">🛡</div>
           <div>
             <h2>Site permissions — full reference</h2>
-            <p>What each tier can do. There are two tiers today (Technical, Food Team) — built so more tiers can be added later without changing this structure.</p>
+            <p>What each tier can do. Built so more tiers can be added later without changing this structure.</p>
           </div>
         </div>
         <div class="us-card-body">
@@ -321,6 +321,14 @@
           <details class="us-accordion-item">
             <summary>Food Team</summary>
             <div class="us-accordion-body">Full read/write access to shared data — Ingredients, Recipes, Projects, Reports, Export Templates. Create, edit, save and duplicate your own recipes freely. Saved Comparisons are personal: only you ever see comparisons you saved. Cannot approve/un-approve a recipe, and cannot manage other accounts.</div>
+          </details>
+          <details class="us-accordion-item">
+            <summary>Finance</summary>
+            <div class="us-accordion-body">Not wired into any permission yet — same access as Food Team for now. Reserved for a future stage of the Approval Process (recipes/ingredients will route through Finance for review once that stage is added).</div>
+          </details>
+          <details class="us-accordion-item">
+            <summary>Operations</summary>
+            <div class="us-accordion-body">Not wired into any permission yet — same access as Food Team for now. Reserved for a future stage of the Approval Process, same as Finance.</div>
           </details>
           <table class="us-people-table" style="margin-top:16px">
             <thead><tr><th>Action</th><th style="width:110px">Technical</th><th style="width:110px">Food Team</th></tr></thead>
@@ -1896,7 +1904,7 @@
 <script src="hfss.js?v=20260923-cache-buster"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="app.js?v=20260928-4status-lifecycle"></script>
+<script src="app.js?v=20260928-finance-ops-tiers"></script>
 <script src="excel-import.js?v=20260916-parentnoofportions-col-k"></script>
 <script src="reports.js?v=20260923-cache-buster"></script>
 </body>
