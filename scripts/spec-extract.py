@@ -111,6 +111,12 @@ def parse_nutrition_value(val, expected_unit):
     # this never touches a case where parens are part of a real qualifier elsewhere in the text.
     if s.startswith("(") and s.endswith(")"):
         s = s[1:-1].strip()
+    # A stray trailing apostrophe/quote mark (e.g. "54.0'") -- confirmed as a plain typo against
+    # a real spec (Paprika Powder, 2026-09-28), not a unit or qualifier. Strip only a SINGLE
+    # trailing apostrophe/quote, never a leading one, so this doesn't touch something like a
+    # feet/inches notation that happens to use the same character meaningfully.
+    if s.endswith("'") or s.endswith('"'):
+        s = s[:-1].strip()
     m = _re.match(r"^([\d.]+)\s*([A-Za-z]*)$", s)
     if not m:
         return None, "unparseable"

@@ -955,3 +955,63 @@ make alone.
   extraction, `status: "ok"`. Name mismatch ("Burnt Sugar Syrup NC0020 - CARAMEL13" vs "RM
   Plain Caramel (Burnt Sugar Syrup)" -- both key phrases present, reordered, supplier codes
   added) confirmed. Applied, verified.
+
+### 2026-09-28 — 8 more specs; a new document-type refusal, and swapped code/name labels
+
+- **Cornflour (106189) — not a Raw Material Specification at all.** The file supplied is a
+  completely different document type: `TECH-PROCESS-20 "Raw Material Quality Attribute Sheet"`
+  (a single "QAS" sheet covering organoleptic goods-in criteria -- appearance, flavour, aroma,
+  texture, foreign bodies) rather than `TECH-PROCESS-19 "Raw Material Specification"`. It
+  contains **no nutrition or allergen data anywhere** -- not blank fields, the sections simply
+  don't exist in this document type. Correctly refused (`cannot_extract`, wrong sheet names)
+  before any override flag was even considered -- this class of problem isn't a formatting
+  quirk to fix, it's the wrong document. Reported back plainly; the real spec still needs to be
+  sourced.
+- **Gluten-Free Soy Sauce Sachet (100681) → live ingredient of the same name.** Clean
+  extraction, `status: "ok"`, no name mismatch. Applied, verified.
+- **Industrial Noodles (103895/105076) → `RM Noodle Industrial`.** The Manufacturer Detail
+  sheet had its OWN label/value pairs swapped with each other -- "Product Name :" held the
+  code, "Wasabi Product Code :" held the name "Industrial Noodles". Confirmed and used
+  `--override-code`. Also: no Fibre row (same older-template gap), and Salt cell contained only
+  a stray backtick character with Sodium also N/A (nothing to derive from) -- confirmed left
+  unset via a manual patch (the backtick was an "unparseable" error, not a "blank" one, so
+  `--allow-blank-nutrition` didn't cover it automatically; handled as a one-off rather than
+  extending the flag's scope to catch every unparseable case).
+- **Sriracha Mayonnaise (104634/105087) → `Sriracha Mayo Sachet`.** Confirmed the extraction's
+  zero-allergens result was genuinely correct (not a missed row) by checking Egg/Milk/Soya/
+  Mustard explicitly -- all stated "N" (this is a vegan mayo). Pack Format ("Laminate")
+  described the material, not the type; the 15g pack size made clear it's a sachet, matching
+  the established soy-sauce-sachet convention -- written as "Sachet".
+- **Paprika Powder (106160/105017) → `RM Paprika Powder`.** Same blank-code/Manufacturer-Detail
+  pattern. Carbohydrate cell read `"54.0'"` -- a stray trailing apostrophe, confirmed as a plain
+  typo and generalised into `parse_nutrition_value()` (strip a single trailing apostrophe/quote
+  mark). Sanity check failed once carb was corrected (282 vs 388.5 calculated) -- investigated
+  against real USDA paprika reference data (~289kcal, ~13g fat, ~14g protein, ~54g carb, ~35g
+  fibre) which matches almost exactly; confirmed as the same class of false alarm as lemon
+  juice, caused by dried spices' very high fibre content not being counted by the 4/4/9
+  formula. No Fibre row (same gap). Name mismatch confirmed.
+- **Frying Powder (106202/105049) → `RM Frying powder`.** Clean extraction, `status: "ok"`, but
+  the spec's own name ("Chicken Breading WSB MK2") shared no obvious wording with the live
+  ingredient's name -- user asked "do the codes match?" rather than accept on trust. Verified:
+  the spec's own C4 code cell, the filename, and the live ingredient code all agreed exactly
+  (this was never a blank-code or wrong-code case, `status: "ok"` the whole time) -- only the
+  descriptive names differed. Confirmed once that was established. Worth remembering: a
+  surprising name mismatch is a prompt to re-verify the underlying evidence, not just re-ask
+  the same framing.
+- **Sliced Red Pepper (106438/106450) → `RM Red Pepper Sliced 30x60mm IH Foods`.** Same
+  blank-code/Manufacturer-Detail pattern (code cell had stray tabs/newlines mixed in). No Fibre
+  row (same gap). Name mismatch (dimension order reversed, 60x30 vs 30x60) confirmed.
+- **Onion Powder (106955) → `RM Onion Powder`.** A genuinely unresolvable allergen answer: the
+  Sulphites row read *"product may contain naturally occurring SO2 (not tested to verify
+  levels)"* -- not a Y/N, not a numeric ppm value the threshold logic could evaluate, and
+  explicitly states no testing was done. This is a real unknown, not a formatting quirk --
+  presented plainly as a genuine judgment call rather than trying to parse it. User chose the
+  precautionary reading: **treat as Y (declare Sulphur dioxide present)**, on the reasoning
+  that "may contain, untested" cannot be treated as absent. Handled as a one-off manual patch,
+  not a new parser rule (this phrasing is too open-ended to safely generalise). Pack Format
+  combined inner ("2x heat sealed inner liners") + outer ("cardboard box").
+- **Shiitake Mushrooms (107320) → `RM IQF Shitake Mushroom`.** Sanity check failed (56kcal vs
+  65.8 calculated, 17.5% gap) -- investigated against real shiitake reference data (close to
+  56kcal for cooked/frozen) before asking; confirmed as fibre-related, same class as the
+  paprika/lemon-juice cases. Pack Format combined inner ("Blue Polyliner") + outer ("Cardboard
+  Carton"). Name mismatch (Shiitake/Shitake spelling, "Sliced" dropped) confirmed.
