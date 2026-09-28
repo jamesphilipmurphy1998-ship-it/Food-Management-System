@@ -57,6 +57,53 @@ starts, and (b) requiring the row label to *start with* the category name rather
 contain it anywhere. Documented here specifically so a future change to this matching logic
 doesn't reintroduce the same class of bug.
 
+## Why this stays safe without relying on anyone "thinking carefully"
+
+Everything above — the refuse-on-uncertainty rules, the plausibility checks, the name-mismatch
+flag — has to work the same way whether a careful human is watching every step, or a future AI
+with no memory of *why* any of this was built is just running the two scripts. **The guarantee
+doesn't come from anyone being thoughtful in the moment. It comes from the code itself refusing
+to proceed, past a point only a real human decision can get it past.**
+
+Concretely: `spec-apply.js` will not write anything — not even show a dry-run diff — unless
+`status: "ok"`, unless the spec's name and the live ingredient's name look related, *and* the
+person running it happens to already know the exact flags below. There is no path where an AI
+(or a person clicking through quickly) can accidentally cause an unsafe write just by not
+thinking hard enough about it — the only way past a block is to type a specific flag that
+**only makes sense to add after a human has actually been asked and has actually answered**:
+
+- **`--confirm-name-mismatch`** — only exists to be added *after* a person was shown both names
+  side by side and said "yes, same product." Nothing in the code adds this automatically, and
+  nothing about running the script normally would cause someone to type it without that
+  conversation having happened first.
+- **`--confirm-warnings`** — same shape: only makes sense once a person has actually read the
+  specific warnings listed (a sanity-check failure, an implausible pack format, etc.) and
+  decided they're fine. `cannot_extract` (errors, not warnings) has **no equivalent override at
+  all** — that tier is never negotiable by design.
+
+So even an AI with zero context, reading only this file, would hit the same wall: run
+`spec-extract.py`, see `status` isn't `"ok"`, run `spec-apply.js`, watch it refuse and print
+exactly why, and have no flag to add that doesn't require having first surfaced the problem to
+a person and gotten an answer. The investigation habits below (checking raw cells, doing a
+real-world plausibility sanity check, looking for a better field elsewhere in the same
+document) aren't required for safety — they're what makes the *question put to the person*
+sharper and better-informed, not what stands between a bad extraction and a bad write. That
+job is already done by the flags.
+
+### A good investigation still makes for a better question, even if it isn't load-bearing
+
+Worked example, from a real run (2026-09-28, IQF Julienne Carrot spec): the sanity check
+flagged `kcal: 146` vs. an expected ~37 from the macros. Rather than just relaying "sanity
+check failed" to the user, the actual raw cells were checked directly (`kj: 35`, `kcal: 146` —
+confirmed these were the literal typed values, not an extraction bug), and cross-referenced
+against real-world knowledge (raw carrots are ~35 kcal / ~146 kJ per 100g — suggesting the two
+rows had been swapped when the spec was filled in, since `35 × 4.184 ≈ 146`). That math was put
+directly in front of the user as the actual question, instead of just forwarding the raw
+warning text. **The user's actual decision went against the obvious "fix" anyway** — write the
+values exactly as entered in the source spec, not the corrected version — which is exactly why
+this has to be a question and never an automatic correction, however confident the reasoning
+looks. See the full trace in the extraction log below.
+
 ## Matching rule: exact code, never fuzzy
 
 The spec's own "Product Code" field is matched **exactly** against `ingredient.code` in
@@ -348,14 +395,20 @@ Per the earlier discussion on reliability: **propose, don't auto-write.** Two sc
    every sheet in the workbook agrees on the same Product Code, and runs the
    kcal-vs-macros sanity check, both surfaced as `warnings` in the output rather than silently
    trusted. Outputs JSON.
-2. **`node scripts/spec-apply.js <extraction.json> [--apply]`** — matches the extracted code
-   against the live ingredients (tries the primary code, then the alt code if the primary
-   doesn't match anything — handles both the two-code and one-code cases). No match → stops
-   and says so, never guesses or creates a new ingredient. Prints a before/after diff of just
-   the nutrition + allergen fields (cost, supplier, code, everything else on the record is
-   never touched). Without `--apply` it's a dry run (diff only); with `--apply` it writes via
-   `PUT /api/ingredients/{id}`, sending back the full updated record so the write can be
-   confirmed immediately from the response.
+2. **`node scripts/spec-apply.js <extraction.json> [--apply] [--confirm-name-mismatch] [--confirm-warnings]`**
+   — matches the extracted code against the live ingredients (tries the primary code, then the
+   alt code if the primary doesn't match anything — handles both the two-code and one-code
+   cases). No match → stops and says so, never guesses or creates a new ingredient. Prints a
+   before/after diff of just the nutrition/allergen/pack fields (cost, supplier, code,
+   everything else on the record is never touched). Without `--apply` it's a dry run (diff
+   only); with `--apply` it writes via `PUT /api/ingredients/{id}`, then immediately re-fetches
+   and re-verifies (see "Post-upload verification" below).
+   - **`--confirm-name-mismatch`** — required to proceed at all (even a dry run) if the spec's
+     product name and the live ingredient's name don't look related. Never pass this without
+     having actually asked a person and gotten a yes — see "Why this stays safe" above.
+   - **`--confirm-warnings`** — required to proceed if `status` is `"extracted_with_warnings"`
+     (not `"cannot_extract"` — that tier has no override). Same rule: only after a person has
+     reviewed the specific warnings listed and confirmed them.
    - Needs a signed-in session cookie jar (`COOKIE_JAR` env var, default `/tmp/qa_cookies.txt`)
      — **on Windows, pass the actual Windows path** (e.g.
      `C:\Users\...\AppData\Local\Temp\qa_cookies.txt`), not the Git-Bash-style `/tmp/...` path
@@ -575,3 +628,36 @@ nutrition:**
 - Verified live: `RM Black Bean Paste` currently carries both its original BOM cost
   (`£3.69564`) and today's spec-uploaded nutrition/allergen/pack data simultaneously — neither
   has erased the other.
+
+**Same day, batch-processed the 4 new specs added to the folder — added two override flags in
+the process (`--confirm-name-mismatch`, `--confirm-warnings`), both only usable after an
+explicit human decision:**
+
+Before processing, checked live `kcal` on every candidate code first (per the user's suggestion
+that the site itself, not a separate log, should answer "has this already been done") — all
+four were genuinely `0`, safe to proceed.
+
+- **Batter Mix (106006/106009) → `RM Eclipse Batter Newlyweds Sack`.** Extraction initially hit
+  `cannot_extract`: values written as `"1.24g"` (number+unit inline) instead of bare numbers.
+  Fixed `parse_nutrition_value()` to accept a number followed by that field's own stated unit
+  (narrow — a mismatched unit is still refused). Then flagged a name mismatch ("Eclipse Batter
+  6 B64503-2500-A" vs. "RM Eclipse Batter Newlyweds Sack") — user confirmed same product via
+  AskUserQuestion, said this was "the best way to prompt" and asked it be documented (see
+  above). Applied with `--confirm-name-mismatch`, verified. Turned out to be the batter
+  underlying the entire Chicken Katsu family (78 recipes) investigated earlier the same day.
+- **Rice Vermicelli (106190/105018) → `RM Rice Vermicelli`.** Clean extraction, name matched
+  automatically, applied without any override, verified.
+- **Red Pepper Julienne (106317, single code) → `RM Pepper Red Julienne`.** Flagged as a name
+  mismatch — "Julienne Red Pepper" vs. "Pepper Red Julienne", same three words reordered. User
+  confirmed same product. Improved the check itself afterward (`sameWordSet()` — order-
+  independent word-set comparison) so this specific, well-defined pattern won't need flagging
+  again; re-ran and it passed automatically. Applied, verified.
+- **IQF Julienne Carrot (107497/P00060) → `RM IQF Julienne Carrot`.** The worked example in the
+  "why this stays safe" section above — sanity-check failure on kJ/kcal investigated and
+  presented with the math, user chose to write as-entered rather than "fix" it; Pack Format
+  ("Liner") and Storage Conditions ("-18 degreas Celsius") both failed their plausibility
+  checks but were confirmed genuine (checked the Packaging Detail sheet for a better Pack
+  Format answer first — none existed, so it was dropped per the user's instruction rather than
+  written as "Liner"). Also flagged a name mismatch (spec typo'd "Julianne" for "Julienne") —
+  confirmed via the codes matching independently on both the primary and alt code. Applied with
+  `--confirm-warnings --confirm-name-mismatch`, verified. Used in 131 recipes.

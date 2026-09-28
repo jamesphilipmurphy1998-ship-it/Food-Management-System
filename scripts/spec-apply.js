@@ -28,8 +28,14 @@ if (!extractionPath) {
   process.exit(1);
 }
 const extraction = JSON.parse(fs.readFileSync(extractionPath, "utf8"));
+const confirmedWarnings = process.argv.includes("--confirm-warnings");
 
-if (extraction.status !== "ok") {
+// Errors (status "cannot_extract") are never overridable -- they mean the format itself wasn't
+// recognised or something structural failed to verify (a nutrition/allergen field, specifically,
+// could not be trusted at all). Warnings (status "extracted_with_warnings") CAN be overridden,
+// but only by a person who has actually reviewed each one and explicitly confirmed it's fine --
+// --confirm-warnings is that confirmation, never passed automatically by this script itself.
+if (extraction.status === "cannot_extract" || (extraction.status !== "ok" && !confirmedWarnings)) {
   console.log(`CANNOT SAFELY PROCEED — extraction status is "${extraction.status}", not "ok".`);
   if (extraction.errors && extraction.errors.length) {
     console.log("\nErrors (the spec format wasn't fully recognised, or something didn't check out):");
@@ -38,9 +44,16 @@ if (extraction.status !== "ok") {
   if (extraction.warnings && extraction.warnings.length) {
     console.log("\nWarnings:");
     extraction.warnings.forEach((w) => console.log("  - " + w));
+    console.log("\nIf a person has reviewed every warning above and confirmed the data is fine to use as-is, re-run with --confirm-warnings added.");
   }
-  console.log("\nThis extraction will not be matched or written, even in dry-run mode — manual review required.");
+  if (extraction.status === "cannot_extract") {
+    console.log("\nThis extraction will not be matched or written, even in dry-run mode — manual review required. Errors cannot be overridden.");
+  }
   process.exit(1);
+}
+if (extraction.status !== "ok" && confirmedWarnings) {
+  console.log(`⚠ Proceeding despite unresolved warnings — a person reviewed and confirmed them:`);
+  extraction.warnings.forEach((w) => console.log("  - " + w));
 }
 
 function curlGet(url) {
@@ -88,11 +101,23 @@ function normalizeIngredientName(name) {
 }
 const specNameNorm = normalizeIngredientName(extraction.name);
 const liveNameNorm = normalizeIngredientName(matched.name);
-const namesLookRelated = specNameNorm && liveNameNorm && (specNameNorm.includes(liveNameNorm) || liveNameNorm.includes(specNameNorm));
-if (!namesLookRelated) {
+function sameWordSet(a, b) {
+  const wordsA = a.split(" ").filter(Boolean).sort();
+  const wordsB = b.split(" ").filter(Boolean).sort();
+  return wordsA.length > 0 && JSON.stringify(wordsA) === JSON.stringify(wordsB);
+}
+const namesLookRelated = specNameNorm && liveNameNorm && (
+  specNameNorm.includes(liveNameNorm) || liveNameNorm.includes(specNameNorm) || sameWordSet(specNameNorm, liveNameNorm)
+);
+const confirmedNameMismatch = process.argv.includes("--confirm-name-mismatch");
+if (!namesLookRelated && !confirmedNameMismatch) {
   console.log(`\n⚠ NAME MISMATCH — code "${matchedOn}" matched, but the spec's product name ("${extraction.name}") doesn't look related to the live ingredient's name ("${matched.name}").`);
   console.log("This could mean the code was typo'd in the spec and happened to match a different, unrelated ingredient, or the code has been reassigned. Refusing to proceed — a person needs to confirm this is actually the right ingredient before anything is matched or written.");
+  console.log("If a person has confirmed these ARE the same product, re-run with --confirm-name-mismatch added.");
   process.exit(1);
+}
+if (!namesLookRelated && confirmedNameMismatch) {
+  console.log(`\n⚠ Proceeding despite name mismatch ("${extraction.name}" vs "${matched.name}") — a person confirmed this is the same product.`);
 }
 
 // --- Flow-up flag: nutrition needs no propagation code at all -- calcRecipeNutrition() in
