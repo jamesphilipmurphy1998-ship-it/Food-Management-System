@@ -762,7 +762,7 @@ app.MapGet("/api/db/health", async (AppDbContext db) =>
     }
 });
 
-app.MapGet("/api/ingredients", async (AppDbContext db, bool includeUnlinked) =>
+app.MapGet("/api/ingredients", async (AppDbContext db, bool includeUnlinked = false) =>
 {
     var ingredients = await db.Ingredients.AsNoTracking().ToListAsync();
     if (includeUnlinked) return Results.Ok(ingredients.Select(i => i.ToModel()));
