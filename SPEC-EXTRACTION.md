@@ -409,6 +409,29 @@ Per the earlier discussion on reliability: **propose, don't auto-write.** Two sc
    - **`--confirm-warnings`** — required to proceed if `status` is `"extracted_with_warnings"`
      (not `"cannot_extract"` — that tier has no override). Same rule: only after a person has
      reviewed the specific warnings listed and confirmed them.
+   - `spec-extract.py` also takes three narrow, opt-in flags — each is a real format variant hit
+     during the 2026-09-28 batch (see "Extraction log" below for the specific specs). Every one
+     of them is a **named exception a human must invoke explicitly, never a default behavior
+     change** — the parser still hard-refuses these cases unless the flag is passed:
+     - **`--override-code CODE` / `--override-code "CODE (ALTCODE)"`** — only usable when the
+       Product Code cell is blank on **every** sheet of the document (nothing in the document to
+       disagree with). Never overrides a code the document actually states, and never resolves a
+       genuine cross-sheet code conflict — those stay hard errors. Use when a human has confirmed
+       the correct code outside the document itself (e.g. from the filename).
+     - **`--derive-salt-from-sodium`** — only fires when Salt (g) is blank but Sodium (mg) is
+       filled in on the same row-set. Applies the standard UK/EU conversion, Salt = Sodium × 2.5
+       ÷ 1000 — a legal conversion factor, not a guess, but still gated behind this flag so nothing
+       gets derived without a person having looked at the specific numbers first.
+     - **`--allow-blank-nutrition FIELD[,FIELD2,...]`** — only for a field that's genuinely blank
+       in the spec with **no alternate value anywhere on the sheet** (unlike Salt/Sodium above,
+       there's nothing to derive it from). The named field is simply omitted from the write, so
+       `--apply` leaves whatever that field currently holds on the live ingredient untouched — it
+       is never written as 0. A blank field NOT named here is still a hard error.
+   - **Every one of the above — including these three flags — must be preceded by asking the
+     person in chat and getting an actual answer, every single time, never assumed from a prior
+     ingredient's answer.** This is a standing instruction, not a one-off: even though
+     `--derive-salt-from-sodium` is "just" a fixed legal formula, the person explicitly asked to
+     keep being asked before it's applied, rather than have the flag become an automatic default.
    - Needs a signed-in session cookie jar (`COOKIE_JAR` env var, default `/tmp/qa_cookies.txt`)
      — **on Windows, pass the actual Windows path** (e.g.
      `C:\Users\...\AppData\Local\Temp\qa_cookies.txt`), not the Git-Bash-style `/tmp/...` path
@@ -661,3 +684,82 @@ four were genuinely `0`, safe to proceed.
   written as "Liner"). Also flagged a name mismatch (spec typo'd "Julianne" for "Julienne") —
   confirmed via the codes matching independently on both the primary and alt code. Applied with
   `--confirm-warnings --confirm-name-mismatch`, verified. Used in 131 recipes.
+
+### 2026-09-28 — ingredient count established; second batch hits several new real format variants
+
+- Answered "how many ingredients total?": the live `/api/ingredients` table (409 rows) already
+  **is** the base bought-in layer — BCP/HR/GR/SUB/CPU/BHP prep-recipe items live in the recipes
+  API, not ingredients, so no separate filtering for "prep layer" was needed. Filtering out
+  `cat: "Packaging"` (172, a strict superset of the `NF`-prefixed items) and delisted names
+  leaves **207 active base ingredients**. Of those, 11 already had nutrition — **196 remained**
+  needing a spec uploaded, as of the start of this batch.
+- Found 6 unprocessed spec files in the folder. Processing strictly one at a time (explicit user
+  instruction: "please to each ingredient 1 by 1 i dont want any cross over mistakes") — no
+  batching, no extracting/asking about multiple ingredients before finishing one.
+- **Konbudashi Soup Stock (106142/105034) → `RM Konbudashi Soup Stock`.** Clean extraction, no
+  warnings. Name mismatch flagged ("Shimaya Kombu-Dashi Soup Stock 1kg" — brand name + spelling
+  variant vs. site's stripped/respelled name) — user confirmed. Applied, verified. Used in 98
+  recipes.
+- **Granulated Sugar (106161/105023) → `RM Sugar Granulated (CPU ONLY)`.** Two real format
+  variants, both confirmed by the user and turned into permanent, narrowly-scoped parser rules
+  (not one-off fixes):
+  - `Energy (Kcal)` cell read `"(400kCals)"` — parentheses-wrapped, non-standard unit spelling.
+    `parse_nutrition_value()` now strips a matching pair of parens wrapping the *entire* value,
+    and accepts a unit with a trailing "s" (e.g. "kCals" for a "kcal" column) as the same unit.
+  - The Sulphites row read `"N, max 6 (mg/kg)"` instead of a plain Y/N. Researched the actual UK/
+    EU rule first (see new `ALLERGEN-THRESHOLDS.md`) rather than guessing: **sulphites/sulphur
+    dioxide is the only one of the 14 allergens with a numeric declaration threshold** — 10mg/kg
+    or 10mg/L as SO2. 6 < 10, so the spec's own "N" answer is legally consistent. Added a rule
+    to `spec-extract.py`, scoped *only* to the sulphite row (every other allergen row still
+    requires a literal Y/N, since no other allergen has a threshold) — parses `"[Y/N], max
+    X (mg/kg or mg/L)"` and trusts the stated Y/N only when X is below 10; if X were >= 10 it's
+    now a hard error (a spec claiming "N" above the legal threshold is a real contradiction, not
+    a formatting quirk). Also added YES/NO as a general synonym for Y/N on any allergen row,
+    while here (see Soy Sauce entry below for why).
+  - Name mismatch also flagged ("Standard Granulated Sugar" vs. "RM Sugar Granulated (CPU
+    ONLY)", reordered words + a site-only annotation) — user confirmed. Applied, verified. Used
+    in a very large number of recipes (rice/noodle/sauce base).
+- **Lemon Juice (106166/105045) → `RM Lemon Juice`.** Two more real format variants, confirmed
+  and turned into general parser rules:
+  - `<0.1g` / `<0.01` (below-threshold lab-result notation) on Fat and Salt — user confirmed:
+    record the threshold number itself (the conservative/standard reading of a "less than X"
+    result). Added to `parse_nutrition_value()`: a leading `<` is stripped before parsing.
+  - A bare `-` on Fibre (and on the polyunsaturate/monounsaturate/starch sub-breakdowns, which
+    aren't tracked fields anyway) — user confirmed: treat as 0, same as an explicit "0". Added:
+    a bare `-` now parses as `0.0`.
+  - The kcal-vs-macros sanity check failed (27 stated vs. 10.5 calculated) — investigated rather
+    than assumed: lemon juice's calories come mostly from citric acid, which the 4/4/9 formula
+    doesn't count at all, and 27kcal/100g matches published reference values for lemon juice.
+    User was confused by the raw check output first time round — walked through the formula in
+    plain terms (what it's checking, why citrus specifically triggers false positives) before
+    they confirmed. Applied with `--confirm-warnings`, verified (matched cleanly on name, no
+    mismatch this time). Allergen "Sulphur dioxide" correctly picked up (used as a preservative
+    in lemon juice, consistent).
+- **Coconut Milk 17% (106169/105059) → `RM Milk Coconut Choakoch`.** The most structurally novel
+  spec of the batch — this document's Product Code cell was genuinely blank on **every** sheet
+  (checked "3 Ingredient & Recipe" and "1&2 Manufacturer Detail" — both empty/0), with the code
+  only present in the filename. Rather than silently start trusting filenames (a real policy
+  question, not a parsing detail), asked the user explicitly: they confirmed 106169 by hand for
+  this one ingredient, not as a standing rule. Built `--override-code` as a narrow, opt-in flag
+  for exactly this situation — it only fires when every sheet's C4 is blank (never overrides a
+  code the document actually states, never resolves a real cross-sheet disagreement). Also hit
+  two blank-nutrition-field cases, handled as two separate new mechanisms per the user's
+  instruction to keep asking each time rather than let either become silent/automatic:
+  - Salt (g) blank, but Sodium (mg) = 150 filled in — offered the standard UK/EU conversion
+    (Salt = Sodium x 2.5 / 1000 = 0.375g). Built `--derive-salt-from-sodium` as an opt-in flag,
+    only usable when Sodium *is* present for a blank Salt row (does nothing for a blank Salt row
+    with no Sodium value to derive from — that's still a hard error).
+  - Sugar (g) blank with **no** alternate value anywhere on the sheet — a genuine gap the spec
+    itself never states, nothing to derive it from. Built `--allow-blank-nutrition FIELD[,...]`
+    as an opt-in flag: the named field is simply omitted from the write (so `--apply` leaves the
+    ingredient's current value for that field untouched, never writes it as 0).
+  - Name mismatch also flagged ("Coconut Milk 17%" vs. "RM Milk Coconut Choakoch" — reordered +
+    brand name "Choakoch" added + fat% dropped) — user confirmed. Applied with
+    `--confirm-warnings --confirm-name-mismatch`, verified. Used in 11 recipes.
+- **Standing instruction from the user, mid-batch:** keep asking via AskUserQuestion before
+  applying any of these override flags, every single time — including the ones that are "just"
+  a fixed formula or a legally-grounded rule (like the sulphites threshold or the sodium-to-salt
+  conversion). The flags exist to make the override auditable and never-default, not to let the
+  pipeline start deciding these on its own after the first confirmation.
+- Remaining in this batch, still to process one at a time: Tom Yum Paste (106170), SS3 Soy Sauce
+  No Added Alcohol Bulk (107170).

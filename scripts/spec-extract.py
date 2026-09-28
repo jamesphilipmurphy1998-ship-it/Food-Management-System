@@ -8,7 +8,15 @@ actually found and read from a validated column -- never assumed from a fixed ce
 format the code doesn't recognise must come back as `"status": "cannot_extract"` with a clear
 `errors` list, never as an empty/partial/best-guess result silently treated as "no allergens."
 
-Usage: python scripts/spec-extract.py "<path to .xlsx>"
+Usage: python scripts/spec-extract.py "<path to .xlsx>" [--override-code CODE[/ALTCODE]]
+
+--override-code is for the narrow case where the Product Code cell is genuinely blank on
+every sheet of the document itself (nothing to disagree with) and a human has manually
+confirmed, outside this script, what the code should be (e.g. from the filename). It NEVER
+overrides a code that was actually found in the document -- if C4 has a real value, that
+value is what's used/checked, full stop; a blank-vs-supplied conflict never happens because
+the override only fires when every sheet's C4 was empty. The output is stamped with a
+warning so this is never silently indistinguishable from a code the document itself stated.
 Exit code 0 with status "ok" only when the format was fully recognised and nothing looked off.
 Exit code 1 (status "cannot_extract" or "extracted_with_warnings") otherwise -- spec-apply.js
 refuses --apply unless it sees status "ok".
@@ -73,10 +81,26 @@ def parse_nutrition_value(val, expected_unit):
     s = str(val).strip()
     if not s or s.upper() == "N/A":
         return None, "blank"
+    # A bare dash means "none/negligible" on this template (confirmed against a real spec,
+    # see SPEC-EXTRACTION.md) -- record as 0, same as if the supplier had written "0".
+    if s == "-":
+        return 0.0, None
+    # A below-threshold lab result ("<0.1g") -- record the threshold value itself (the
+    # standard/conservative reading: the true value is somewhere between 0 and this number).
+    if s.startswith("<"):
+        s = s[1:].strip()
+    # Parentheses around the whole value ("(400kCals)") are just formatting some suppliers use
+    # for this field -- strip one matching pair, but only if it wraps the ENTIRE cell value, so
+    # this never touches a case where parens are part of a real qualifier elsewhere in the text.
+    if s.startswith("(") and s.endswith(")"):
+        s = s[1:-1].strip()
     m = _re.match(r"^([\d.]+)\s*([A-Za-z]*)$", s)
     if not m:
         return None, "unparseable"
     number_part, suffix = m.group(1), m.group(2).strip().lower()
+    # Accept a trailing "s" on the unit (e.g. "kCals" for a "kcal" column) -- same unit, plural.
+    if suffix.endswith("s") and suffix[:-1] == expected_unit.lower():
+        suffix = suffix[:-1]
     if suffix and suffix != expected_unit.lower():
         return None, "unit mismatch (found %r, expected %r)" % (suffix, expected_unit)
     try:
@@ -98,7 +122,7 @@ def find_col_in_row(ws, row_num, text_contains, max_col=20):
             return col
     return None
 
-def extract(path):
+def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank_nutrition=()):
     errors = []
     warnings = []
 
@@ -124,7 +148,20 @@ def extract(path):
     ws = wb[recipe_sheet_name]
     name = ws["C3"].value
     raw_code = str(ws["C4"].value or "").strip()
-    if not raw_code:
+    # Every sheet's C4 must be blank for the override to be eligible -- if ANY sheet has a real
+    # value, that's the document's own stated code (or a real disagreement to flag), and the
+    # override never applies. This is checked BEFORE using override_code for anything.
+    all_c4_blank = not raw_code and all(
+        not (wb[sn]["C4"].value and str(wb[sn]["C4"].value).strip())
+        for sn in wb.sheetnames if sn != recipe_sheet_name
+    )
+    if not raw_code and override_code and all_c4_blank:
+        raw_code = override_code
+        warnings.append(
+            "Product Code cell was blank on every sheet of the document itself -- code %r was "
+            "supplied via --override-code (human-confirmed, not read from the spec document). "
+            "Flagging so this is never mistaken for a code the document actually stated." % override_code)
+    elif not raw_code:
         errors.append("Product Code cell (C4 on '%s') is empty" % recipe_sheet_name)
     m = re.match(r"^([A-Za-z0-9\-]+)", raw_code) if raw_code else None
     primary_code = m.group(1) if m else None
@@ -134,14 +171,17 @@ def extract(path):
         errors.append("Could not parse a product code out of C4 value %r" % raw_code)
 
     # Every sheet must agree on the same product code -- a mismatch means either a corrupted
-    # file or (more dangerously) sheets copy-pasted from a different product's spec.
-    for sn in wb.sheetnames:
-        if sn == recipe_sheet_name:
-            continue
-        s = wb[sn]
-        c4 = s["C4"].value
-        if c4 and str(c4).strip() and str(c4).strip() != raw_code:
-            errors.append("Sheet '%s' has Product Code %r, which does not match '%s'’s %r -- refusing, this looks like mismatched/corrupted data, not a format change" % (sn, c4, recipe_sheet_name, raw_code))
+    # file or (more dangerously) sheets copy-pasted from a different product's spec. Skipped
+    # when the code came from --override-code, since in that case every sheet's C4 was blank
+    # by construction (that's the precondition the override required above).
+    if not (override_code and all_c4_blank):
+        for sn in wb.sheetnames:
+            if sn == recipe_sheet_name:
+                continue
+            s = wb[sn]
+            c4 = s["C4"].value
+            if c4 and str(c4).strip() and str(c4).strip() != raw_code:
+                errors.append("Sheet '%s' has Product Code %r, which does not match '%s'’s %r -- refusing, this looks like mismatched/corrupted data, not a format change" % (sn, c4, recipe_sheet_name, raw_code))
 
     if errors:
         return {"status": "cannot_extract", "sourceFile": path, "errors": errors, "warnings": warnings}
@@ -162,6 +202,7 @@ def extract(path):
                 cell = row[0]
                 if cell.value:
                     labels[str(cell.value).strip().rstrip("*").strip().lower()] = cell.row
+            blank_fields = {}  # field -> label, for fields that were genuinely blank in the spec
             for label, field, unit in NUTRITION_FIELDS:
                 target = label.rstrip("*").strip().lower()
                 found_row = labels.get(target)
@@ -173,9 +214,45 @@ def extract(path):
                 if parsed is not None:
                     nutrition[field] = parsed
                 elif problem == "blank":
-                    errors.append("Nutrition value for %r is blank/N-A in the spec" % label)
+                    blank_fields[field] = label
                 else:
                     errors.append("Nutrition value for %r is not usable: %r (%s) -- refusing to write it" % (label, raw_val, problem))
+
+            # Salt is blank but a Sodium (mg) row is filled in -- offer the standard UK/EU
+            # conversion (Salt g = Sodium mg x 2.5 / 1000) as a NAMED, opt-in option, never
+            # applied automatically. A human must explicitly pass --derive-salt-from-sodium
+            # (after being asked, each time -- see SPEC-EXTRACTION.md) for this to take effect.
+            if "salt" in blank_fields:
+                sodium_row = labels.get("sodium (mg)")
+                sodium_val = ns.cell(row=sodium_row, column=per100_col).value if sodium_row else None
+                sodium_parsed, _ = parse_nutrition_value(sodium_val, "mg") if sodium_row else (None, None)
+                if sodium_parsed is not None:
+                    if derive_salt_from_sodium:
+                        nutrition["salt"] = round(sodium_parsed * 2.5 / 1000, 4)
+                        warnings.append(
+                            "Salt (g) was blank in the spec -- derived as %.4fg from Sodium %.1fmg using the "
+                            "standard UK/EU conversion (Salt = Sodium x 2.5 / 1000), per --derive-salt-from-sodium "
+                            "(human-confirmed)." % (nutrition["salt"], sodium_parsed))
+                        del blank_fields["salt"]
+                    else:
+                        errors.append(
+                            "Salt (g) is blank, but Sodium (mg) = %r is present -- salt CAN be derived via the "
+                            "standard conversion (Salt = Sodium x 2.5 / 1000), but this requires a human decision "
+                            "each time; re-run with --derive-salt-from-sodium if confirmed." % sodium_val)
+                        del blank_fields["salt"]
+
+            # Any remaining blank field is a hard error UNLESS a human has explicitly named it
+            # via --allow-blank-nutrition (after being asked, each time) as a confirmed real gap
+            # in the source document -- in which case it's simply omitted from `nutrition`
+            # (so an --apply run leaves the ingredient's existing value for that field untouched)
+            # and recorded as a warning, never silently dropped without a trace.
+            for field, label in blank_fields.items():
+                if field in allow_blank_nutrition:
+                    warnings.append(
+                        "Nutrition value for %r is blank/N-A in the spec, with no alternate value on the sheet -- "
+                        "left unset per --allow-blank-nutrition (human-confirmed real gap in the source document)." % label)
+                else:
+                    errors.append("Nutrition value for %r is blank/N-A in the spec" % label)
 
     if "kcal" in nutrition and "protein" in nutrition and "carb" in nutrition and "fat" in nutrition:
         expected = 4 * nutrition["protein"] + 4 * nutrition["carb"] + 9 * nutrition["fat"]
@@ -329,6 +406,32 @@ def extract(path):
                         found_categories.add(key)
                         val = as_.cell(row=row_num, column=contains_col).value
                         val_norm = str(val).strip().upper() if val is not None else ""
+                        # YES/NO is an unambiguous synonym for Y/N on any allergen row.
+                        if val_norm == "YES":
+                            val_norm = "Y"
+                        elif val_norm == "NO":
+                            val_norm = "N"
+                        elif key == "sulphite" and val_norm not in ("Y", "N"):
+                            # Sulphites/sulphur dioxide is the ONLY one of the 14 allergens with a
+                            # legal declaration threshold (10mg/kg or 10mg/L as SO2 -- see
+                            # ALLERGEN-THRESHOLDS.md). A spec answer like "N, max 6 (mg/kg)" is
+                            # legally consistent with "N" only if the stated max is below 10. This
+                            # rule is deliberately restricted to this one allergen -- no other row
+                            # has a threshold, so no other row gets this treatment.
+                            thresh_match = _re.match(
+                                r"^([YN])\s*,?\s*max\s*([\d.]+)\s*\(?\s*mg\s*/\s*(kg|l|litre)\s*\)?$",
+                                str(val).strip(), _re.IGNORECASE)
+                            if thresh_match:
+                                stated_answer, max_val, _unit = thresh_match.groups()
+                                max_val = float(max_val)
+                                stated_answer = stated_answer.upper()
+                                if max_val < 10:
+                                    val_norm = stated_answer  # consistent with legal threshold
+                                else:
+                                    errors.append(
+                                        "Sulphites row answer %r states a max of %.1f mg/kg/L, which is AT OR ABOVE "
+                                        "the 10mg/kg legal declaration threshold -- refusing to trust a stated %r "
+                                        "answer that contradicts the threshold; needs human review" % (val, max_val, stated_answer))
                         if val_norm not in ("Y", "N"):
                             errors.append("Allergen row %r has an unrecognised contains-value %r (expected Y or N) -- refusing to assume either way" % (label_lower, val))
                         elif val_norm == "Y":
@@ -358,6 +461,22 @@ def extract(path):
     }
 
 if __name__ == "__main__":
-    result = extract(sys.argv[1])
+    args = sys.argv[1:]
+    override_code = None
+    if "--override-code" in args:
+        idx = args.index("--override-code")
+        override_code = args[idx + 1]
+        del args[idx:idx + 2]
+    derive_salt_from_sodium = "--derive-salt-from-sodium" in args
+    if derive_salt_from_sodium:
+        args.remove("--derive-salt-from-sodium")
+    allow_blank_nutrition = ()
+    if "--allow-blank-nutrition" in args:
+        idx = args.index("--allow-blank-nutrition")
+        allow_blank_nutrition = tuple(f.strip() for f in args[idx + 1].split(","))
+        del args[idx:idx + 2]
+    result = extract(args[0], override_code=override_code,
+                      derive_salt_from_sodium=derive_salt_from_sodium,
+                      allow_blank_nutrition=allow_blank_nutrition)
     print(json.dumps(result, indent=2, ensure_ascii=False))
     sys.exit(0 if result["status"] == "ok" else 1)
