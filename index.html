@@ -802,14 +802,14 @@
             <label class="form-label">Serving Size (g)</label>
             <input class="form-input" type="number" id="nutrition-serving-size-input" value="100" min="1" oninput="updateServingSizeFromNutritionTab(this.value)">
           </div>
-          <p style="font-size:11px;color:var(--nc-gray-400);margin-top:8px;">Used for the "per Serving" values throughout this recipe (Full Nutrition Profile, Label, and the Total row below). Same value as Label → Label Settings.</p>
+          <p style="font-size:11px;color:var(--nc-gray-400);margin-top:8px;">Used for the "per Serving" values throughout this recipe (Full Nutrition Profile, Label, and the Total row below). Same value as Label → Label Settings. <strong>Press Save (top toolbar) to make this permanent</strong> — like every other recipe edit, it stays local until saved.</p>
         </div>
         <div class="card">
           <div class="card-header"><h2>Nutrition Breakdown by Ingredient</h2></div>
           <div style="overflow-x:auto">
             <table class="data-table" id="nutrition-by-ingredient-matrix"></table>
           </div>
-          <p style="font-size:11px;color:var(--nc-gray-400);margin-top:8px;">Each ingredient's actual contribution to the recipe's per-100g totals above, based on the quantity used — the Total row sums to the Full Nutrition Profile row.</p>
+          <p style="font-size:11px;color:var(--nc-gray-400);margin-top:8px;">Each ingredient's actual contribution to the recipe's per-100g totals above, based on the quantity used — the Total sums to the Full Nutrition Profile row.</p>
         </div>
       </div>
 
@@ -1898,7 +1898,7 @@
 <script src="hfss.js?v=20260923-cache-buster"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="app.js?v=20260928-nutrition-labels-position"></script>
+<script src="app.js?v=20260928-nutrition-transposed"></script>
 <script src="excel-import.js?v=20260916-parentnoofportions-col-k"></script>
 <script src="reports.js?v=20260923-cache-buster"></script>
 </body>

@@ -6642,15 +6642,15 @@
     if (menu) menu.style.display = "none";
   });
 
-  // Body rows show each ingredient/sub-recipe line's actual contribution to the recipe's
-  // per-100g totals, based on the real quantity used -- NOT the ingredient's own unscaled
-  // per-100g profile (that would just repeat the Ingredient Centre data regardless of how much
-  // is used). Uses the same weight-in-grams and scale-to-100g logic as
-  // Recipes.calcRecipeNutrition. The Total row is a user-toggled view of the same underlying
-  // per-100g totals, scaled three ways: "per recipe" (the whole batch as made, i.e. what's
-  // actually in the bowl -- totalWeight grams' worth), "per 100g" (what the totals would be if
-  // the recipe made exactly 100g -- matches the Full Nutrition Profile table above), and
-  // "per serving" (scaled to the user-set Serving Size).
+  // Transposed layout (rows = nutrients, columns = ingredients, like Excel's Paste Transpose) --
+  // each ingredient/sub-recipe line's actual contribution to the recipe's per-100g totals, based
+  // on the real quantity used -- NOT the ingredient's own unscaled per-100g profile (that would
+  // just repeat the Ingredient Centre data regardless of how much is used). Uses the same
+  // weight-in-grams and scale-to-100g logic as Recipes.calcRecipeNutrition. The Total column is a
+  // user-toggled view of the same underlying per-100g totals, scaled three ways: "per recipe"
+  // (the whole batch as made, i.e. what's actually in the bowl -- totalWeight grams' worth), "per
+  // 100g" (what the totals would be if the recipe made exactly 100g -- matches the Full Nutrition
+  // Profile table above), and "per serving" (scaled to the user-set Serving Size).
   function renderNutritionByIngredient(recipe) {
     var ingredients = Ingredients.getIngredients();
     var recipes = Recipes.getRecipes();
@@ -6658,52 +6658,62 @@
     var totalWeight = (recipe.ingredients || []).reduce(function (s, ri) { return s + recipeLineWeightForTotal(ri); }, 0);
     var serving = recipe.serving || 100;
     var modeLabel = NUTRITION_TOTAL_MODES.filter(function (m) { return m.key === nutritionTotalMode; })[0].label;
-    var html = "<thead><tr><th>Ingredient</th>" + NUTRITION_BREAKDOWN_COLUMNS.map(function () { return "<th></th>"; }).join("") + "</tr></thead><tbody>";
+
+    var lines = (recipe.ingredients || []).map(function (ri) {
+      var name; var lineNut = null; var ingBadge;
+      var qtyG = recipeLineWeightForTotal(ri);
+      if (ri.subRecipeId) {
+        var subRec = recipes.find(function (r) { return r.id === ri.subRecipeId; });
+        if (!subRec) return null;
+        name = subRec.name;
+        lineNut = Recipes.calcRecipeNutrition(subRec, ingredients);
+      } else {
+        var ing = ingredients.find(function (i) { return i.id === ri.ingredientId; });
+        if (!ing) return null;
+        name = ing.name;
+        lineNut = ing;
+      }
+      ingBadge = getRecipeLineBadge(ri, ingredients, recipes);
+      return { name: name, ingBadge: ingBadge, lineNut: lineNut, qtyG: qtyG };
+    }).filter(Boolean);
+
     var totals100 = {};
     NUTRITION_BREAKDOWN_COLUMNS.forEach(function (c) { totals100[c.key] = 0; });
-    if (totalWeight > 0) {
-      var scale = 100 / totalWeight;
-      (recipe.ingredients || []).forEach(function (ri) {
-        var name; var lineNut = null; var ingBadge;
-        var qtyG = recipeLineWeightForTotal(ri);
-        if (ri.subRecipeId) {
-          var subRec = recipes.find(function (r) { return r.id === ri.subRecipeId; });
-          if (!subRec) return;
-          name = subRec.name;
-          lineNut = Recipes.calcRecipeNutrition(subRec, ingredients);
-        } else {
-          var ing = ingredients.find(function (i) { return i.id === ri.ingredientId; });
-          if (!ing) return;
-          name = ing.name;
-          lineNut = ing;
-        }
-        ingBadge = getRecipeLineBadge(ri, ingredients, recipes);
-        html += "<tr><td style=\"font-size:12px\">" + ingBadge + name + "</td>";
-        var f = qtyG / 100 * scale;
-        NUTRITION_BREAKDOWN_COLUMNS.forEach(function (c) {
-          var contribution = (Number(lineNut[c.key]) || 0) * f;
-          if (qtyG > 0) totals100[c.key] += contribution;
-          html += '<td style="text-align:center;font-size:12px">' + (qtyG > 0 ? Data.round(contribution, c.dp) : '<span style="color:var(--nc-gray-200)">—</span>') + "</td>";
-        });
-        html += "</tr>";
+    var scale = totalWeight > 0 ? 100 / totalWeight : 0;
+    var contributions = lines.map(function (line) {
+      var perField = {};
+      var f = line.qtyG / 100 * scale;
+      NUTRITION_BREAKDOWN_COLUMNS.forEach(function (c) {
+        var contribution = (Number(line.lineNut[c.key]) || 0) * f;
+        if (line.qtyG > 0 && totalWeight > 0) totals100[c.key] += contribution;
+        perField[c.key] = (line.qtyG > 0 && totalWeight > 0) ? contribution : null;
       });
-    }
-    html += "</tbody><tfoot><tr><td class=\"bold\" style=\"font-size:12px;position:relative;cursor:pointer\" onclick=\"toggleNutritionTotalMode(event)\">" +
-      modeLabel + ' <span style="font-size:9px">▾</span>' +
-      '<div id="nutrition-total-mode-menu" style="display:none;position:absolute;top:100%;left:0;background:#fff;border:1px solid var(--nc-gray-200);border-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,.15);z-index:10;min-width:170px">' +
-      NUTRITION_TOTAL_MODES.map(function (m) {
-        return '<div style="padding:6px 10px;font-size:12px;font-weight:400;white-space:nowrap" onmouseover="this.style.background=\'var(--nc-gray-100)\'" onmouseout="this.style.background=\'\'" onclick="event.stopPropagation();setNutritionTotalMode(\'' + m.key + '\')">' + m.label + '</div>';
-      }).join("") +
-      "</div></td>";
-    NUTRITION_BREAKDOWN_COLUMNS.forEach(function (c) {
-      var val = totals100[c.key];
-      if (nutritionTotalMode === "recipe") val = totals100[c.key] * (totalWeight / 100);
-      else if (nutritionTotalMode === "serving") val = totals100[c.key] * (serving / 100);
-      html += '<td class="bold" style="text-align:center;font-size:12px">' + Data.round(val, c.dp) + "</td>";
+      return perField;
     });
-    html += '</tr><tr><th style="border-top:2px solid var(--nc-gray-300)"></th>';
-    NUTRITION_BREAKDOWN_COLUMNS.forEach(function (c) { html += '<th style="border-top:2px solid var(--nc-gray-300);font-size:9px;writing-mode:vertical-lr;text-align:center;padding:8px 2px 4px">' + c.label + "</th>"; });
-    html += "</tr></tfoot>";
+
+    var html = "<thead><tr><th>Nutrient</th>";
+    lines.forEach(function (line) { html += "<th style=\"font-size:11px;text-align:center;padding:4px 6px\">" + line.ingBadge + line.name + "</th>"; });
+    html += '<th class="bold" style="font-size:11px;text-align:center;padding:4px 6px;position:relative;cursor:pointer;border-left:2px solid var(--nc-gray-300)" onclick="toggleNutritionTotalMode(event)">' +
+      modeLabel + ' <span style="font-size:9px">▾</span>' +
+      '<div id="nutrition-total-mode-menu" style="display:none;position:fixed;background:#fff;border:1px solid var(--nc-gray-200);border-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,.15);z-index:10;min-width:170px;text-transform:none">' +
+      NUTRITION_TOTAL_MODES.map(function (m) {
+        return '<div style="padding:6px 10px;font-size:12px;font-weight:400;white-space:nowrap;text-align:left" onmouseover="this.style.background=\'var(--nc-gray-100)\'" onmouseout="this.style.background=\'\'" onclick="event.stopPropagation();setNutritionTotalMode(\'' + m.key + '\')">' + m.label + '</div>';
+      }).join("") +
+      "</div></th>";
+    html += "</tr></thead><tbody>";
+    NUTRITION_BREAKDOWN_COLUMNS.forEach(function (c) {
+      html += "<tr><td style=\"font-size:12px\">" + c.label + "</td>";
+      contributions.forEach(function (perField) {
+        var v = perField[c.key];
+        html += '<td style="text-align:center;font-size:12px">' + (v !== null ? Data.round(v, c.dp) : '<span style="color:var(--nc-gray-200)">—</span>') + "</td>";
+      });
+      var totalVal = totals100[c.key];
+      if (nutritionTotalMode === "recipe") totalVal = totals100[c.key] * (totalWeight / 100);
+      else if (nutritionTotalMode === "serving") totalVal = totals100[c.key] * (serving / 100);
+      html += '<td class="bold" style="text-align:center;font-size:12px;border-left:2px solid var(--nc-gray-300)">' + Data.round(totalVal, c.dp) + "</td>";
+      html += "</tr>";
+    });
+    html += "</tbody>";
     table.innerHTML = html;
   }
 
