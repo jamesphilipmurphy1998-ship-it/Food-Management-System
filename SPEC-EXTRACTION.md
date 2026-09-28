@@ -196,10 +196,11 @@ this spec's Vegetable/Fruit rows — those track ingredient composition for alle
 purposes, not whether the product itself counts as fruit/veg/nut for HFSS scoring. Don't set
 `Fvn` from this spec; leave it to whoever reviews the extraction.
 
-### Pack Format & Storage Conditions
+### Pack Size, Pack Format & Storage Conditions
 
 | Spec label | Sheet | NutriCost field | Notes |
 |---|---|---|---|
+| `1-d) Weight or Volume` | `1&2 Manufacturer Detail` | `packSize` | e.g. "5 kg" — **different sheet layout**, see below |
 | `4-a) Inner packaging format/description` | `4 Packaging Detail` | `packFormat` | e.g. "Bag" |
 | `5-f) Storage conditions` | `5&6 Durability & Micro Standard` | `storageConditions` | e.g. "Ambient" |
 
@@ -209,6 +210,23 @@ error — but per the "warnings block just as hard as errors" rule above, it sti
 field being wrong or missing means something about this spec's format wasn't what the code
 expected, which is itself worth a human's attention before trusting *anything else* extracted
 from the same file.
+
+**Pack Size's sheet uses a different label layout than every other field extracted here.**
+`1&2 Manufacturer Detail` puts the item number (`1-d)`) in column A and the question text
+("Weight or Volume : *") in a *separate* column B cell, with the actual answer in column C —
+unlike `4 Packaging Detail`/`5&6 Durability...`, where the whole question is one string in
+column A and the generic "scan rightward for the first non-empty cell" approach finds the
+answer safely. Reusing that same generic scan against `1&2 Manufacturer Detail` would have
+wrongly grabbed column B's label text (it's non-empty) and reported it as the pack size. So
+`packSize` extraction reads column C explicitly for this one row, instead of generalizing the
+scan across both layouts — see the code comment above `pack_size = None` in
+`spec-extract.py` for the full reasoning. **If a future field needs to be pulled from this same
+sheet, check which layout applies before assuming the generic scan works.**
+
+**Plausibility check:** `packSize` must contain at least one digit (a real pack size always has
+a quantity — "Bag" alone, with no number, would be a Pack Format value that ended up in the
+wrong field, not a valid size). Same "warning, still blocks `--apply`" treatment as the other
+plausibility checks.
 
 ## Every field an extraction can produce — the complete list
 
@@ -229,7 +247,8 @@ nothing is extracted from a spec beyond what's here:
 | Fibre (g) | `7 Nutrition Information` | **Fatal** |
 | Salt (g) | `7 Nutrition Information` | **Fatal** |
 | Allergens (all 14 EU categories checked) | `8&9 Intolerance & Dietary` | **Fatal** if even one of the 19 source rows this maps from can't be located — an allergen can never be assumed absent |
-| Pack Format | `4 Packaging Detail` | Warning (still blocks `--apply`, but distinguished as non-safety in the message) |
+| Pack Size | `1&2 Manufacturer Detail` | Warning (still blocks `--apply`, but distinguished as non-safety in the message) |
+| Pack Format | `4 Packaging Detail` | Warning (same as above) |
 | Storage Conditions | `5&6 Durability & Micro Standard` | Warning (same as above) |
 
 **"Fatal" means `status: "cannot_extract"`, and `spec-apply.js` refuses to even show a diff,
@@ -311,6 +330,7 @@ Source file: `107168 (P00018) Black Bean Paste RM Spec V3 (06.02.25).xlsx`
 | Fibre (g) | `7 Nutrition Information` | row labelled `Fiber (g)*` | `5.8` |
 | Salt (g) | `7 Nutrition Information` | row labelled `Salt (g)*` | `5.1` |
 | Allergens | `8&9 Intolerance & Dietary` | every row's "contains?" column, scanned | Only the `Soya/soya derivatives:*` row had `Y` **and** mapped to an EU allergen → `["Soya"]` |
+| Pack Size | `1&2 Manufacturer Detail` | row `1-d)`, column C specifically (not a scan — see the layout note above) | `5 kg` — passed the plausibility check (contains a digit) |
 | Pack Format | `4 Packaging Detail` | row `4-a) Inner packaging format/description:*` | `Bag` — passed the plausibility check (contains a recognised container word) |
 | Storage Conditions | `5&6 Durability & Micro Standard` | row `5-f) Storage conditions :*` | `Ambient` — passed the plausibility check |
 
@@ -331,6 +351,7 @@ result and should be suspicious of itself if it doesn't.
   "altCode": "P00018",
   "nutrition": { "kj": 470.7, "kcal": 112.3, "fat": 3.1, "sat": 0, "carb": 8.9, "sugar": 0.5, "protein": 9.3, "fibre": 5.8, "salt": 5.1 },
   "allergens": ["Soya"],
+  "packSize": "5 kg",
   "packFormat": "Bag",
   "storageConditions": "Ambient",
   "errors": [],
@@ -413,3 +434,27 @@ flagged, never silently produce a wrong upload (allergen mismatch risk):**
 - Added the full worked-example trace above (every field's exact sheet + cell/row for this one
   spec) specifically so a fresh AI has a concrete, checkable reference rather than only the
   general field-mapping rules.
+
+**Same day, added Pack Size:**
+
+- New field `packSize`, added end-to-end: `Ingredient` model/entity/mapping, migration
+  `AddIngredientPackSize`, and a new UI input positioned to the left of Pack Format in the
+  Ingredient Centre modal (per the user's request — pack size and pack format read together,
+  e.g. "5 kg Bag").
+- Extracted from `1&2 Manufacturer Detail`, row `1-d) Weight or Volume`. **This sheet's label
+  layout is different from every other section extracted so far** — item number in column A,
+  question text in a separate column B cell, answer in column C — so this field reads column C
+  explicitly rather than reusing the generic "scan rightward for the first non-empty cell"
+  logic the other pack/storage fields use (that scan would have wrongly grabbed column B's
+  label text). See the layout note in the field mapping section above and the code comment in
+  `spec-extract.py` above `pack_size = None`.
+  - Actually correct on the input rather than something to catch after the fact: reasoned
+    through this discrepancy *before* writing the extraction code, once it became clear the two
+    sheets don't share a layout, rather than discovering it as a bug afterward.
+- Plausibility check: must contain a digit (mirrors the same "does this actually look like what
+  it claims to be" principle applied to Pack Format/Storage Conditions).
+- Applied to Black Bean Paste: `packSize` "" → "5 kg". `PUT` returned 200, and the new
+  post-upload verification step confirmed it: `POST-UPLOAD VERIFICATION: PASSED`.
+- Updated the field mapping table, the "every field an extraction can produce" list, and the
+  worked-example trace/JSON above to include this field — this log entry is the record that
+  those sections were brought current alongside the code, not left behind it.
