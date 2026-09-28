@@ -5,6 +5,23 @@ sheet on import) against a live recomputation from the recipe's own ingredient l
 every recipe in the database — the "tally vs the sheet" check. Lets us catch cost-calculation
 regressions or bad source data before they show up as a wrong price somewhere.
 
+## ⚠️ Standing caution — read before flagging anything as a cost gap
+
+**`ownCost === 0` (or missing) on a recipe does NOT mean it has no real cost, and is NOT by
+itself a finding worth reporting.** This has been reported as a false "no cost" issue more than
+once — every time, checking the actual app screen showed the recipe displaying a correct,
+non-zero cost, because a **single-ingredient recipe (1 line, wraps exactly one ingredient —
+this is the entire `P00xxx` code family) never needs `ownCost` at all**. Its displayed cost is
+derived live, directly from the one underlying ingredient's own `cost` field, every time — this
+flow-through was deliberately built and confirmed working (see the "single-component
+pass-through" bucket below, 116 of these, correctly excluded from the accuracy count because
+there's nothing to compare `ownCost` against in the first place).
+
+Before reporting *any* recipe as having "no cost" or "zero cost": check `ingredients.length`.
+If it's 1, this is expected and correct — not a finding. Only a **multi-line** recipe with
+`ownCost <= 0` AND a live tally that also comes back at ≤0 is a genuine gap (see "Genuinely
+zero-cost" in the table below — that's the only bucket where this is real).
+
 ## How it works
 
 The script (`scripts/accuracy-scan.js`) doesn't reimplement the costing formula — it loads the
@@ -146,11 +163,13 @@ The script now dumps a named list (not just a count) for every bucket — see
 
 **Separately flagged (not part of the bucket count above, found via direct inspection):** 117
 recipes across the dataset have their `name` field literally equal to their `code` (e.g.
-`"106488-2"`) — no real product name at all. All 117 are `approved: true` (locked) with
-`ownCost: 0`. This overlaps with the "multi-line, no cached cost" and "single-component"
-buckets above but is worth calling out on its own: it's the most actionable real data gap in
-the whole recipe library — 117 locked, production-status recipes that are effectively
-unidentifiable by name anywhere in the app.
+`"106488-2"`, `"P00060"`) — no real product name at all. All 117 are `approved: true` (locked).
+**This is a naming/identification gap only — it is NOT a cost problem.** Many of these are
+single-ingredient `P00xxx` wrappers whose cost flows through correctly from their one
+underlying ingredient (see the standing caution at the top of this file — checked directly
+against the live app for `P00060`, confirmed correct: £1.003, matching exactly). The actual,
+real gap here is purely that the recipe has no real product name anywhere in the app — search,
+lists, and exports all show the raw code instead of something a person would recognize.
 
 ### Ingredient audit — all 463 ingredients
 
