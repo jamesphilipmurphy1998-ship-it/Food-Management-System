@@ -885,3 +885,39 @@ make alone.
   write (writing 0 over an already-0 default is an empty diff) -- see the new "Known tracking
   exceptions" section above for why this ingredient will keep showing as "missing" in any
   future kcal-based scan despite being correct, and why that's expected, not a bug.
+
+### 2026-09-28 — IQF Carrot Diced, IQF Diced Onions; a real kJ/kcal swap confirmed and corrected
+
+- **IQF Carrot Diced (107685) → `RM IQF Carrot Diced 10 mm`.** This is the corrected spec the
+  user re-supplied after catching that the earlier-found 106209 file was for a delisted item.
+  - Energy fields were genuinely swapped in the source spec: literal cells read kj=30, kcal=125
+    -- neither reconciled with anything (not with each other by the kJ/kcal conversion factor,
+    not with the macro calculation, not with real-world carrot reference values). Investigated
+    before asking: **30 kcal × 4.184 = 125.5 kJ**, an almost exact match, and 30kcal alone
+    matches both the macro-derived estimate (31.3kcal) and real carrot data (~35kcal). User
+    confirmed this is a genuine swap, not just an unreconciled discrepancy -- corrected to
+    kj=125, kcal=30 (the actual values, cells transposed). This is a materially different
+    resolution than the earlier IQF Julienne Carrot case, where the user chose to write an
+    unreconciled kJ/kcal pair exactly as entered rather than "fix" it -- proof each case is its
+    own question, not a rule to reapply.
+  - Pack Format: "Liner" alone (the extractor's default read) undersold what the document
+    actually said. Asked whether the spec mentioned a bag/box anywhere -- searched the whole
+    workbook, found the outer packaging material is "Cardboard Carton" (Packaging Detail 4-d)
+    and the date-location fields on Durability say "Box". User chose to combine both:
+    **"Liner (inner), Carton (outer)"**.
+  - Storage Conditions: spec said "-18 degreas Celsius" (typo'd "degrees") -- user asked for
+    temperature only, written as "-18°C".
+  - Name mismatch ("IQF Carrots diced 10mm" vs "RM IQF Carrot Diced 10 mm" -- plural/spacing
+    only) confirmed. Applied, verified.
+- **IQF Diced Onions (106579/106603 in filename, matched on 106579) → `White Onion Diced 20mm
+  Bag Frozen`.** Clean energy values this time (36kcal × 4.184 = 150.6kJ, matches the stated
+  150kJ almost exactly -- no swap issue here). Same inner/outer packaging pattern as the carrot
+  spec just above -- inner "Blue liner", outer "Carton" -- combined the same way per the user's
+  now-established preference: **"Blue liner (inner), Carton (outer)"**. Name mismatch ("IQF 20
+  mm Diced Onion" vs "White Onion Diced 20mm Bag Frozen" -- live name adds colour/bag/frozen
+  descriptors) confirmed. Applied, verified.
+- **Note on combined inner/outer Pack Format:** this is now the second spec where the user
+  chose to combine both packaging layers into one Pack Format string rather than pick just one.
+  Worth checking whether a future spec's inner-only answer ("Liner", "Bag", etc.) should
+  prompt the same "check for an outer material too" question by default -- but per the standing
+  rule, still ask each time rather than silently assume the combined format is always wanted.
