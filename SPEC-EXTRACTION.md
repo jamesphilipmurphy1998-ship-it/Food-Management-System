@@ -512,6 +512,24 @@ result and should be suspicious of itself if it doesn't.
 }
 ```
 
+## Known tracking exceptions
+
+"Already uploaded?" is checked by reading the live ingredient's `kcal` value — `kcal > 0` means
+a spec has already been applied, `kcal === 0` means it hasn't (see the 2026-09-28 entry below
+on why the site itself, not a separate tracking file, is the source of truth for this). This
+signal has exactly one known blind spot: **an ingredient whose real nutrition genuinely IS all
+zeros is indistinguishable from one that's never been touched at all** — there's no separate
+flag in the data model for "confirmed zero" vs "untouched."
+
+- **Water (103004).** Confirmed correct as all-zero nutrition (2026-09-28) — writing zeros over
+  existing zeros produces an empty diff, so `spec-apply.js` made no actual PUT; the record is
+  unchanged. Water will keep appearing in any future "still needs a spec" scan even though it's
+  already correct. Treat it as done — don't re-ask about it, and don't be surprised the
+  `updatedAt`/version history shows no write from this confirmation.
+
+If another genuinely-all-zero ingredient turns up (unlikely for anything except water/ice), the
+same note applies: confirm it here by name, don't try to force a write that will just no-op.
+
 ## Extraction log
 
 Append an entry each time a spec is actually processed (once the write pipeline exists) —
@@ -814,3 +832,56 @@ make alone.
      lining material, not the pack type). Initially going to leave it blank, but the user
      pointed out Pack Size ("25KG BAGS") already tells us the real format -- corrected to write
      "Bag" instead of leaving it unset. Applied, verified.
+
+### 2026-09-28 — Diced Potato, Rapeseed Oil; a real self-correction on "corrupted" framing
+
+- **Diced Potato (106208/105905) → `RM Potato Dice 10mm`.** Same "code blank on the usual
+  sheet, correct on Manufacturer Detail" pattern as Xanthan Gum -- confirmed, applied via
+  `--override-code`. Two new real format variants hit and confirmed:
+  - Saturates cell read `"tr"` (standard food-labeling shorthand for "trace amount, below
+    quantifiable"). Confirmed and generalised into `parse_nutrition_value()` as a synonym for
+    the existing dash-as-zero rule (`"tr"`/`"trace"`, case-insensitive → 0).
+  - Salt cell read `"17.5mg"` -- not a unit-suffix formatting quirk like earlier cases, but the
+    unit itself was wrong. Verified independently before asking: Sodium was 7mg, and 7 × 2.5 =
+    17.5 exactly, confirming this WAS the correct salt-from-sodium value, just mislabeled mg
+    instead of g. Confirmed and corrected to 0.0175g -- handled as a one-off manual patch to
+    the extraction JSON, not a new parser rule (unlike "tr", this needed spec-specific
+    corroborating math, not a safely generalisable pattern).
+  - Also hit the missing-Fibre-row case again (`--allow-blank-nutrition fibre`).
+- **Diced Carrot (106209/105904) — user caught this spec is delisted** before any code
+  question was even resolved (the filename code didn't match any live ingredient at all; the
+  closest name-match candidate was a different code, 107685). User: "i now see this spec i
+  have given you is delisted, ignore that i will find the correct spec." Not processed.
+- **Rapeseed Oil (106167/105047) → `RM Oil Rapeseed CPU use only`.** A real self-correction
+  worth recording in detail, since it shows what "always ask" looks like when the first
+  read of a problem is wrong:
+  - Initial investigation found the Product Code field stating a stale code ("10202/102035")
+    on the first two sheets, then the pack size ("1000lt IBC") mistakenly appearing in that
+    same field on several other sheets. This was reported to the user as **"the document looks
+    structurally corrupted."**
+  - The user pushed back with a screenshot showing the Nutrition Information sheet's actual
+    data (rows 12+) completely clean and well-populated -- directly contradicting the
+    "corrupted" framing. Re-checked precisely rather than defending the original claim: the
+    nutrition/allergen/packaging DATA was never the problem. Only the Product Code *field
+    specifically* held wrong values (a stale code, then a data-entry mistake pasting the pack
+    size into the code field on later sheets) -- a real but narrow data-entry error, not
+    document corruption. Said so plainly, including the direct quote of what was overstated.
+  - With the accurate, narrower picture, the user re-confirmed proceeding with 106167 (105047)
+    from the filename (matches a real, unprocessed live ingredient by both code and name).
+  - Separately, extraction had also been silently failing on Fibre — this spec spells it
+    **"Fibre"** (UK spelling) where the code only matched **"Fiber"** (US spelling), a genuine
+    spelling variant across real specs. Generalised into the nutrition-row lookup: try both
+    spellings for this one field before treating the row as missing.
+  - The `name` field also came back as the garbage code text (same class of issue as Xanthan
+    Gum's mislabeled name cell) -- corrected to "Rapeseed Oil," confirmed both directly by the
+    user and independently via the Nutrition sheet's own Product Name row. Name mismatch also
+    flagged against the live ingredient's name ("Rapeseed Oil" vs "RM Oil Rapeseed CPU use
+    only") -- confirmed. Applied, verified.
+  - **Lesson for a fresh AI:** a claim like "this looks corrupted" needs the same evidence
+    standard as every other flag in this pipeline -- don't generalise from one wrong field to
+    the whole document. When corrected, restate the narrower, accurate picture rather than
+    quietly dropping the claim.
+- **Water (103004).** Confirmed correct as all-zero nutrition. Produced no actual database
+  write (writing 0 over an already-0 default is an empty diff) -- see the new "Known tracking
+  exceptions" section above for why this ingredient will keep showing as "missing" in any
+  future kcal-based scan despite being correct, and why that's expected, not a bug.

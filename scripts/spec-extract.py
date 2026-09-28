@@ -90,6 +90,11 @@ def parse_nutrition_value(val, expected_unit):
     # see SPEC-EXTRACTION.md) -- record as 0, same as if the supplier had written "0".
     if s == "-":
         return 0.0, None
+    # "tr"/"trace" is standard UK food-labeling notation for "present but below the quantifiable
+    # amount" -- confirmed against a real spec (Diced Potato, 2026-09-28) -- record as 0, same
+    # treatment as the dash convention above.
+    if s.lower() in ("tr", "trace"):
+        return 0.0, None
     # A below-threshold lab result ("<0.1g") -- record the threshold value itself (the
     # standard/conservative reading: the true value is somewhere between 0 and this number).
     if s.startswith("<"):
@@ -226,6 +231,11 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
             for label, field, unit in NUTRITION_FIELDS:
                 target = label.rstrip("*").strip().lower()
                 found_row = labels.get(target)
+                # "Fiber"/"Fibre" is a genuine US/UK spelling variant seen across real specs
+                # (confirmed: Rapeseed Oil, 2026-09-28, spells it "Fibre") -- same field, try
+                # both spellings before treating the row as missing.
+                if found_row is None and target == "fiber (g)":
+                    found_row = labels.get("fibre (g)")
                 if found_row is None:
                     # A missing row is normally refused outright (see module docstring -- it
                     # could mean the format changed and a category silently dropped). The one
