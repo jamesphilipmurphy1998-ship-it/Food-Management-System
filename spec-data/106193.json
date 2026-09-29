@@ -1,0 +1,26 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106193 (105031) Canned pineapple tidbits in light syrup RM Spec V4 (09.10.2023).xlsx",
+  "appliedAt": "2026-09-29T12:18:44.861Z",
+  "name": "RM Pineapple Cut Tin",
+  "code": "106193",
+  "altCode": "105031",
+  "nutrition": {
+    "kj": 272,
+    "kcal": 64,
+    "fat": 0.5,
+    "sat": 0,
+    "carb": 15,
+    "sugar": 15,
+    "protein": 0.5,
+    "salt": 0.01
+  },
+  "allergens": [],
+  "packSize": "6x3kg",
+  "packFormat": "conventional 3-piece sanitary metal cans.\nTop and bottom ends as well as body are tin-coated. The body (side\nseam) is seam welded.",
+  "storageConditions": "ambient temperature",
+  "ingredientsList": "pineapple (60%), water, sugar, acidity regulator (E330).",
+  "errors": [],
+  "warnings": [],
+  "shelfLife": "3 years"
+}

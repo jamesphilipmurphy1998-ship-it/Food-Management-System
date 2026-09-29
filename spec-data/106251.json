@@ -22,5 +22,6 @@
   "storageConditions": "DRY, AMBIENT CONDITIONS IN SEALED BAG OUT OF DIRECT SUNLIGHT",
   "ingredientsList": null,
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "shelfLife": "24 MONTHS"
 }

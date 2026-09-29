@@ -22,5 +22,6 @@
   "storageConditions": "Keep frozen, -18 or below",
   "ingredientsList": "Onion",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "shelfLife": "24 months, 12 months minimum shelf life on delivery"
 }

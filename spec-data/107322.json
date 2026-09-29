@@ -1,0 +1,27 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/107322 (P00047) Beef Mince with 20 fat RM Spec V2 (13.08.2026) .xlsx",
+  "appliedAt": "2026-09-29T12:37:03.858Z",
+  "name": "RM Beef Mince Frozen (Red tractor)",
+  "code": "107322",
+  "altCode": null,
+  "nutrition": {
+    "kj": 900,
+    "kcal": 200,
+    "fat": 13,
+    "sat": 5.8,
+    "carb": 0.5,
+    "sugar": 0.5,
+    "protein": 21.5,
+    "fibre": 0.5,
+    "salt": 0.15
+  },
+  "allergens": [],
+  "packSize": "15kg",
+  "packFormat": "Plastic bag",
+  "storageConditions": "0°C - 2°C",
+  "shelfLife": "Production + 5 days. Minimum shelf life from delivery 3 days",
+  "ingredientsList": "Boned in flank from the fore quarters minced with 20% fat from 85vl",
+  "errors": [],
+  "warnings": []
+}

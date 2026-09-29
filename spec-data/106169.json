@@ -22,5 +22,6 @@
   "storageConditions": "Ambient",
   "ingredientsList": null,
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "shelfLife": "18 months. Minimum shelf life on delivery 4.5 months"
 }

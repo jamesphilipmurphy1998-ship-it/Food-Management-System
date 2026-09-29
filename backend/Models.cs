@@ -37,6 +37,11 @@ public sealed class Ingredient
     public string PackSize { get; set; } = "";
     public string PackFormat { get; set; } = "";
     public string StorageConditions { get; set; } = "";
+    /// <summary>Shelf life as stated by the manufacturer's spec -- e.g. "Production + 5 days.
+    /// Minimum shelf life from delivery 3 days". Free text, not a structured duration, since
+    /// specs phrase this inconsistently (some give a single figure, some split manufacturer vs
+    /// delivery minimum, some add "once opened" separately in Storage Conditions).</summary>
+    public string ShelfLife { get; set; } = "";
     /// <summary>The full legal ingredient declaration (composition list) for this raw material,
     /// as it would appear on a label — e.g. "Rapeseed Oil, Water, Spirit Vinegar, Sugar, Salt...".
     /// Used to build the ingredient listing for finished products that use this ingredient.</summary>

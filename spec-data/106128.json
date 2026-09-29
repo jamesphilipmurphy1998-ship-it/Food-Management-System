@@ -22,5 +22,6 @@
   "storageConditions": "+2°C",
   "ingredientsList": "Chives",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "shelfLife": "Shelf life is not applicable to fresh produce, min shelf delivery on delivery into Wasabi is D +3 days"
 }

@@ -24,5 +24,6 @@
   "storageConditions": "cool,dry, abient warehouse",
   "ingredientsList": "dehydrated onion powder",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "shelfLife": "24months; minimum shelf life upon delivery - 6months"
 }

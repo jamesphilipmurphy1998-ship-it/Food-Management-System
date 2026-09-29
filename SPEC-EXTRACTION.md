@@ -329,6 +329,77 @@ a quantity — "Bag" alone, with no number, would be a Pack Format value that en
 wrong field, not a valid size). Same "warning, still blocks `--apply`" treatment as the other
 plausibility checks.
 
+### Shelf Life (added 2026-09-29)
+
+| Spec label | Sheet | NutriCost field | Notes |
+|---|---|---|---|
+| `5-a) Shelf Life from manufacturer...` | `5&6 Durability & Micro Standard` | `shelfLife` | e.g. "Production + 5 days. Minimum shelf life from delivery 3 days" |
+
+Same sheet as Storage Conditions (`5-f)`), found the same way — by item-number prefix, not the
+full question text, since the wording after "5-a)" varies between spec revisions ("Shelf Life
+from manufacturer : *" on some, "...& Minimum shelf life on delivery : *" on others). Free text,
+not a structured duration — specs phrase this too inconsistently to parse into a number+unit
+pair reliably (some give one figure, some split manufacturer vs. delivery minimum, "once opened"
+shelf life sometimes lives here and sometimes gets folded into Storage Conditions instead).
+
+**Plausibility check, reasoned the same way as Pack Format/Storage Conditions:** a real shelf
+life is always a *number of a time unit* — "5 days", "Production + 5 days", "3 months". It can
+never be just prose with no duration in it. This guards against the same failure mode as those
+two checks: a lookup landing on the wrong row and silently writing something that isn't
+actually a shelf life. Concretely, this sheet's very next row down is `5-b) Manufacturing date
+format` — a cell containing literally `"DDMMYYYY"` — which has no digit-plus-time-unit pattern
+at all and would fail this check immediately if a future template change ever caused the lookup
+to drift onto it. The check requires **both** a digit and a time-unit word (day/days/week/weeks/
+month/months/year/years/hour/hours/hr/hrs) to be present; either one alone isn't enough (a bare
+number could be a code fragment, a bare unit word with no number isn't a real duration either).
+Same "warning, still blocks `--apply`" treatment as every other plausibility check — flagged for
+a human to confirm, never silently written if it fails, never silently dropped either.
+
+### Standing rule: Storage Conditions and Shelf Life ALWAYS require explicit human confirmation
+
+Added 2026-09-29, per explicit user instruction: `storageConditions` and `shelfLife` always
+generate a warning requiring `--confirm-warnings`, **even when they pass every automated check
+cleanly** — unlike every other field, where a clean pass means no warning at all. These two are
+singled out because a wrong value in either is a genuine food-safety risk (wrong temperature
+instructions, wrong shelf life), not a cosmetic error, and because uploads are expected to be
+infrequent going forward (roughly weekly) — the extra confirmation step costs almost nothing at
+that cadence. In practice this means: whoever runs `spec-apply.js` must look at the actual
+extracted Storage Conditions and Shelf Life text and confirm it matches the source spec before
+every single `--apply`, never just trust a clean `status: "ok"` for these two fields specifically.
+
+### Real bug found and fixed: rich-text formatting can silently fake a degree symbol
+
+**The incident (Beef Mince, 107322, 2026-09-29):** the Storage Conditions cell read, via plain
+`.value`, as `"00C - 20C"` — indistinguishable from a genuine (and dangerously different) 0–20°C
+range. The actual Excel file, opened normally, visually shows `"0°C - 2°C"`. Root cause: the
+cell isn't plain text at all — it's **rich text** with a manually-inserted **superscript "0"**
+standing in for a real degree sign (`"0"` + superscript`"0"` + `"C - 2"` + superscript`"0"` +
+`"C"`). openpyxl's default plain-text read strips all rich-text formatting, collapsing the
+superscript "0" into an indistinguishable plain "0" — a silent, structurally undetectable
+corruption from a 2°C range into what reads exactly like a 20°C range. This is exactly the kind
+of error that matters most: it doesn't look wrong, it looks like a plausible (if oddly-typed)
+value.
+
+**Fix:** `spec-extract.py` now opens every workbook with `rich_text=True` and reads every
+text-bearing cell (name, code, pack size/format, storage conditions, shelf life, ingredients
+list) through a `cell_text()` helper that inspects the actual rich-text runs. A run styled
+`vertAlign="superscript"` whose text is exactly `"0"` is translated to the real degree sign
+(`°`). **This substitution is never trusted silently** — whenever any superscript-styled
+run is found (whether it's this exact pattern or something else the helper doesn't specifically
+recognise), a dedicated warning fires unconditionally, separate from the general
+always-confirm-these-two-fields rule above, naming both the raw plain-text reading and the
+substituted reading side by side, so a person can see exactly what was assumed and verify it
+against the real file before trusting it. The reasoning for never auto-trusting this: font/
+formatting tricks can vary in ways a single pattern match can't guarantee to catch every case
+of — the fix makes the ONE specific pattern seen so far come out correct automatically, but the
+safety net is the mandatory human check, not the pattern match's own confidence.
+
+**Reviewed retroactively:** every one of the 63 already-processed (or in-folder) specs was
+re-scanned with the fixed extraction logic, specifically checking for this rich-text warning.
+**Only Beef Mince (107322) was affected** — nothing else in the batch already applied this
+session was silently corrupted by this trick. No other backfill was needed for this specific
+issue.
+
 ## Every field an extraction can produce — the complete list
 
 If any of these can't be found or verified in a given spec, **that field (and depending on

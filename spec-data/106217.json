@@ -22,5 +22,6 @@
   "storageConditions": "Chilled ( 1 - 5 C)",
   "ingredientsList": "Pak Choi 100%",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "shelfLife": "Date of Production + 4 days, Delivery + 3 days"
 }

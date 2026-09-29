@@ -22,5 +22,6 @@
   "storageConditions": "Chilled 0-4C, or frozen -18C",
   "ingredientsList": "Plum Puree",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "shelfLife": "6 months when chilled, 24 months when frozen"
 }

@@ -21,5 +21,6 @@
   "storageConditions": "Ambient. Ideally between 18-24 deg C to remain liquid",
   "ingredientsList": null,
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "shelfLife": "6 months"
 }

@@ -21,5 +21,6 @@
   "storageConditions": "cool dry warehouse",
   "ingredientsList": "chilli powder HT 10 000 -20 000 SHU",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "shelfLife": "18 months, min 6 months upon delivery"
 }

@@ -24,5 +24,6 @@
   "storageConditions": "Keep frozen. Once defrosted, keep refrigerated and consume within 48 hours. Do not refreeze",
   "ingredientsList": "Shrimp 99.5% (Crustaceans), Salt",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "shelfLife": "Shelf life from manufacturer: 24 months\nShelf life on delivery: 90 days"
 }

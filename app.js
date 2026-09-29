@@ -2746,7 +2746,7 @@
 
   function openNewIngredientModal() {
     editIngredientId = null;
-    ["new-ing-name", "new-ing-code", "new-ing-secondary-code", "new-ing-kj", "new-ing-kcal", "new-ing-fat", "new-ing-sat", "new-ing-carb", "new-ing-sugar", "new-ing-fibre", "new-ing-protein", "new-ing-salt", "new-ing-cost", "new-ing-supplier", "new-ing-description-tags", "new-ing-density", "new-ing-unit-weight", "new-ing-pack-size", "new-ing-pack-format", "new-ing-storage-conditions"].forEach(function (id) {
+    ["new-ing-name", "new-ing-code", "new-ing-secondary-code", "new-ing-kj", "new-ing-kcal", "new-ing-fat", "new-ing-sat", "new-ing-carb", "new-ing-sugar", "new-ing-fibre", "new-ing-protein", "new-ing-salt", "new-ing-cost", "new-ing-supplier", "new-ing-description-tags", "new-ing-density", "new-ing-unit-weight", "new-ing-pack-size", "new-ing-pack-format", "new-ing-storage-conditions", "new-ing-shelf-life"].forEach(function (id) {
       var el = document.getElementById(id);
       if (el) el.value = "";
     });
@@ -2834,6 +2834,8 @@
     if (packFormatEl) packFormatEl.value = data.packFormat || "";
     var storageConditionsEl = document.getElementById("new-ing-storage-conditions");
     if (storageConditionsEl) storageConditionsEl.value = data.storageConditions || "";
+    var shelfLifeEl = document.getElementById("new-ing-shelf-life");
+    if (shelfLifeEl) shelfLifeEl.value = data.shelfLife || "";
     var ingredientsListEl = document.getElementById("new-ing-ingredients-list");
     if (ingredientsListEl) ingredientsListEl.value = data.ingredientsList || "";
     document.getElementById("new-ing-fvn").checked = !!data.fvn;
@@ -3009,6 +3011,7 @@
       packSize: (function () { var el = document.getElementById("new-ing-pack-size"); return el ? el.value.trim() : ""; })(),
       packFormat: (function () { var el = document.getElementById("new-ing-pack-format"); return el ? el.value.trim() : ""; })(),
       storageConditions: (function () { var el = document.getElementById("new-ing-storage-conditions"); return el ? el.value.trim() : ""; })(),
+      shelfLife: (function () { var el = document.getElementById("new-ing-shelf-life"); return el ? el.value.trim() : ""; })(),
       ingredientsList: (function () { var el = document.getElementById("new-ing-ingredients-list"); return el ? el.value.trim() : ""; })(),
       allergens: allergens,
       fvn: document.getElementById("new-ing-fvn").checked

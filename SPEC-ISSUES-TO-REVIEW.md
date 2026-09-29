@@ -84,3 +84,28 @@ from a different document at some point — rather than `106199` being wrong.
 **Status:** skipped, awaiting review. Not written anywhere. Once confirmed, re-run
 `spec-extract.py` with `--override-code 106199` (or whatever code is confirmed correct) and
 apply via `spec-apply.js` in the usual way.
+
+---
+
+## 106167 -- RM Oil Rapeseed CPU use only (shelf life not backfilled)
+
+**File:** `106167 (105047) Rapeseed Oil spec V6 (08.01.2025).xlsx`
+
+**Issue:** the document's `5&6 Durability & Micro Standard` sheet has "1000lt IBC" (a pack size
+value) written into what should be its Product Code cell -- a genuine data-entry error specific
+to this one sheet of this one document. The recipe sheet states the correct code consistently
+("10202 (102035)"), but this sheet disagrees, which the cross-sheet consistency check correctly
+refuses regardless of any override (a real disagreement between sheets is never overridable,
+per the standing rule -- only a uniformly blank or uniformly-different-but-consistent code is).
+
+This was only discovered 2026-09-29 during the Shelf Life field's backfill, because the
+Product Code lookup only recently became dynamic (label-search based, not hardcoded C4) --
+the old lookup happened to read a blank C4 on this sheet and never noticed the mismatch. The
+ingredient's nutrition/allergen/pack data was already correctly applied earlier this session
+(via the recipe sheet's own consistent code) and is unaffected -- this only blocks re-extracting
+anything from the Durability sheet specifically (Shelf Life, and any future Storage Conditions
+re-extraction).
+
+**Status:** paused, awaiting review. `RM Oil Rapeseed CPU use only` has no `shelfLife` value.
+Once a person confirms what this sheet's Product Code cell should actually say (or confirms the
+real shelf life from elsewhere in the document/supplier), re-run extraction and apply normally.

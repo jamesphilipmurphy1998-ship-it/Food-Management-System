@@ -24,5 +24,6 @@
   "storageConditions": "FROZEN",
   "ingredientsList": "Soya Beans (100%).",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "shelfLife": "24 months * 75% of life on delivery"
 }

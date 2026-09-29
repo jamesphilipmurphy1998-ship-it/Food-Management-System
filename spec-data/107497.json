@@ -22,5 +22,6 @@
   "storageConditions": "-18 degreas Celsius",
   "ingredientsList": "Carrot",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "shelfLife": "24 Months, 18 months (75% of the shelf life on production)"
 }

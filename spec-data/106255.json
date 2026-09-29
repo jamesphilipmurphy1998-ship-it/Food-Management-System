@@ -22,5 +22,6 @@
   "storageConditions": "Chilled 0-4C, or frozen -18C",
   "ingredientsList": "Pear puree; antioxidant: L-ascorbic acid (E300)",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "shelfLife": "12 months when chilled, 24 months when frozen"
 }

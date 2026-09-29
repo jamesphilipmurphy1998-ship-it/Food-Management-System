@@ -24,5 +24,6 @@
   "storageConditions": "Ambient",
   "ingredientsList": "Water, Tomato Paste (19%), Glucose Syrup, Malt Vinegar (From BARLEY), Sugar, Native Maize Starch, Salt, Caramelised Sugar Syrup, Acidity Regulator (Citric Acid), Onion Powder, Garlic Powder, Black Pepper, Cloves.",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "shelfLife": "6 months (4.5 months minimum on delivery)"
 }

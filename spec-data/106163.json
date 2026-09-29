@@ -21,5 +21,6 @@
   "storageConditions": "Chilled ( 1 - 5 C)",
   "ingredientsList": null,
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "shelfLife": "DOP (Date of Production) + 02 days"
 }

@@ -1470,6 +1470,7 @@ file static class IngredientSnapshot
         packSize = i.PackSize,
         packFormat = i.PackFormat,
         storageConditions = i.StorageConditions,
+        shelfLife = i.ShelfLife,
         ingredientsList = i.IngredientsList,
         allergens = i.Allergens,
         fvn = i.Fvn,

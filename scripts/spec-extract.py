@@ -38,6 +38,58 @@ import openpyxl
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 
+def cell_text(cell, warnings=None, field_label=None):
+    """Plain-text value of a cell. Handles one specific rich-text trick: a run of text styled as
+    superscript whose text is exactly '0' is a common manual fake for a degree symbol (no real
+    Unicode '°' character used at all) -- confirmed against a real spec (Beef Mince,
+    2026-09-29) whose Storage Conditions cell reads as *plain* text "00C - 20C" (indistinguishable
+    from a genuine double-zero typo, and from a real 0-20C range) but is actually rich text:
+    "0" + SUPERSCRIPT"0" + "C - 2" + SUPERSCRIPT"0" + "C", i.e. "0[deg]C - 2[deg]C" is what a
+    human reading the spec actually sees.
+
+    SAFETY: this substitution is NEVER trusted silently. A wrong read here is the difference
+    between "chilled" and "ambient" storage instructions -- a genuine food-safety risk, not a
+    cosmetic formatting quirk. Whenever ANY superscript-styled run is found in a cell (whether
+    it's the exact "0"->degree-sign case or something else this pattern doesn't recognise), a
+    warning is appended and the extraction status can never be "ok" until a human explicitly
+    reviews it via --confirm-warnings, per the standing rule that every questionable read gets
+    a person's eyes on it -- this is not something a font-formatting heuristic gets to decide
+    alone, no matter how confident the pattern match looks. A workbook opened without
+    rich_text=True, or a cell with no rich-text runs at all, just returns str(value) unchanged."""
+    v = cell.value
+    if v is None:
+        return None
+    runs = getattr(v, "__iter__", None) and not isinstance(v, str)
+    if not runs:
+        return str(v)
+    out = []
+    plain_concat = []
+    superscript_found = []
+    for run in v:
+        if isinstance(run, str):
+            out.append(run)
+            plain_concat.append(run)
+        else:
+            text = getattr(run, "text", None) or ""
+            font = getattr(run, "font", None)
+            vert_align = getattr(font, "vertAlign", None) if font else None
+            plain_concat.append(text)
+            if vert_align == "superscript":
+                superscript_found.append(text)
+                out.append("°" if text == "0" else text)
+            else:
+                out.append(text)
+    result = "".join(out)
+    if superscript_found and warnings is not None:
+        warnings.append(
+            "%s contains superscript-styled text (%r read plainly, %r with superscript '0' runs "
+            "translated to the degree sign) -- this is a rich-text formatting trick some specs "
+            "use to fake a degree symbol without the real Unicode character. SAFETY-RELEVANT: "
+            "never trusted automatically -- a person must verify this against the actual spec "
+            "(open it in Excel and read what it visually shows) before this can be applied; "
+            "re-run with --confirm-warnings once confirmed." % (field_label or "A cell", "".join(plain_concat), result))
+    return result
+
 # Every category this template's allergen sheet is expected to carry, and which EU-14 allergen
 # it maps to (several spec rows -> one EU allergen; several spec rows aren't EU allergens at
 # all and are intentionally not mapped -- see SPEC-EXTRACTION.md). ALL of these must be found
@@ -117,6 +169,13 @@ def parse_nutrition_value(val, expected_unit):
     # feet/inches notation that happens to use the same character meaningfully.
     if s.endswith("'") or s.endswith('"'):
         s = s[:-1].strip()
+    # European comma-decimal notation ("<0,02" meaning "<0.02") -- confirmed against a real spec
+    # (Glucose Syrup, 2026-09-29) that mixed BOTH comma and period decimals for different fields
+    # in the same document, so this isn't a one-off typo, it's a real notation variant. Safe to
+    # normalize unconditionally here: a comma between two digits is never a thousands separator
+    # in this context (every value on this template is well under 1000), so there's no ambiguity
+    # to guess through.
+    s = _re.sub(r"(\d),(\d)", r"\1.\2", s)
     m = _re.match(r"^([\d.]+)\s*([A-Za-z]*)$", s)
     if not m:
         return None, "unparseable"
@@ -150,7 +209,7 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
     warnings = []
 
     try:
-        wb = openpyxl.load_workbook(path, data_only=True)
+        wb = openpyxl.load_workbook(path, data_only=True, rich_text=True)
     except Exception as e:
         return {"status": "cannot_extract", "sourceFile": path, "errors": ["Could not open file as .xlsx: %s" % e], "warnings": []}
 
@@ -168,9 +227,19 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
         return {"status": "cannot_extract", "sourceFile": path, "errors": errors, "warnings": warnings}
 
     # --- Product code + name ---
+    # Located by scanning for the "Product Name :"/"Product Code :" label text in column A,
+    # same as every other field in this file (packSize, storageConditions, etc.) -- NOT a fixed
+    # C3/C4 cell. A third document layout variant was found 2026-09-29 (Honey, Diced Green
+    # Pepper, Pineapple) with everything shifted up one row (title at row 5, Product Name at row
+    # 2, Product Code at row 3, instead of the usual row 1/3/4) -- a fixed-cell lookup silently
+    # read blank on all three until this was made dynamic like everything else.
+    def labeled_cell(sheet, label_prefix):
+        row = find_row_starting_with(sheet, label_prefix)
+        return sheet.cell(row=row, column=3).value if row else None
+
     ws = wb[recipe_sheet_name]
-    name = ws["C3"].value
-    raw_code_from_doc = str(ws["C4"].value or "").strip()
+    name = labeled_cell(ws, "Product Name")
+    raw_code_from_doc = str(labeled_cell(ws, "Product Code") or "").strip()
     # Whether every OTHER sheet agrees with the recipe sheet's own C4 (blank sheets don't count
     # as disagreeing -- only a sheet with its own different non-blank value does). This is the
     # single precondition for --override-code, in BOTH its forms below: the document must be
@@ -179,8 +248,8 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
     # disagree with each other is refused regardless of override_code -- that looks like
     # corrupted or mixed-up data, not something a single confirmed code can safely paper over.
     doc_self_consistent = all(
-        not (wb[sn]["C4"].value and str(wb[sn]["C4"].value).strip())
-        or str(wb[sn]["C4"].value).strip() == raw_code_from_doc
+        not (labeled_cell(wb[sn], "Product Code") and str(labeled_cell(wb[sn], "Product Code")).strip())
+        or str(labeled_cell(wb[sn], "Product Code")).strip() == raw_code_from_doc
         for sn in wb.sheetnames if sn != recipe_sheet_name
     )
     raw_code = raw_code_from_doc
@@ -200,13 +269,13 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
             "this does NOT look like our own ingredient code, so it was replaced with %r via "
             "--override-code (human-confirmed: %r is the manufacturer's own code, not ours)." % (raw_code_from_doc, override_code, raw_code_from_doc))
     elif not raw_code:
-        errors.append("Product Code cell (C4 on '%s') is empty" % recipe_sheet_name)
+        errors.append("Product Code cell (found via label search on '%s') is empty" % recipe_sheet_name)
     m = re.match(r"^([A-Za-z0-9\-]+)", raw_code) if raw_code else None
     primary_code = m.group(1) if m else None
     paren_m = re.search(r"\(([A-Za-z0-9\-]+)\)", raw_code) if raw_code else None
     alt_code = paren_m.group(1) if paren_m else None
     if not primary_code:
-        errors.append("Could not parse a product code out of C4 value %r" % raw_code)
+        errors.append("Could not parse a product code out of Product Code cell value %r" % raw_code)
 
     # Every sheet must agree on the same product code -- a mismatch means either a corrupted
     # file or (more dangerously) sheets copy-pasted from a different product's spec. Skipped
@@ -217,7 +286,7 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
             if sn == recipe_sheet_name:
                 continue
             s = wb[sn]
-            c4 = s["C4"].value
+            c4 = labeled_cell(s, "Product Code")
             if c4 and str(c4).strip() and str(c4).strip() != raw_code:
                 errors.append("Sheet '%s' has Product Code %r, which does not match '%s'’s %r -- refusing, this looks like mismatched/corrupted data, not a format change" % (sn, c4, recipe_sheet_name, raw_code))
 
@@ -348,6 +417,27 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
                 "condition (expected something like Ambient/Chilled/Frozen/Cool Dry Place) -- "
                 "flagging for manual review rather than assuming it's correct." % value)
 
+    # A real shelf life is always a NUMBER of a TIME UNIT ("5 days", "Production + 5 days",
+    # "3 months") -- never just prose with no duration in it. Guards against the same class of
+    # mistake as the pack format/storage conditions checks: a cell reference drifting onto the
+    # wrong row (e.g. landing on the date-FORMAT row just below it, "DDMMYYYY", which has no
+    # time-unit word and would otherwise silently get written as if it were a duration).
+    # Requires the time-unit word to immediately follow a number (with optional whitespace in
+    # between), checking only the RIGHT-hand word boundary -- not both sides. A plain \bday\b
+    # word-boundary check fails on real specs that omit the space ("540days": confirmed against
+    # a real spec, Frozen Fried Tofu, 2026-09-29) because digits and letters are the same "word
+    # character" class in regex, so there's no boundary between the "0" and the "d". Anchoring on
+    # "number immediately before the unit" is both more permissive (catches the no-space case)
+    # and more precise (a stray unit word elsewhere with no adjacent number still won't match).
+    SHELF_LIFE_PATTERN = _re.compile(r"\d\s*(day|days|week|weeks|month|months|year|years|hour|hours|hrs|hr)\b", _re.IGNORECASE)
+
+    def check_shelf_life_plausible(value):
+        if SHELF_LIFE_PATTERN.search(value):
+            return None
+        return ("Shelf Life extracted as %r, but it doesn't read like a duration (expected a "
+                "number plus a time unit, e.g. '5 days' or '3 months') -- flagging for manual "
+                "review rather than assuming it's correct." % value)
+
     def check_pack_size_plausible(value):
         if any(ch.isdigit() for ch in value):
             return None
@@ -373,9 +463,9 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
         if row is None:
             warnings.append("Could not find the '1-d) Weight or Volume' row in '%s' -- Pack Size not extracted" % manufacturer_sheet_name)
         else:
-            v = ms.cell(row=row, column=3).value  # column C
-            if v is not None and str(v).strip():
-                pack_size = str(v).strip()
+            v = cell_text(ms.cell(row=row, column=3), warnings, "Pack Size")  # column C
+            if v is not None and v.strip():
+                pack_size = v.strip()
                 implausible = check_pack_size_plausible(pack_size)
                 if implausible:
                     warnings.append(implausible)
@@ -394,9 +484,9 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
             warnings.append("Could not find the '4-a) Inner packaging format' row in '%s' -- Pack Format not extracted" % packaging_sheet_name)
         else:
             for col in range(2, 15):
-                v = ps.cell(row=row, column=col).value
-                if v is not None and str(v).strip():
-                    pack_format = str(v).strip()
+                v = cell_text(ps.cell(row=row, column=col), warnings, "Pack Format")
+                if v is not None and v.strip():
+                    pack_format = v.strip()
                     break
             if pack_format is None:
                 warnings.append("Row '4-a)' in '%s' has no value in any column -- Pack Format not extracted" % packaging_sheet_name)
@@ -415,9 +505,9 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
             warnings.append("Could not find the '5-f) Storage conditions' row in '%s' -- Storage Conditions not extracted" % durability_sheet_name)
         else:
             for col in range(2, 15):
-                v = ds.cell(row=row, column=col).value
-                if v is not None and str(v).strip():
-                    storage_conditions = str(v).strip()
+                v = cell_text(ds.cell(row=row, column=col), warnings, "Storage Conditions")
+                if v is not None and v.strip():
+                    storage_conditions = v.strip()
                     break
             if storage_conditions is None:
                 warnings.append("Row '5-f)' in '%s' has no value in any column -- Storage Conditions not extracted" % durability_sheet_name)
@@ -425,8 +515,38 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
                 implausible = check_storage_conditions_plausible(storage_conditions)
                 if implausible:
                     warnings.append(implausible)
+                # Always human-confirmed, even when it passes every automated check -- per
+                # explicit user instruction 2026-09-29, prompted by the degree-symbol rich-text
+                # case above: a wrong storage temperature is a real food-safety risk, and with
+                # uploads expected to be infrequent going forward (roughly weekly), the extra
+                # confirmation step costs nothing. This is deliberately unconditional -- it fires
+                # on every extraction with a Storage Conditions value, not just implausible ones.
+                warnings.append("Storage Conditions extracted as %r -- always requires explicit human confirmation before writing (temperature-relevant, safety-critical), regardless of whether it looks plausible. Confirm this matches what the source spec actually states, then re-run with --confirm-warnings." % storage_conditions)
+        # --- Shelf Life ("5-a)" on the same Durability sheet) -- the label text varies between
+        # spec revisions ("5-a) Shelf Life from manufacturer : *" vs "...& Minimum shelf life on
+        # delivery : *"), so this matches on the "5-a)" prefix only, same approach as everything
+        # else in this file that's found by item-number prefix rather than the full question text.
+        shelf_life = None
+        sl_row = find_row_starting_with(ds, "5-a)")
+        if sl_row is None:
+            warnings.append("Could not find the '5-a) Shelf Life' row in '%s' -- Shelf Life not extracted" % durability_sheet_name)
+        else:
+            for col in range(2, 15):
+                v = cell_text(ds.cell(row=sl_row, column=col), warnings, "Shelf Life")
+                if v is not None and v.strip():
+                    shelf_life = v.strip()
+                    break
+            if shelf_life is None:
+                warnings.append("Row '5-a)' in '%s' has no value in any column -- Shelf Life not extracted" % durability_sheet_name)
+            else:
+                implausible = check_shelf_life_plausible(shelf_life)
+                if implausible:
+                    warnings.append(implausible)
+                # Always human-confirmed -- same reasoning and same date as the Storage
+                # Conditions rule just above.
+                warnings.append("Shelf Life extracted as %r -- always requires explicit human confirmation before writing (safety-relevant), regardless of whether it looks plausible. Confirm this matches what the source spec actually states, then re-run with --confirm-warnings." % shelf_life)
     else:
-        warnings.append("No sheet matching 'Durability' found -- Storage Conditions not extracted")
+        warnings.append("No sheet matching 'Durability' found -- Storage Conditions/Shelf Life not extracted")
 
     # --- Legal Ingredient Declaration: the composition list as it would appear on a label,
     # lives on the recipe sheet, one row below its own label ("Legal Ingredient Declaration
@@ -438,9 +558,9 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
     if declaration_row is None:
         warnings.append("Could not find a 'Legal Ingredient Declaration' row on '%s' -- Ingredients List not extracted" % recipe_sheet_name)
     else:
-        v = ws.cell(row=declaration_row + 1, column=1).value
-        if v is not None and str(v).strip():
-            ingredients_list = str(v).strip()
+        v = cell_text(ws.cell(row=declaration_row + 1, column=1), warnings, "Ingredients List")
+        if v is not None and v.strip():
+            ingredients_list = v.strip()
         else:
             warnings.append("Row after 'Legal Ingredient Declaration' on '%s' is empty -- Ingredients List not extracted" % recipe_sheet_name)
 
@@ -528,6 +648,7 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
         "packSize": pack_size,
         "packFormat": pack_format,
         "storageConditions": storage_conditions,
+        "shelfLife": shelf_life,
         "ingredientsList": ingredients_list,
         "errors": errors,
         "warnings": warnings,

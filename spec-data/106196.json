@@ -1,0 +1,29 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106196 (105055) Glucose Syrup - SPEC V5 25.09.2026.xlsx",
+  "appliedAt": "2026-09-29T12:19:36.970Z",
+  "name": "RM Glucose Syrup",
+  "code": "106196",
+  "altCode": "105055",
+  "nutrition": {
+    "kj": 1292,
+    "kcal": 304,
+    "fat": 0,
+    "sat": 0,
+    "carb": 76,
+    "sugar": 24.3,
+    "protein": 0.02,
+    "fibre": 0,
+    "salt": 0.01
+  },
+  "allergens": [
+    "Cereals containing gluten"
+  ],
+  "packSize": "25kg / bucket",
+  "packFormat": "BUCKET",
+  "storageConditions": "Ambient",
+  "ingredientsList": "Glucose Syrup (This glucose syrup is a purified and concentrated aqueous solution of nutritive saccharides obtained by hydrolysis of wheat starch). \nThe product is 100% single ingredient ( Glucose Syrup)",
+  "errors": [],
+  "warnings": [],
+  "shelfLife": "18 months (when repackaged in buckets)"
+}

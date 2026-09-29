@@ -25,5 +25,6 @@
   "storageConditions": "Store unopened in a cool dry place away from direct sunlight for both jerrican and IBC",
   "ingredientsList": "Water, soya beans, wheat, salt",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "shelfLife": "IBC: Shelf life from manufacturer 10 months / minimum shelf life 4 months /                                                                  6Kg Jerrican Shelf life from manufacturer 12 months / minimum shelf life 9 months \n15Kg Jerrican -  Shelf life from manufacturer 12 months / minimum shelf life 9 months"
 }

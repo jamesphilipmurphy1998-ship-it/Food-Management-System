@@ -78,7 +78,7 @@ archiveFiles.forEach((file) => {
   const afterAllergens = (archive.allergens || []).slice().sort();
   const allergensChanged = JSON.stringify(beforeAllergens) !== JSON.stringify(afterAllergens);
   if (allergensChanged) diff.push({ field: "allergens", before: beforeAllergens, after: afterAllergens });
-  ["packSize", "packFormat", "storageConditions", "ingredientsList"].forEach((f) => {
+  ["packSize", "packFormat", "storageConditions", "shelfLife", "ingredientsList"].forEach((f) => {
     const after = archive[f];
     if (after == null) return;
     const before = matched[f] || "";
@@ -100,7 +100,7 @@ archiveFiles.forEach((file) => {
   nutritionFields.forEach((f) => { if (archive.nutrition && archive.nutrition[f] != null) { updated[f] = archive.nutrition[f]; intendedNutrition[f] = archive.nutrition[f]; } });
   if (allergensChanged) updated.allergens = afterAllergens;
   const intendedPackFields = {};
-  ["packSize", "packFormat", "storageConditions", "ingredientsList"].forEach((f) => { if (archive[f] != null) { updated[f] = archive[f]; intendedPackFields[f] = archive[f]; } });
+  ["packSize", "packFormat", "storageConditions", "shelfLife", "ingredientsList"].forEach((f) => { if (archive[f] != null) { updated[f] = archive[f]; intendedPackFields[f] = archive[f]; } });
 
   const tmpPath = path.join(SPEC_DATA_DIR, `.${archive.code}.put-body.json`);
   const result = curlPut(`${API_BASE}/api/ingredients/${matched.id}`, updated, tmpPath);
