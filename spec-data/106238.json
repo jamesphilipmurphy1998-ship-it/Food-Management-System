@@ -1,0 +1,28 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106238 (105082) Fine Semolina  4020 Specification.xlsx",
+  "appliedAt": "2026-09-29T11:25:43.015Z",
+  "name": "RM SEMOLINA FINE",
+  "code": "106238",
+  "altCode": null,
+  "nutrition": {
+    "kj": 1456,
+    "kcal": 343,
+    "fat": 1.5,
+    "sat": 0.1,
+    "carb": 70,
+    "sugar": 2,
+    "protein": 11.2,
+    "fibre": 2.5,
+    "salt": 0.025
+  },
+  "allergens": [
+    "Cereals containing gluten"
+  ],
+  "packSize": "25kg",
+  "packFormat": "Paper Sack, thread tear off",
+  "storageConditions": "Ambient. Store in a cool, dry place. Ensure bag is closed after use",
+  "ingredientsList": null,
+  "errors": [],
+  "warnings": []
+}

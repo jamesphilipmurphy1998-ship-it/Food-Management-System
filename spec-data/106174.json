@@ -1,0 +1,26 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106174 (106071) Pak Choi Sliced RM Spec V2, 24.01.2025.xlsx",
+  "appliedAt": "2026-09-29T11:21:55.265Z",
+  "name": "RM Sliced Pak Choi 2.5 Kg",
+  "code": "106174",
+  "altCode": "106071",
+  "nutrition": {
+    "kj": 49,
+    "kcal": 12,
+    "fat": 0.2,
+    "sat": 0,
+    "carb": 1.4,
+    "sugar": 1.4,
+    "protein": 1,
+    "fibre": 0,
+    "salt": 0.018
+  },
+  "allergens": [],
+  "packSize": "2.5kg",
+  "packFormat": "Blue Food Grade Bag",
+  "storageConditions": "Chilled ( 1 - 5 C)",
+  "ingredientsList": null,
+  "errors": [],
+  "warnings": []
+}

@@ -1,0 +1,28 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106003 (106022) White Miso 20kg- Wasabi RM Spec-V4 (21.10.2025).xlsx",
+  "appliedAt": "2026-09-29T11:21:02.889Z",
+  "name": "RM White Miso Paste Hikari",
+  "code": "106003",
+  "altCode": "106022",
+  "nutrition": {
+    "kj": 682,
+    "kcal": 163,
+    "fat": 6.4,
+    "sat": 1.05,
+    "carb": 12.5,
+    "sugar": 7.7,
+    "protein": 11.6,
+    "fibre": 7.7,
+    "salt": 11.84
+  },
+  "allergens": [
+    "Soya"
+  ],
+  "packSize": "20kg",
+  "packFormat": "Plastic bag",
+  "storageConditions": "Keep in a cool, dry place. Keep away from sunlight. To prevent colour change, keeping in Freezer/Chiller recommended.",
+  "ingredientsList": null,
+  "errors": [],
+  "warnings": []
+}

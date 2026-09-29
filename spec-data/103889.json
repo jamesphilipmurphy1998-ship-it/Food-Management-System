@@ -1,0 +1,28 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/103889 (105074) Tomato Ketchup 500kg RM Spec V3 (01.09.2026).xlsx",
+  "appliedAt": "2026-09-29T11:20:10.381Z",
+  "name": "RM Tomato Ketchup",
+  "code": "103889",
+  "altCode": "105074",
+  "nutrition": {
+    "kj": 579,
+    "kcal": 136,
+    "fat": 0,
+    "sat": 0,
+    "carb": 33,
+    "sugar": 18,
+    "protein": 0.9,
+    "fibre": 0.8,
+    "salt": 1.1
+  },
+  "allergens": [
+    "Cereals containing gluten"
+  ],
+  "packSize": "500kg",
+  "packFormat": "Pallecon Liner made from LLDPE film in light blue, with a blue DN50 fill gland with cap and a blue LLDPE DN50 butterfly valve with cap",
+  "storageConditions": "Ambient",
+  "ingredientsList": null,
+  "errors": [],
+  "warnings": []
+}

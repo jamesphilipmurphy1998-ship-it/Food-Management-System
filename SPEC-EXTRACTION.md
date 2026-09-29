@@ -1179,3 +1179,43 @@ codes to find what's new, rather than re-scanning everything.
   this specific case (a missing LABEL, not a missing VALUE) -- patched manually as a one-off
   rather than generalizing a new flag for something only seen once. Name mismatch confirmed.
   Applied, verified.
+
+### 2026-09-29 — nine more specs; version-history/source-document feature built and backfilled
+in between (see "Version history" section above), then this batch
+
+- **Tomato Ketchup (103889/105074) → `RM Tomato Ketchup`.** Clean, exact name match after RM
+  prefix strip. Applied, verified.
+- **White Miso (106003/106022) → `RM White Miso Paste Hikari`.** Name mismatch confirmed
+  (word-order only, same Hikari-brand product via Tazaki). User feedback: going forward, always
+  state explicitly whether the CODE matches when asking a name-mismatch question, not just the
+  name comparison -- the code match is often the stronger piece of evidence and should be named,
+  not left implicit. Applied, verified.
+- **Sushi Prawn (106130/105598) → `RM Prawn Ebi (Tazaki Own brand)`.** Codes matched exactly;
+  name overlap was thin ("Sushi Prawn 3L ASC certified" vs "Prawn Ebi") but supplier (Tazaki) and
+  high sushi-grade cost both corroborated. Confirmed, applied, verified.
+- **Pak Choi Sliced 2.5kg (106174/106071) → `RM Sliced Pak Choi 2.5 Kg`.** A DIFFERENT Pak Choi
+  ingredient from 106217 (processed earlier this session) -- different code, different pack size,
+  different supplier (TCK Fresh Produce vs the earlier one). Clean match. Applied, verified.
+- **White Cabbage Whole (106206) → `RM Cabbage Wholehead`.** Clean code/name match. Pack Format
+  extracted as "N/A RM Loose" (flagged by the heuristic) -- confirmed as a legitimate answer
+  meaning "sold loose, no specific pack format", written as stated. User asked directly whether
+  spec-apply.js ever overwrites the live ingredient's NAME field -- confirmed from the script's
+  own diff scope that it never does; the spec's product name is only ever used for the
+  name-match CHECK, never written. Applied, verified.
+- **Matilda Sushi Rice (106214) → `RM Rice Sushi`.** Codes matched exactly. The spec's internal
+  product name ("4049 Matilda Medium Grain White Rice") doesn't say "sushi" at all -- but the
+  filename does ("Matilda Shusi Rice"), and medium-grain white rice is the standard sushi rice
+  variety, so the internal name field just reads as more technical/generic than the live
+  ingredient's usage-based name. Confirmed, applied, verified.
+- **Fine Semolina (106238/105082) → `RM SEMOLINA FINE`.** Clean, word-order-only name match.
+  Applied, verified.
+- **Plum Puree (107498/P00062) → `RM Plum Puree`.** Clean, exact name match. Sanity check gap
+  (45.2 vs 48.2kcal, ~6%) consistent with the fibre/acid pattern seen on every other fruit puree
+  this session. Applied, verified.
+- **Shokupan Bun (106987) — PAUSED, not applied.** The "Product contains?" allergen column is
+  entirely blank for every category except the ones genuinely present (Wheat, Gluten, Yeast,
+  Milk, Egg all have an explicit Y; nothing else does). Investigated and read as internally
+  consistent (every real allergen has explicit confirmation, nothing is actually ambiguous), but
+  user chose to pause rather than confirm reading blanks as N -- logged in
+  [SPEC-ISSUES-TO-REVIEW.md](SPEC-ISSUES-TO-REVIEW.md) with the full extracted data ready to
+  apply once reviewed.

@@ -1,0 +1,26 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106214 Matilda Shusi Rice Specification v1 09.09.26.xlsx",
+  "appliedAt": "2026-09-29T11:25:24.770Z",
+  "name": "RM Rice Sushi",
+  "code": "106214",
+  "altCode": null,
+  "nutrition": {
+    "kj": 1490,
+    "kcal": 356,
+    "fat": 1.2,
+    "sat": 0.2,
+    "carb": 77.5,
+    "sugar": 1,
+    "protein": 6.8,
+    "fibre": 6.8,
+    "salt": 0.01
+  },
+  "allergens": [],
+  "packSize": "20kg",
+  "packFormat": "BOPP plastic bags",
+  "storageConditions": "Store in a cool dry place. Cook before consumption",
+  "ingredientsList": null,
+  "errors": [],
+  "warnings": []
+}

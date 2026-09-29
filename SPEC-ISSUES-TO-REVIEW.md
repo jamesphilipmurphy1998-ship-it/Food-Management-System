@@ -11,6 +11,41 @@ processed and how. This file is the opposite: what's still open.
 
 ---
 
+## 106987 — SHOKUPAN BUN, GLAZED & SLICED, 60g x 48
+
+**File:** `106987 Shokupan Wasabi RM Spec-V3 (01.04.2026).xlsx`
+
+**Issue:** the "Product contains? (Y/N)" allergen column is entirely blank for every row EXCEPT
+the ones that genuinely apply — Wheat, Gluten level, Yeast, Milk, and Egg all have an explicit
+"Y"; every other allergen category has no value in that column at all (only the separate
+cross-contamination column is filled, mostly "N", with Rye/Barley showing "Y" there only —
+cross-contamination risk from being made on the same site, not a direct ingredient).
+`spec-extract.py` correctly refuses to guess whether a blank cell means "N" or "not answered".
+
+**Investigated:** the pattern reads as internally consistent — every row where the product
+actually contains something has an explicit "Y", nothing is genuinely ambiguous. User chose to
+skip rather than confirm this reading, so nothing has been written.
+
+**Extracted data (not yet applied):**
+```json
+{
+  "name": "SHOKUPAN BUN, GLAZED & SLICED, 60g x 48",
+  "code": "106987",
+  "nutrition": {
+    "kj": 1378, "kcal": 337, "fat": 8.7, "sat": 2, "carb": 55,
+    "sugar": 9.1, "protein": 10.7, "fibre": 2.7, "salt": 1
+  },
+  "allergens_if_confirmed": ["Cereals containing gluten", "Milk", "Eggs"],
+  "packSize": "60g x 48",
+  "packFormat": "Bag",
+  "storageConditions": "Store in freezer at < -18ºC."
+}
+```
+
+**Status:** paused, awaiting review. Not written anywhere.
+
+---
+
 ## 106199 — RM PANKO JAPANESE SUPERCOURSE
 
 **File:** `106199 (105080) Breadcrumbs spec V11 (01.04.2026).xlsx`

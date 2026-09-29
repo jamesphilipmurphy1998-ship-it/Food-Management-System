@@ -1,0 +1,28 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106130 (105598) Sushi Prawn RM Spec V3 (09.10.25).xlsx",
+  "appliedAt": "2026-09-29T11:21:36.578Z",
+  "name": "RM Prawn Ebi (Tazaki Own brand)",
+  "code": "106130",
+  "altCode": "105598",
+  "nutrition": {
+    "kj": 367,
+    "kcal": 88,
+    "fat": 0.2,
+    "sat": 0.1,
+    "carb": 0,
+    "sugar": 0,
+    "protein": 21.4,
+    "fibre": 0,
+    "salt": 0.8
+  },
+  "allergens": [
+    "Crustaceans"
+  ],
+  "packSize": "180g",
+  "packFormat": "Master carton",
+  "storageConditions": "Keep frozen. Once defrosted, keep refrigerated and consume within 48 hours. Do not refreeze",
+  "ingredientsList": null,
+  "errors": [],
+  "warnings": []
+}
