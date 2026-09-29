@@ -1,0 +1,25 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/107313 (P00030) Chilli powder Spec 14.10.2025.xlsx",
+  "appliedAt": "2026-09-29T10:53:55.456Z",
+  "name": "RM Ground Chilli",
+  "code": "107313",
+  "altCode": null,
+  "nutrition": {
+    "kj": 1922,
+    "kcal": 459.5,
+    "fat": 12.5,
+    "sat": 2.3,
+    "carb": 55.3,
+    "sugar": 10.3,
+    "protein": 14,
+    "fibre": 35.5
+  },
+  "allergens": [],
+  "packSize": "25 kg",
+  "packFormat": "blue PE bag",
+  "storageConditions": "cool dry warehouse",
+  "ingredientsList": null,
+  "errors": [],
+  "warnings": []
+}

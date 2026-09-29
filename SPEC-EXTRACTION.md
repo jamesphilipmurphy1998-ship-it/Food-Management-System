@@ -1114,3 +1114,19 @@ codes to find what's new, rather than re-scanning everything.
   declared in the spec -- trusted as stated, not assumed. Applied, verified. Flows into **111
   recipes** -- by far the widest-reaching single ingredient processed so far, covering most of
   the Korean BBQ / Sweet Chilli Chicken product range.
+- **Chilli Powder (107313) → `RM Ground Chilli`.** The weakest code evidence of any spec
+  applied this session: the document's own Product Code field states `CHIPO/002` (the
+  manufacturer's SKU) on every one of its 11 sheets, and a full-workbook search confirmed
+  `107313` appears **nowhere inside the document at all** -- the match rests entirely on the
+  folder's filename convention (`<code> (<alt code>) <description>.xlsx`), corroborated by
+  product category (Ground Chilli / Chilli Powder) and supplier. User explicitly confirmed
+  proceeding on filename evidence alone after being shown this was weaker than the usual case.
+  Salt stated as `"not provided"` (text, not a number) -- left unset rather than guessed, same
+  treatment as a genuinely blank cell. Sanity check failed (459.5 vs 389.7kcal, 15.2%) --
+  checked against real USDA chilli powder reference data (fat/carb/fibre/protein all matched
+  closely; only the stated kcal was far off both the macro calculation AND the ~282kcal USDA
+  figure). Unlike the Paprika/Shiitake fibre-driven gaps, this one didn't reconcile against
+  independent real-world data either -- flagged as a likely genuine data-entry error in the
+  spec, but user explicitly chose to write the literal stated value (459.5) rather than the
+  macro-calculated figure. Applied, verified. Flows into 98 recipes (Flaming Chicken/Korean
+  Fire Chicken line, Chilli Oil products, and many sushi sets via the Wasabi Sachet chain).
