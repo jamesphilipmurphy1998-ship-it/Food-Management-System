@@ -2781,6 +2781,8 @@
     if (sel) { sel.style.display = "none"; sel.innerHTML = ""; }
     var banner = document.getElementById("ingredient-version-readonly-banner");
     if (banner) banner.style.display = "none";
+    var sourceRow = document.getElementById("new-ing-source-document-row");
+    if (sourceRow) sourceRow.style.display = "none";
   }
 
   /** Fills the ingredient form fields from a plain data object — either the live ingredient
@@ -2851,6 +2853,28 @@
    * read-only past version. Never touches the underlying store — recipes and everywhere
    * else in the app always use the live/latest ingredient data regardless of what's
    * being viewed here. */
+  /** Shows which spec document this ingredient's nutrition/pack data came from -- pulled from
+   * the version-history row's comment (auto-filled by spec-apply.js/spec-reapply-all.js from
+   * the source spec's filename). Hidden entirely for a version with no comment (a manual edit,
+   * or data predating this feature), rather than showing a blank/confusing label. */
+  function updateSourceDocumentDisplay(comment) {
+    var row = document.getElementById("new-ing-source-document-row");
+    var text = document.getElementById("new-ing-source-document-text");
+    if (!row || !text) return;
+    if (comment) {
+      text.textContent = "Source: " + comment;
+      row.style.display = "";
+    } else {
+      row.style.display = "none";
+    }
+  }
+
+  function latestIngredientVersionComment() {
+    if (!ingredientVersionsCache || ingredientVersionsCache.length === 0) return null;
+    var latest = ingredientVersionsCache.reduce(function (m, v) { return v.versionNumber > m.versionNumber ? v : m; });
+    return latest.comment || null;
+  }
+
   function selectIngredientVersion(value) {
     var ingredients = Ingredients.getIngredients();
     var ing = ingredients.find(function (i) { return i.id === editIngredientId; });
@@ -2859,6 +2883,7 @@
     var sel = document.getElementById("ingredient-version-select");
     if (value === "latest") {
       applyIngredientDataToForm(ing);
+      updateSourceDocumentDisplay(latestIngredientVersionComment());
       if (banner) banner.style.display = "none";
       setIngredientModalViewMode(true);
     } else {
@@ -2866,6 +2891,7 @@
       var version = ingredientVersionsCache.find(function (v) { return v.versionNumber === versionNumber; });
       if (!version) return;
       applyIngredientDataToForm(version);
+      updateSourceDocumentDisplay(version.comment || null);
       if (banner) banner.style.display = "";
       setIngredientModalViewMode(false);
     }
@@ -2886,6 +2912,7 @@
     if (ingredientVersionsCache.length === 0) {
       sel.style.display = "none";
       sel.innerHTML = "";
+      updateSourceDocumentDisplay(null);
       return;
     }
     var maxVersion = ingredientVersionsCache.reduce(function (m, v) { return Math.max(m, v.versionNumber); }, 1);
@@ -2897,6 +2924,7 @@
     sel.innerHTML = options.join("");
     sel.style.display = "";
     sel.value = "latest";
+    updateSourceDocumentDisplay(latestIngredientVersionComment());
   }
 
   function setIngredientModalViewMode(editable) {
