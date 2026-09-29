@@ -9,6 +9,7 @@ format the code doesn't recognise must come back as `"status": "cannot_extract"`
 `errors` list, never as an empty/partial/best-guess result silently treated as "no allergens."
 
 Usage: python scripts/spec-extract.py "<path to .xlsx>" [--override-code CODE[/ALTCODE]]
+       [--confirm-cross-sheet-mismatch]
 
 --override-code covers two narrow cases, both requiring the document to be internally
 self-consistent (every sheet's C4 either blank or in exact agreement -- a real disagreement
@@ -22,6 +23,14 @@ Either way this is a human decision substituting for what the document states, n
 automatic inference, and the output is always stamped with a warning naming exactly what was
 overridden and why, so it's never silently indistinguishable from a code the document itself
 stated correctly.
+
+--confirm-cross-sheet-mismatch is separate and much narrower: it does NOT change which code is
+used (that's still whatever's on the recipe sheet, or --override-code if also given). It only
+permits proceeding when exactly one or a few sheets disagree with the rest, after a human has
+manually opened the document, confirmed the Product Name and every other sheet's code agree,
+and judged the differing sheet a stray typo/leftover rather than evidence the sheet was
+copy-pasted from a different product's spec. Always stamped with a warning naming the exact
+sheet and value that was overridden.
 Exit code 0 with status "ok" only when the format was fully recognised and nothing looked off.
 Exit code 1 (status "cannot_extract" or "extracted_with_warnings") otherwise -- spec-apply.js
 refuses --apply unless it sees status "ok".
@@ -204,7 +213,8 @@ def find_col_in_row(ws, row_num, text_contains, max_col=20):
             return col
     return None
 
-def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank_nutrition=()):
+def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank_nutrition=(),
+            confirm_cross_sheet_mismatch=False):
     errors = []
     warnings = []
 
@@ -295,7 +305,23 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
             s = wb[sn]
             c4 = labeled_cell(s, "Product Code")
             if c4 and str(c4).strip() and str(c4).strip() != raw_code:
-                errors.append("Sheet '%s' has Product Code %r, which does not match '%s'’s %r -- refusing, this looks like mismatched/corrupted data, not a format change" % (sn, c4, recipe_sheet_name, raw_code))
+                mismatch_text = str(c4).strip()
+                if confirm_cross_sheet_mismatch:
+                    # A human has manually reviewed this exact document, confirmed every OTHER
+                    # sheet and the Product Name agree, and judged this one sheet's differing
+                    # value a stray typo/leftover -- not evidence of a copy-pasted-from-a-
+                    # different-product file. This is a narrower, more deliberate action than
+                    # --override-code (which only ever fills a blank or replaces a
+                    # self-consistent non-our-code value) -- it does not change which code gets
+                    # used, only permits proceeding despite one sheet disagreeing.
+                    warnings.append(
+                        "Sheet '%s' has Product Code %r, which does not match '%s'’s %r -- "
+                        "a human reviewed this exact document and confirmed every other sheet "
+                        "and the Product Name agree, judging this one sheet's value a stray "
+                        "typo/leftover, not evidence of mismatched/corrupted data. Proceeding "
+                        "per --confirm-cross-sheet-mismatch (human-confirmed)." % (sn, mismatch_text, recipe_sheet_name, raw_code))
+                else:
+                    errors.append("Sheet '%s' has Product Code %r, which does not match '%s'’s %r -- refusing, this looks like mismatched/corrupted data, not a format change" % (sn, c4, recipe_sheet_name, raw_code))
 
     if errors:
         return {"status": "cannot_extract", "sourceFile": path, "errors": errors, "warnings": warnings}
@@ -676,8 +702,12 @@ if __name__ == "__main__":
         idx = args.index("--allow-blank-nutrition")
         allow_blank_nutrition = tuple(f.strip() for f in args[idx + 1].split(","))
         del args[idx:idx + 2]
+    confirm_cross_sheet_mismatch = "--confirm-cross-sheet-mismatch" in args
+    if confirm_cross_sheet_mismatch:
+        args.remove("--confirm-cross-sheet-mismatch")
     result = extract(args[0], override_code=override_code,
                       derive_salt_from_sodium=derive_salt_from_sodium,
-                      allow_blank_nutrition=allow_blank_nutrition)
+                      allow_blank_nutrition=allow_blank_nutrition,
+                      confirm_cross_sheet_mismatch=confirm_cross_sheet_mismatch)
     print(json.dumps(result, indent=2, ensure_ascii=False))
     sys.exit(0 if result["status"] == "ok" else 1)

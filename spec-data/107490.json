@@ -1,0 +1,30 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/107490 - Cooked Breakfast Sausage RM spec V1 (06.11.2025).xlsx",
+  "appliedAt": "2026-09-29T13:39:48.996Z",
+  "name": "RM Cooked Breakfast Sausage",
+  "code": "107490",
+  "altCode": null,
+  "nutrition": {
+    "kj": 1013,
+    "kcal": 244,
+    "fat": 18.3,
+    "sat": 6.7,
+    "carb": 3.2,
+    "sugar": 0.4,
+    "protein": 16,
+    "fibre": 1.2,
+    "salt": 1.9
+  },
+  "allergens": [
+    "Cereals containing gluten",
+    "Sulphur dioxide"
+  ],
+  "packSize": "2 kg",
+  "packFormat": "OPPXX / PE L 2845 Blue Bags",
+  "storageConditions": "Frozen <-18°C",
+  "shelfLife": "Date of Production + 150 Days, Minimum Shleflife on delivery is 90 Days",
+  "ingredientsList": "Cooked Pork Cumberland sausage: Pork, Pork Fat, Rusk (WHEAT Flour Fortified with Calcium Carbonate, Niacin, Iron, Folic acid, Thiamin), Water, Salt, Potato Starch, Black Pepper, Dextrose, Sage, Stabiliser: Sodium Di and Triphosphates (E450, E451), Preservative: Sodium Sulphite (E221), Antioxidant: Ascorbic acid (E300), Parsley, Nutmeg Extract, Coriander Extract, Sage Extract. Filled into Sodium Alginate casing.",
+  "errors": [],
+  "warnings": []
+}

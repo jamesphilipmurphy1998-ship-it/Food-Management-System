@@ -67,6 +67,11 @@ of how routine the question starts to feel. Two specs using the exact same overr
 the exact same *kind* of problem still each get their own question, with their own specifics,
 because the specifics are what the person is actually confirming — never the general pattern.
 
+**These questions must always be asked via a clickable confirmation prompt (the assistant's
+AskUserQuestion-style tool), never as plain chat text requiring a typed reply.** This was
+missed once on 2026-09-29 (first pass on spec 107316) and corrected immediately per the user —
+logged here so it's never dropped again.
+
 ## Standing rule: unmatched spec-data on reapply is always flagged, never silently skipped
 
 Whenever `spec-reapply-all.js` is run — now or in any future session, by this AI or any other —
@@ -600,7 +605,18 @@ Per the earlier discussion on reliability: **propose, don't auto-write.** Two sc
        there's nothing to derive it from). The named field is simply omitted from the write, so
        `--apply` leaves whatever that field currently holds on the live ingredient untouched — it
        is never written as 0. A blank field NOT named here is still a hard error.
-   - **Every one of the above — including these three flags — must be preceded by asking the
+     - **`--confirm-cross-sheet-mismatch`** (added 2026-09-29, for spec 107490) — the narrowest
+       of the four. Every other flag above only ever fills a blank or substitutes a
+       self-consistent value; a genuine disagreement between sheets (one sheet's Product Code
+       cell reads something different from all the others) was, until this flag existed,
+       refused unconditionally, `--override-code` included — see the code comment "refused
+       regardless of override_code". This flag does NOT change which code is used, and does NOT
+       bypass the check for every case — it permits proceeding **only** after a human has
+       manually opened the document, confirmed the Product Name and every other sheet's code
+       agree with each other, and judged the one differing sheet's value a stray typo/leftover
+       rather than evidence the sheet was copy-pasted from an unrelated product's spec. The
+       differing sheet and its exact value are always named in the resulting warning.
+   - **Every one of the above — including these four flags — must be preceded by asking the
      person in chat and getting an actual answer, every single time, never assumed from a prior
      ingredient's answer.** This is a standing instruction, not a one-off: even though
      `--derive-salt-from-sodium` is "just" a fixed legal formula, the person explicitly asked to
@@ -1481,5 +1497,22 @@ never dropped again.
   "Chilled < 8 (°C)" confirmed. Used in 6 recipes, flows up automatically. Applied and
   post-upload-verified.
 
-Still open in this batch, not yet processed: **107490** (Cooked Breakfast Sausage -- a genuine cross-sheet code mismatch, "SKU 807" on
-one sheet vs "107490" on the recipe sheet, needs investigation before proceeding).
+- **Cooked Pork/Breakfast Sausage (107490) → `RM Cooked Breakfast Sausage`.** The flagged
+  cross-sheet code mismatch: 10 of 11 sheets read "107490" and Product Name is consistently
+  "Cooked Pork Sausage" on all 11, but the Additive & GMO sheet's code cell read "SKU 807" --
+  confirmed a stray typo/leftover, not a copy-pasted-from-a-different-product document.
+  `spec-extract.py` previously had no way to proceed past this by design (the comment literally
+  said "refused regardless of override_code" -- `--override-code` only ever fills a blank code
+  or replaces a self-consistent non-our-code value, never resolves an actual disagreement
+  between sheets). Added a new, narrower **`--confirm-cross-sheet-mismatch`** flag specifically
+  for this scenario: it does not change which code is used, it only permits proceeding once a
+  human has manually opened the document and confirmed the Product Name and every other sheet
+  agree, judging the one differing sheet a stray value. Always logged in the warnings with the
+  exact sheet and differing value. Name mismatch ("Cooked Pork Sausage" vs. "RM Cooked
+  Breakfast Sausage") also confirmed as the same product. Storage ("Frozen <-18°C") and Shelf
+  Life ("Date of Production + 150 Days, Minimum Shleflife on delivery is 90 Days" -- spec's own
+  typo, kept verbatim) both confirmed. Used in 4 (delisted/legacy) recipes. Applied and
+  post-upload-verified.
+
+This closes out the current spec batch -- all four previously-open items (107316, 107427,
+107451, 107490) are now processed.
