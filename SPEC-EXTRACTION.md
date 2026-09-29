@@ -67,6 +67,18 @@ of how routine the question starts to feel. Two specs using the exact same overr
 the exact same *kind* of problem still each get their own question, with their own specifics,
 because the specifics are what the person is actually confirming — never the general pattern.
 
+## Standing rule: unmatched spec-data on reapply is always flagged, never silently skipped
+
+Whenever `spec-reapply-all.js` is run — now or in any future session, by this AI or any other —
+**every archive in `spec-data/` that doesn't match a code in the live system must be reported
+to the user by name and code, every time, never just silently left out of a summary count.**
+The script already does this (the "UNMATCHED" section of its output), but the rule is explicit
+here so it survives a rewrite of the script or a different tool doing the same job later: a
+human-confirmed nutrition/allergen/pack record failing to find its home again is exactly the
+kind of thing that must surface, not disappear into a "60 matched, done" message. A missing
+match usually means a reimport renumbered or dropped that code — worth a person's attention
+before assuming the ingredient just isn't needed anymore.
+
 ## Why this stays safe without relying on anyone "thinking carefully"
 
 Everything above — the refuse-on-uncertainty rules, the plausibility checks, the name-mismatch
