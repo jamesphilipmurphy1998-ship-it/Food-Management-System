@@ -1219,3 +1219,39 @@ in between (see "Version history" section above), then this batch
   user chose to pause rather than confirm reading blanks as N -- logged in
   [SPEC-ISSUES-TO-REVIEW.md](SPEC-ISSUES-TO-REVIEW.md) with the full extracted data ready to
   apply once reviewed.
+
+### 2026-09-29 — a new template layout variant found (row-shifted), a genuine unit-mismatch
+correction, and a standing rule on external reference data
+
+- **New template variant: row-shifted layout.** Two specs (Honey, Diced Green Pepper) use a
+  document layout with everything shifted up one row versus every other spec seen this session
+  -- title at row 5 instead of row 1, Product Name at row 2 instead of 3, Product Code at row 3
+  instead of 4. `spec-extract.py`'s code lookup is hardcoded to C4, so it read blank on both;
+  the name extraction similarly misread the wrong cell. Manually verified by reading C2/C3
+  directly on the raw sheet for both -- the real Product Code cell was present and unambiguous
+  in both cases (not blank, just in the wrong row for the parser to find), a stronger form of
+  evidence than the usual blank-code override case. Not generalized into the parser yet (seen
+  twice, both today, possibly a newer template revision -- worth watching for a third
+  occurrence before deciding whether to add row-shift detection generally).
+- **Honey (106041/106147) → `RM Sarant Mexican Honey`.** Real product name "Mexican Honey"
+  confirmed via the row-shift investigation above. Protein stated as "0.7mg" -- a genuine unit
+  mismatch (column header says g). Every OTHER value on the same row cites "USDA" as its source
+  and matches real USDA honey data precisely (304kcal, 82g carb, 0g fat), so this looked like a
+  case for substituting the real USDA protein figure (0.3g) -- **user explicitly corrected this
+  approach**: the spec's literal value is always the first choice, external reference data is
+  for sanity-checking only, never for substituting a value the spec actually states unless it's
+  truly unusable (a range, "not provided", etc.) -- "0.7mg" is a normal, parseable value that
+  just needs its unit corrected, not replaced. Standing rule going forward. Converted
+  0.7mg → 0.0007g (unit fix only, not a value substitution). Fibre row doesn't exist in this
+  template at all -- left unset. Applied, verified.
+- **Diced Green Pepper 25x25mm (106163/105027) → `RM Pepper Green Square 25 MM`.** Same
+  row-shifted template. Clean nutrition (sanity check 16.3 vs 15kcal, fine), same missing-fibre-
+  row gap as Honey. Pack format/storage pulled from the Packaging Detail and Durability sheets
+  directly (Blue Food Grade Bag, Chilled 1-5°C) -- consistent with the established convention for
+  diced/sliced veg items this session. No pack size (weight) stated anywhere in the document.
+  Applied, verified.
+- **Simply Vanilla Syrup (107390) → `RM Simply Vanilla Syrup rPET bottle`.** Clean extraction,
+  standard template. Name mismatch confirmed (spec says "UCC Vanilla Syrup" -- UCC Coffee UK
+  Limited is the exact live supplier, "Simply" is just the live ingredient's product-line
+  branding). Fibre genuinely blank (not a missing row, an actual blank cell this time). Applied,
+  verified.

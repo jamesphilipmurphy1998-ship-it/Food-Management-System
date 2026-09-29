@@ -1,0 +1,25 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/107390 Simply Vanilla Syrup RM Spec V1 25092025.xlsx",
+  "appliedAt": "2026-09-29T11:53:20.966Z",
+  "name": "RM Simply Vanilla Syrup rPET bottle",
+  "code": "107390",
+  "altCode": null,
+  "nutrition": {
+    "kj": 1359,
+    "kcal": 320,
+    "fat": 0,
+    "sat": 0,
+    "carb": 78.1,
+    "sugar": 58.8,
+    "protein": 0,
+    "salt": 0.26
+  },
+  "allergens": [],
+  "packSize": "1 litre e (bottle) / 6 x 1 Litre - 6 Litres (Outercase)",
+  "packFormat": "Bottle, cap, label",
+  "storageConditions": "Store in dry, cool ambient conditions, away from heat sources and odorous materials.",
+  "ingredientsList": null,
+  "errors": [],
+  "warnings": []
+}

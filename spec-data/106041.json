@@ -1,0 +1,25 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106041 (106147) - Honey - Wasabi RM Spec- V4 051124.xlsx",
+  "appliedAt": "2026-09-29T11:50:33.673Z",
+  "name": "RM Sarant Mexican Honey",
+  "code": "106041",
+  "altCode": "106147",
+  "nutrition": {
+    "kj": 1271,
+    "kcal": 304,
+    "fat": 0,
+    "sat": 0,
+    "carb": 82,
+    "sugar": 76,
+    "protein": 0.0007,
+    "salt": 0
+  },
+  "allergens": [],
+  "packSize": "15kg",
+  "packFormat": "15kg in Jerry can",
+  "storageConditions": "Ambient. Ideally between 18-24 deg C to remain liquid",
+  "ingredientsList": null,
+  "errors": [],
+  "warnings": []
+}
