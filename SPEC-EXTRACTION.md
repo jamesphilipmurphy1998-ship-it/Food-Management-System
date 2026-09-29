@@ -1061,3 +1061,48 @@ make alone.
   56kcal for cooked/frozen) before asking; confirmed as fibre-related, same class as the
   paprika/lemon-juice cases. Pack Format combined inner ("Blue Polyliner") + outer ("Cardboard
   Carton"). Name mismatch (Shiitake/Shitake spelling, "Sliced" dropped) confirmed.
+
+### 2026-09-29 — folder-based drip-feed workflow starts; a genuine kJ/kcal swap plus a sugar
+range plus a salt-from-sodium derivation, all in one spec
+
+Data-recovery testing (real wipe, real reimport, `spec-reapply-all.js`) happened first this day
+-- see the "Surviving a full DB wipe" section above and its own dated entries there. Two real
+bugs were found and fixed in the process (fake "Clear all"/wipe buttons that never actually hit
+the server, and name-keyword allergen auto-guessing on every BOM import/resync) -- not spec
+issues, but they blocked trusting spec-uploaded allergen data until fixed. Both are fixed and
+deployed; `data.js`'s `autoDetectAllergens` is deleted entirely.
+
+From here on, the user adds specs to the `Ingredient Specs` OneDrive folder incrementally rather
+than all at once -- each session just diffs the folder's codes against `spec-data/`'s archived
+codes to find what's new, rather than re-scanning everything.
+
+- **Gyoza Sachet (106234/105048) → `RM Sauce Gyoza Dipping Sachet`.** Clean extraction,
+  `status: "ok"`. Name mismatch confirmed (spec's short name vs live's fuller
+  "Sauce...Dipping..." name, same Shoda-supplied product). Applied, verified. Flows into 10
+  recipes (Gyoza boxes, tasting boxes).
+- **Pear Puree (105557/105567) → `RM Pear Puree` (106255).** The spec's own Product Code field
+  states 106255/105567 -- the folder filename's "105557" turned out to be a transposed-digit
+  typo of the alt code 105567, not a real second code; doesn't collide with anything live, so no
+  override needed, matched cleanly on 106255 with an exact name match. Sanity check passed
+  (45.3 vs 48.2 kcal, ~6% gap, consistent with fruit fibre/acid content not counted by the
+  formula). Applied, verified. Flows into 16 recipes (the whole Korean BBQ line).
+- **IQF Red Chilli Puree Nuggets (106959) → `RM Puree Red Chilli Nugget IQF`.** The most
+  involved single-spec case this session -- three separate issues, each individually confirmed:
+  1. **kJ/kcal genuinely swapped** in the spec (entered kj=25, kcal=105). Same pattern as IQF
+     Carrot Diced's swap on 2026-09-28: caught because 25kcal x 4.184 = 104.6 ~= the stated 105
+     (a near-exact cross-check), AND the macro sanity check independently lands on 24.3kcal,
+     matching 25 not 105. Two independent checks agreeing on the same correction is much
+     stronger evidence than either alone -- corrected to kj=105, kcal=25.
+  2. **Sugar given as a range**, `"3.9-5.0"`, which `parse_nutrition_value()` correctly refused
+     to write (`unparseable`, not a blank -- `--allow-blank-nutrition` doesn't cover this case,
+     deliberately, since a range isn't the same problem as an empty cell). Not generalized into
+     the parser -- a range's midpoint is a judgment call the parser shouldn't make silently, so
+     this stays a manual per-case patch. Used the midpoint, 4.45g, per human confirmation.
+  3. **Salt blank, Sodium 0.01mg present** -- derived via the standard conversion
+     (0.01 x 2.5 / 1000 = 0.000025g, effectively negligible but derived rather than left blank),
+     per human confirmation.
+  Name mismatch confirmed (word-order/plural differences, same product). Pack Format
+  ("Polyliners - Blue") flagged by the heuristic as not looking like a container type, but read
+  as legitimate on inspection -- consistent with "Blue Food Grade Bag" phrasing seen on several
+  other frozen IQF/diced veg items this session. Applied, verified. Flows into 13 recipes
+  (the Hot Honey line, Vegetable Curry).

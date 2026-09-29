@@ -1,0 +1,26 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106959  (106989) IQF Red Chilli Puree Nuggets  Wasabi RM Spec V2 (14.09.2026).xlsx",
+  "appliedAt": "2026-09-29T10:38:02.135Z",
+  "name": "RM Puree Red Chilli Nugget IQF",
+  "code": "106959",
+  "altCode": "106989",
+  "nutrition": {
+    "kj": 105,
+    "kcal": 25,
+    "fat": 0.3,
+    "sat": 0.1,
+    "carb": 4.5,
+    "sugar": 4.45,
+    "protein": 0.9,
+    "fibre": 1.6,
+    "salt": 0.000025
+  },
+  "allergens": [],
+  "packSize": "10kg",
+  "packFormat": "Polyliners - Blue",
+  "storageConditions": "Keep frozen -18 C",
+  "ingredientsList": null,
+  "errors": [],
+  "warnings": []
+}

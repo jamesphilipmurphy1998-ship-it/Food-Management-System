@@ -1,0 +1,26 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/105557 (105567) Pear Puree Wasabi RM Spec V5 13.07.2026.xlsx",
+  "appliedAt": "2026-09-29T10:35:37.180Z",
+  "name": "RM Pear Puree",
+  "code": "106255",
+  "altCode": "105567",
+  "nutrition": {
+    "kj": 203,
+    "kcal": 48.2,
+    "fat": 0.24,
+    "sat": 0.0033,
+    "carb": 10.4,
+    "sugar": 8.54,
+    "protein": 0.39,
+    "fibre": 2.5,
+    "salt": 0.0044
+  },
+  "allergens": [],
+  "packSize": "20kg",
+  "packFormat": "Aseptic bag",
+  "storageConditions": "Chilled 0-4C, or frozen -18C",
+  "ingredientsList": null,
+  "errors": [],
+  "warnings": []
+}
