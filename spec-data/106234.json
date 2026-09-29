@@ -1,0 +1,29 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106234 (105048) Gyoza sachet RM Spec V7 (29.09.2025) (1).xlsx",
+  "appliedAt": "2026-09-29T10:34:27.010Z",
+  "name": "RM Sauce Gyoza Dipping Sachet",
+  "code": "106234",
+  "altCode": "105048",
+  "nutrition": {
+    "kj": 204,
+    "kcal": 48,
+    "fat": 0,
+    "sat": 0,
+    "carb": 6.9,
+    "sugar": 4.6,
+    "protein": 4.2,
+    "fibre": 0,
+    "salt": 9.66
+  },
+  "allergens": [
+    "Cereals containing gluten",
+    "Soya"
+  ],
+  "packSize": "15g",
+  "packFormat": "Primary: Clear laminate sachets Secondary:PE",
+  "storageConditions": "Store unopened in a cool dry place away from direct sunlight.",
+  "ingredientsList": null,
+  "errors": [],
+  "warnings": []
+}
