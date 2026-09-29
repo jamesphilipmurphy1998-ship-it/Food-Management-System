@@ -408,7 +408,7 @@ nothing is extracted from a spec beyond what's here:
 
 | Field | Source | If not found/verified |
 |---|---|---|
-| Product code (+ alt code if present) | `3 Ingredient & Recipe`, cell C4 | **Fatal** — nothing can be matched or written without this |
+| Product code (+ alt code if present) | `3 Ingredient & Recipe`, "Product Code" label (dynamic row lookup, not a fixed cell) | **Fatal** — nothing can be matched or written without this |
 | Energy (kJ) | `7 Nutrition Information` | **Fatal** |
 | Energy (kcal) | `7 Nutrition Information` | **Fatal** |
 | Fat (g) | `7 Nutrition Information` | **Fatal** |
@@ -421,13 +421,18 @@ nothing is extracted from a spec beyond what's here:
 | Allergens (all 14 EU categories checked) | `8&9 Intolerance & Dietary` | **Fatal** if even one of the 19 source rows this maps from can't be located — an allergen can never be assumed absent |
 | Pack Size | `1&2 Manufacturer Detail` | Warning (still blocks `--apply`, but distinguished as non-safety in the message) |
 | Pack Format | `4 Packaging Detail` | Warning (same as above) |
-| Storage Conditions | `5&6 Durability & Micro Standard` | Warning (same as above) |
+| Storage Conditions | `5&6 Durability & Micro Standard` | Warning — **plus always requires explicit human confirmation even on a clean pass** (safety-critical, see the standing rule above) |
+| Shelf Life (added 2026-09-29) | `5&6 Durability & Micro Standard`, "5-a)" row | Warning — **plus always requires explicit human confirmation even on a clean pass** (safety-critical, same rule) |
+| Ingredients List / Legal Ingredient Declaration (added 2026-09-29) | `3 Ingredient & Recipe`, below the "Legal Ingredient Declaration" label | Warning (non-safety — a missing declaration section is expected/normal for single-/near-single-ingredient raw materials) |
 
 **"Fatal" means `status: "cannot_extract"`, and `spec-apply.js` refuses to even show a diff,
 let alone write anything.** "Warning" means `status: "extracted_with_warnings"`, which
 *currently also fully blocks `--apply`* — there is no field in this pipeline today that's
 allowed through with a warning still attached. Every run either comes back completely clean
-(`status: "ok"`) or is refused outright.
+(`status: "ok"`) or is refused outright. Storage Conditions and Shelf Life are stricter still:
+even a completely clean pass (`status: "ok"`, no plausibility failures) still requires
+`--confirm-warnings`, because those two fields always generate their own unconditional warning
+— see the standing rule earlier in this document.
 
 ## Nutrition flow-up (built — informational only, writes nothing)
 
@@ -1373,3 +1378,66 @@ ingredient PUT, spec-data archive updated, new version snapshot with its own com
 rest) are single- or near-single-ingredient raw materials (oils, spice powders, plain produce,
 honey) whose source documents genuinely have no "Legal Ingredient Declaration" section at all --
 confirmed as a real absence, not an extraction miss, before leaving them blank.
+
+### 2026-09-29 (later still) — FVN name-guessing found and removed; Chartsheet crash fixed; nine more specs
+
+- **FVN (Fruit/Vegetable/Nut) had the identical name-keyword-guessing bug already found and
+  removed from allergens.** User spotted it directly: "RM Inari Cooked Bean Curd Ytk" showed
+  FVN checked despite never having a spec applied. Root cause: `autoDetectFVN()`'s keyword list
+  included "bean", which matched the substring in "Bean Curd" -- bean curd/tofu is not FVN-
+  eligible for HFSS purposes. This ran on BOM import create AND on every routine cost resync
+  (the same dangerous overwrite-on-every-sync pattern as the allergen bug). Removed all 7
+  frontend call sites (5 in app.js, 2 in excel-import.js) and both backend call sites
+  (ImportService.cs create + merge paths), deleted the function everywhere it existed
+  (data.js, ImportService.cs). FVN is now only ever set by spec confirmation or manual entry.
+  **Reviewed all live ingredients**: 42 had `fvn=true` that was never spec-confirmed -- some
+  coincidentally correct (real vegetables), several genuine false positives (Bean Curd, Baked
+  Beans, Potato Starch, Red Pepper Paste, Coffee Beans, Mushroom Powder -- none FVN-eligible).
+  Cleared all 42 to `false` per user decision, rather than leave unconfirmed guesses looking
+  authoritative even where accidentally right.
+- **Real crash bug: an embedded Chartsheet in a workbook breaks every full-sheet scan.** Found
+  on the Tahini spec -- `Chartsheet` objects (a chart-only tab, no cell grid) have no
+  `.iter_rows()`, so the cross-sheet code-consistency check crashed outright with an
+  `AttributeError` instead of returning a clean `cannot_extract`. Fixed by building one
+  `sheet_names` list at the top of `extract()` (`[n for n in wb.sheetnames if hasattr(wb[n],
+  "iter_rows")]`) and using it everywhere a full-workbook scan happens, instead of
+  `wb.sheetnames` directly. No regression on any previously-working spec.
+- **Kikkoman Teriyaki Sauce 4L (105952/105039) → `RM Teriyaki Sauce Kikkoman (CPU Only)`.** Two
+  real issues. (1) Product Code cell read literally `"1105952 (105039)"` -- a genuine typo, an
+  extra leading "1" before the real code -- corrected per human confirmation, matching filename/
+  live ingredient/alt code. (2) **Every single nutrition value given as a dual range**
+  (`"86kcal / 99kcal"`, etc, both the per-100g AND per-pack columns) -- read as two lab retest
+  results, not one official figure. Used the midpoint of each range per explicit human
+  confirmation. Sodium/Salt midpoints cross-checked consistently (9.54g via the standard
+  conversion vs 9.55g stated), confirming the range reading itself was coherent. Sanity-check
+  gap (69 vs 92.5kcal from macros, ~25%) plausibly explained by **Wine** in the ingredients list
+  -- alcohol contributes calories the standard fat/carb/protein formula doesn't count, same
+  class of explanation as fibre/acid gaps seen elsewhere this session. Shelf life matched a
+  pre-existing legacy value on the live record exactly, corroborating the extraction.
+- **Inari Cooked Bean Curd (102584) → `RM Inari Cooked Bean Curd Ytk`.** The exact ingredient
+  the FVN bug above was found on. Blank code (override to 102584, confirmed via filename +
+  strong name match). Clean nutrition, sanity check fine.
+- **Potato Starch (105951/105014) → `RM Potato Starch`.** Blank code override, exact name
+  match. Sulphites row read `"N, <=10mg/kg"` -- a clear No answer with a supporting threshold
+  detail, not genuinely ambiguous -- treated as N per confirmation.
+- **Mizkan Honteri Mirin 18L (106172/105035) → `RM Mizkan Honteri Mirin - Sweet Seasoning
+  18L`.** Clean, sanity check fine.
+- **Shredded White Cabbage 1kg (106223) → `RM Cabbage White Shredded 1KG`.** Clean, exact code/
+  name match, shelf life matched a pre-existing legacy value exactly.
+- **Teriyaki Sauce 6kg (106231/106072) → `RM Teriyaki Sauce 6 KG`.** A DIFFERENT teriyaki sauce
+  from 105952 (Kikkoman) -- distinct code, distinct supplier (Shoda/Tazaki). Clean, sanity check
+  near-exact.
+- **Yutaka Shredded Pickled Ginger (106607/106719) → `Yutaka Shredded Pickled Ginger
+  Benishoga`.** Clean, exact name match, shelf life matched a pre-existing legacy value
+  word-for-word.
+- **Reduced Salt Soy Sauce Sachet (107172) → `RM Soy Sauce Sachet (low salt)`.** A DIFFERENT
+  soy sauce sachet from the earlier Gluten-Free one (100681) -- distinct code, distinct
+  low-salt variant confirmed by name match. Clean, sanity check near-exact.
+- **Tahini (107314/P00037) → `RM Tahini Paste`.** The spec that surfaced the Chartsheet crash
+  bug above. Saturate fat genuinely blank in the spec -- left unset. Clean otherwise, sanity
+  check fine (654.8 vs 671kcal, ~2.5%).
+
+Still open in this batch, not yet processed: **107316** (Red Crushed Chillies), **107427**
+(Matcha Green Tea -- every nutrition field reads blank/N-A in the spec), **107451** (Yuzu Vegan
+Mayo), **107490** (Cooked Breakfast Sausage -- a genuine cross-sheet code mismatch, "SKU 807" on
+one sheet vs "107490" on the recipe sheet, needs investigation before proceeding).

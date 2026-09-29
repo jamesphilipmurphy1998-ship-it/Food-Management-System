@@ -1,0 +1,28 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/107314 (P00037) Tahini RM Spec V1 (05.09.2025).xlsx",
+  "appliedAt": "2026-09-29T13:06:30.277Z",
+  "name": "RM Tahini Paste",
+  "code": "107314",
+  "altCode": "P00037",
+  "nutrition": {
+    "kj": 2774,
+    "kcal": 671,
+    "fat": 60,
+    "carb": 1.7,
+    "sugar": 1.1,
+    "protein": 27,
+    "fibre": 8.3,
+    "salt": 0
+  },
+  "allergens": [
+    "Sesame"
+  ],
+  "packSize": "4x3kg",
+  "packFormat": "Plastic Tubs",
+  "storageConditions": "Store in a cool and dry place",
+  "shelfLife": "18 months, 6 months (on delivery)",
+  "ingredientsList": "100% Organic hulled sesame seeds",
+  "errors": [],
+  "warnings": []
+}
