@@ -1,0 +1,25 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/107316 Red crushed chillies HT CRUCH001-updated 01.07.2025.xlsx",
+  "appliedAt": "2026-09-29T13:22:41.826Z",
+  "name": "RM Crushed Chilli Flakes",
+  "code": "107316",
+  "altCode": null,
+  "nutrition": {
+    "kj": 1331,
+    "kcal": 318,
+    "carb": 56.6,
+    "sugar": 10.3,
+    "protein": 12,
+    "fibre": 27.2,
+    "salt": 0.075
+  },
+  "allergens": [],
+  "packSize": "25kg",
+  "packFormat": "blue PE bag",
+  "storageConditions": "cool dry warehouse",
+  "shelfLife": "18 months, min 6 months upon delivery",
+  "ingredientsList": "red crushed chillied HT",
+  "errors": [],
+  "warnings": []
+}

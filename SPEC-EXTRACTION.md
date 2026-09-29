@@ -1437,7 +1437,33 @@ confirmed as a real absence, not an extraction miss, before leaving them blank.
   bug above. Saturate fat genuinely blank in the spec -- left unset. Clean otherwise, sanity
   check fine (654.8 vs 671kcal, ~2.5%).
 
-Still open in this batch, not yet processed: **107316** (Red Crushed Chillies), **107427**
+### 2026-09-29 (later still) — Red Crushed Chillies applied; standing rule on how confirmations are asked
+
+- **Red Crushed Chillies (107316) → `RM Crushed Chilli Flakes`.** Product Code cell held a
+  literal `0` (not blank text) -- the falsy-zero subtlety noted earlier turned out to matter
+  here: `str(cell or "").strip()` reads a `0` cell the same as an empty one, which happened to
+  be the correct outcome again (the real code isn't usable from that cell either way). Code
+  supplied via `--override-code 107316`, confirmed via filename and the code embedded in the
+  product name itself ("CRUCH/001"). Fat and saturated fat genuinely blank in the spec with no
+  alternate cell -- left unset via `--allow-blank-nutrition fat,sat`. Salt blank but Sodium
+  (30mg) present -- derived via the standard conversion (`--derive-salt-from-sodium`) to
+  0.075g, human-confirmed. Storage Conditions ("cool dry warehouse") and Shelf Life ("18
+  months, min 6 months upon delivery") both confirmed per the standing mandatory-warning rule.
+  Also hit a genuine **name mismatch**: the spec's product name is "Red crushed chillies HT
+  CRUCH/001" but the live ingredient (matched by code) is named "RM Crushed Chilli Flakes" --
+  different wording for the same product, confirmed by the requestor and proceeded with
+  `--confirm-name-mismatch`. Used in 31 recipes (directly or via sub-recipe); their live
+  nutrition already reflects the update automatically, no separate action needed. Applied and
+  post-upload-verified successfully.
+
+**Standing rule reaffirmed: every human-confirmation question in this workflow (name
+mismatches, blank-value handling, storage/shelf-life confirmation, code overrides, anything
+questionable) must be asked via the clickable AskUserQuestion prompt, not as plain chat text
+requiring a typed reply.** This was already the intent throughout the session but got missed
+once on 107316's first pass -- corrected immediately per the requestor, logged here so it's
+never dropped again.
+
+Still open in this batch, not yet processed: **107427**
 (Matcha Green Tea -- every nutrition field reads blank/N-A in the spec), **107451** (Yuzu Vegan
 Mayo), **107490** (Cooked Breakfast Sausage -- a genuine cross-sheet code mismatch, "SKU 807" on
 one sheet vs "107490" on the recipe sheet, needs investigation before proceeding).
