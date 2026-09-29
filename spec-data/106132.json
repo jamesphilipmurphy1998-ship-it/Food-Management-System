@@ -1,0 +1,26 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106132 (105008) -Sweet chilli sauce -RM Spec. -V10 (09.10.2025).xlsx",
+  "appliedAt": "2026-09-29T10:44:17.976Z",
+  "name": "RM Sauce Sweet Chilli Yutaka",
+  "code": "106132",
+  "altCode": "105008",
+  "nutrition": {
+    "kj": 679,
+    "kcal": 162,
+    "fat": 0.5,
+    "sat": 0,
+    "carb": 38,
+    "sugar": 35,
+    "protein": 0.5,
+    "fibre": 0,
+    "salt": 2.6
+  },
+  "allergens": [],
+  "packSize": "6kg",
+  "packFormat": "Plastic Gallon, Heat Induction Seal,Cap",
+  "storageConditions": "Store in a cool, dry and dark place. Once opened keep refrigrtated and consume within 4 weeks",
+  "ingredientsList": null,
+  "errors": [],
+  "warnings": []
+}

@@ -1106,3 +1106,11 @@ codes to find what's new, rather than re-scanning everything.
   as legitimate on inspection -- consistent with "Blue Food Grade Bag" phrasing seen on several
   other frozen IQF/diced veg items this session. Applied, verified. Flows into 13 recipes
   (the Hot Honey line, Vegetable Curry).
+- **Sweet Chilli Sauce (106132/105008) → `RM Sauce Sweet Chilli Yutaka`.** Clean extraction,
+  sanity check passed (158.5 vs 162 kcal, ~2%). Pack Format warning ("Plastic Gallon, Heat
+  Induction Seal, Cap") was another heuristic false positive -- read as a legitimate container
+  + closure description on inspection, same as the Chilli Nuggets case above. Name mismatch
+  confirmed (word-order/brand-name difference, same Tazaki/Yutaka product). No allergens
+  declared in the spec -- trusted as stated, not assumed. Applied, verified. Flows into **111
+  recipes** -- by far the widest-reaching single ingredient processed so far, covering most of
+  the Korean BBQ / Sweet Chilli Chicken product range.
