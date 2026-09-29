@@ -79,6 +79,22 @@ kind of thing that must surface, not disappear into a "60 matched, done" message
 match usually means a reimport renumbered or dropped that code — worth a person's attention
 before assuming the ingredient just isn't needed anymore.
 
+## Standing rule: the spec's literal value is always the first choice
+
+External reference data (USDA tables, real-world nutrition figures, etc.) is for **sanity-
+checking** a spec's stated value — never for **substituting** one. If a spec states a usable,
+parseable value, that value gets written (unit-corrected if needed), even when it doesn't
+reconcile against real-world reference data or the spec's own macro calculation. Only fall back
+to something other than the literal value when the spec's value is genuinely unusable as
+written — a range with no single number ("3.9-5.0"), a non-numeric placeholder ("not provided"),
+or a case the user has explicitly told you to treat differently. A value that merely looks
+implausible compared to reference data is not the same as a value that cannot be written at
+all — flag the implausibility, get it confirmed, and still write what the document says unless
+told otherwise. (Established 2026-09-29 on the Honey spec: its Protein cell read "0.7mg", every
+other value on that row was cited "USDA" and matched real USDA honey data closely, and real USDA
+protein for honey is 0.3g — a strong-looking case for substitution. The correct move was still
+to write 0.0007g, the spec's own value just unit-corrected, not 0.3g.)
+
 ## Why this stays safe without relying on anyone "thinking carefully"
 
 Everything above — the refuse-on-uncertainty rules, the plausibility checks, the name-mismatch
@@ -1259,3 +1275,30 @@ correction, and a standing rule on external reference data
   states "VEG383" (Pagoda Kitchen's own SKU format), not a Wasabi code -- standard
   manufacturer-code override, confirmed via filename + exact product/category match. Sanity
   check fine (118.7 vs 128kcal, ~7.7%). Applied, verified.
+
+### 2026-09-29 (later) -- ingredients-list extraction was never actually automated; fixed and backfilled
+
+User caught that `spec-extract.py` had never actually been extended to pull the "Legal
+Ingredient Declaration" text out of a spec at all -- the `ingredientsList` field, the DB column,
+and the UI form field built the day before were all real, but nothing populated them
+automatically. Sriracha Mayo Sachet (104634) was the one exception, typed in by hand from a
+screenshot. Every other ingredient processed since (49 of them) had this field sitting blank.
+
+**Fixed:** `spec-extract.py` now locates the "Legal Ingredient Declaration" label row
+dynamically on the recipe sheet (same `find_row_starting_with` helper used elsewhere) and reads
+the cell directly below it -- the declaration text is always in a merged cell whose value lives
+on the top-left anchor, so this works regardless of how many rows the merge spans. Verified
+against both Katsu Mayo (label at row 54, text at row 55) and Sriracha Mayo Sachet (label at row
+53, text at row 54) -- the Sriracha result matched the hand-typed value exactly, character for
+character.
+
+**Backfilled** for all 49 already-processed ingredients missing it: re-ran extraction against
+each one's original source file (20 archives still had a real filename; the other 29 -- this
+session's early baseline-snapshot recovery -- were located by matching their code against the
+current `Ingredient Specs` folder listing, since the files themselves were never lost, only the
+JSON extraction record was). 36 had an actual declaration section and got backfilled (live
+ingredient PUT, spec-data archive updated, new version snapshot with its own comment). The other
+13 (checked individually -- Rapeseed Oil, Industrial Noodles, Honey, and by the same pattern the
+rest) are single- or near-single-ingredient raw materials (oils, spice powders, plain produce,
+honey) whose source documents genuinely have no "Legal Ingredient Declaration" section at all --
+confirmed as a real absence, not an extraction miss, before leaving them blank.

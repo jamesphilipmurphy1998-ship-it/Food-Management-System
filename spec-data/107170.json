@@ -23,7 +23,7 @@
   "packSize": "1000Litre IBC / 15Kg Jerrican / 6Kg Jerrican",
   "packFormat": "IBC / 15Kg Jerrican / 6Kg Jerrican",
   "storageConditions": "Store unopened in a cool dry place away from direct sunlight for both jerrican and IBC",
-  "ingredientsList": null,
+  "ingredientsList": "Water, soya beans, wheat, salt",
   "errors": [],
   "warnings": []
 }

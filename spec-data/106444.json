@@ -1,0 +1,28 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106444 (106599) Katsu Mayo - Wasabi RM Spec (CPU)V2 - 01.07.2024.xlsx",
+  "appliedAt": "2026-09-29T12:01:19.404Z",
+  "name": "Katsu Mayonnaise AAK Sauce 15g",
+  "code": "106444",
+  "altCode": null,
+  "nutrition": {
+    "kj": 2425,
+    "kcal": 589,
+    "fat": 62,
+    "sat": 4.1,
+    "carb": 5.8,
+    "sugar": 4.7,
+    "protein": 1.9,
+    "fibre": 0.6,
+    "salt": 1.2
+  },
+  "allergens": [
+    "Soya"
+  ],
+  "packSize": "400 x 15g",
+  "packFormat": "Clear Stick Pack films",
+  "storageConditions": "Chilled",
+  "ingredientsList": "Rapeseed Oil, Water, Spirit Vinegar, Sugar, Yeast Extract Powder, Gluten Free SOY Sauce (Water, SOYBEANS, Salt, Spirit Vinegar), Onion Powder, Ground Turmeric, Garlic Powder, Stabilisers (Xanthan Gum, Guar Gum), Ground Cumin, Modified Potato Starch, Modified Starch, Ground Coriander, Preservative (Potassium Sorbate), Lemon Juice Concentrate, Ground Fenugreek, Ground Cassia, Nutmeg, Star Anise, Ground Black Pepper, Acidity Regulator (Lactic Acid), Fennel Powder, Ground Cardamom, Cayenne Pepper (Chilli Powder, Paprika), Ground Cloves, Ground Bay Leaf, Allspice, Ground Ginger.\n\nAllergy Advice: For allergens, see underlined CAPITALS.",
+  "errors": [],
+  "warnings": []
+}

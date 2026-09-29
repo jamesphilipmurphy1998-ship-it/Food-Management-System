@@ -428,6 +428,22 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
     else:
         warnings.append("No sheet matching 'Durability' found -- Storage Conditions not extracted")
 
+    # --- Legal Ingredient Declaration: the composition list as it would appear on a label,
+    # lives on the recipe sheet, one row below its own label ("Legal Ingredient Declaration
+    # (conform with Food Regulation Information 2014)"). The actual text is always in a merged
+    # cell -- openpyxl gives the value on the merge's top-left anchor regardless, so reading
+    # column A of the row right after the label works whether it's merged across 1 row or 10.
+    ingredients_list = None
+    declaration_row = find_row_starting_with(ws, "Legal Ingredient Declaration")
+    if declaration_row is None:
+        warnings.append("Could not find a 'Legal Ingredient Declaration' row on '%s' -- Ingredients List not extracted" % recipe_sheet_name)
+    else:
+        v = ws.cell(row=declaration_row + 1, column=1).value
+        if v is not None and str(v).strip():
+            ingredients_list = str(v).strip()
+        else:
+            warnings.append("Row after 'Legal Ingredient Declaration' on '%s' is empty -- Ingredients List not extracted" % recipe_sheet_name)
+
     # --- Allergens: locate header row + the actual "contains?" column dynamically, then
     # require EVERY expected category to be present as its own row before trusting any of it.
     allergens = []
@@ -512,6 +528,7 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
         "packSize": pack_size,
         "packFormat": pack_format,
         "storageConditions": storage_conditions,
+        "ingredientsList": ingredients_list,
         "errors": errors,
         "warnings": warnings,
     }

@@ -20,7 +20,7 @@
   "packSize": "10kg",
   "packFormat": null,
   "storageConditions": "-18 degreas Celsius",
-  "ingredientsList": null,
+  "ingredientsList": "Carrot",
   "errors": [],
   "warnings": []
 }
