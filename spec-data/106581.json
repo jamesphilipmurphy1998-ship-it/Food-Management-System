@@ -1,0 +1,28 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106581 (105118) IQF Edamame Beans RM Spec V4 12.08.2026.xlsx",
+  "appliedAt": "2026-09-29T11:55:55.274Z",
+  "name": "RM Edamame Beans IQF",
+  "code": "106581",
+  "altCode": null,
+  "nutrition": {
+    "kj": 532,
+    "kcal": 128,
+    "fat": 6.3,
+    "sat": 1,
+    "carb": 4.5,
+    "sugar": 2.3,
+    "protein": 11,
+    "fibre": 2.4,
+    "salt": 0
+  },
+  "allergens": [
+    "Soya"
+  ],
+  "packSize": "10kg",
+  "packFormat": "Blue plastic bag folded",
+  "storageConditions": "FROZEN",
+  "ingredientsList": null,
+  "errors": [],
+  "warnings": []
+}

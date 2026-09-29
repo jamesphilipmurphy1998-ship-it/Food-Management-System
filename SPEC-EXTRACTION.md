@@ -1255,3 +1255,7 @@ correction, and a standing rule on external reference data
   Limited is the exact live supplier, "Simply" is just the live ingredient's product-line
   branding). Fibre genuinely blank (not a missing row, an actual blank cell this time). Applied,
   verified.
+- **IQF Edamame Beans (106581) -> `RM Edamame Beans IQF`.** Spec's own code field consistently
+  states "VEG383" (Pagoda Kitchen's own SKU format), not a Wasabi code -- standard
+  manufacturer-code override, confirmed via filename + exact product/category match. Sanity
+  check fine (118.7 vs 128kcal, ~7.7%). Applied, verified.
