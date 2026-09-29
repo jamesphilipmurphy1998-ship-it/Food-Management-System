@@ -1,0 +1,31 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/104714 (105089) Chicken Gyoza spec 9.04.25.xlsx",
+  "appliedAt": "2026-09-29T14:11:34.021Z",
+  "name": "RM Gyoza Chicken and Vegetable, 1KG Bag",
+  "code": "104714",
+  "altCode": "105089",
+  "nutrition": {
+    "kj": 724,
+    "kcal": 173,
+    "fat": 4.6,
+    "sat": 0.7,
+    "carb": 25,
+    "sugar": 2.7,
+    "protein": 6.8,
+    "fibre": 1.6,
+    "salt": 0.77
+  },
+  "allergens": [
+    "Cereals containing gluten",
+    "Sesame",
+    "Soya"
+  ],
+  "packSize": "20g/ Piece and 1 kg/Bag",
+  "packFormat": "20g./pcs, 1 kg/bag ,10 bag/Carton",
+  "storageConditions": "Frozen condition below - 18°C",
+  "shelfLife": "24 month",
+  "ingredientsList": "Wheat flour 23%, Chicken meat 19%, Water, Cabbage 11%, Modified tapioca starch, Onion 4.5%, Wheat starch, Spring onion 4%, Textured vegetable soy protein, Mixed vegetable oil (Fully refined soybean oil, Spring onion, Onion, Ginger, Shallot), Light soy sauce (Water, Soybean, Wheat, Salt, Fructose syrup), Sugar, Fully refined soybean oil, Flavour enhancer (E621), Sesame oil, Mirin (Glutinous rice, Water, Sucrose, Glucose syrup), Rice flour, Yeast extract, Salt, Thickener (E407a), Garlic, D-xylose.",
+  "errors": [],
+  "warnings": []
+}

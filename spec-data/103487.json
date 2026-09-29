@@ -1,0 +1,27 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/103487 Dried Seaweed for Onigiri Spec V3 06.08.2026.xlsx",
+  "appliedAt": "2026-09-29T14:09:38.283Z",
+  "name": "RM Seaweed Onigiri Universal",
+  "code": "103487",
+  "altCode": null,
+  "nutrition": {
+    "kj": 1513.77,
+    "kcal": 361.8,
+    "fat": 3.98,
+    "sat": 1.2,
+    "carb": 37.84,
+    "sugar": 0,
+    "protein": 43.16,
+    "fibre": 17.29,
+    "salt": 0.99
+  },
+  "allergens": [],
+  "packSize": "100sheets/bag, 125g * 20 Cases",
+  "packFormat": "100sheets/bag,125gx 20cases",
+  "storageConditions": "Keep it dry at room temperature away from driect sunlight",
+  "shelfLife": "24months. Min shelf life on delivery is 22 month",
+  "ingredientsList": "Dried Seaweed for Onigiri(100%)",
+  "errors": [],
+  "warnings": []
+}

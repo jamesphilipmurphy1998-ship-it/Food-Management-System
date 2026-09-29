@@ -1633,3 +1633,22 @@ explicitly named in the flag, all three still leave the field unset (never coerc
 all three still require asking the person about that specific cell every time, per the standing
 rule -- this only widens *what kind* of "genuinely blank" a human can confirm, not who gets to
 skip being asked.
+
+### 2026-09-29 (later still) — three more specs found via folder re-check
+
+- **RM Seaweed Onigiri Universal (103487) → "Dried Seaweed for Onigiri".** Same manufacturer
+  template as the sushi nori spec (102058) -- clean nutrition, same "driect sunlight" typo in
+  Storage Conditions kept verbatim, both fields confirmed. Name mismatch confirmed same
+  product. Applied and post-upload-verified.
+- **RM Miso Block for Production (103489) → "Instant Miso Soup Block for Production".** Clean
+  extraction. Name mismatch: the live name's "Miso Block for Production" isn't a substring of
+  the spec's fuller "Instant Miso Soup Block for Production" (the inserted "Soup" breaks the
+  containment check) -- confirmed same product. Storage and 12-month/3-month Shelf Life
+  confirmed. **This directly fixes the "Miso Soup" recipe (101577)** flagged in the earlier
+  missing-nutrition recipe scan as having zero computed nutrition. Applied and
+  post-upload-verified.
+- **RM Gyoza Chicken and Vegetable, 1KG Bag (104714/105089) → "Frozen Chicken & Vegetable
+  Gyoza".** Clean extraction. Name mismatch (word order/wording difference) confirmed same
+  product. Storage ("Frozen condition below -18°C") and Shelf Life ("24 month") confirmed.
+  **This is one of the base ingredients behind the Chicken Gyoza / Chicken Gyoza Box recipes**
+  flagged in the earlier missing-nutrition recipe scan. Applied and post-upload-verified.

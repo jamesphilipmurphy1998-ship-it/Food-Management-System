@@ -1,0 +1,29 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/103489 Instant Miso Soup  - RM Spec V4 (03.01.2025).xlsx",
+  "appliedAt": "2026-09-29T14:10:35.375Z",
+  "name": "RM Miso Block for Production",
+  "code": "103489",
+  "altCode": null,
+  "nutrition": {
+    "kj": 1246,
+    "kcal": 298,
+    "fat": 4.3,
+    "sat": 0.853,
+    "carb": 41,
+    "sugar": 8.8,
+    "protein": 18.2,
+    "fibre": 9.99,
+    "salt": 8.53
+  },
+  "allergens": [
+    "Soya"
+  ],
+  "packSize": "8/30x8g",
+  "packFormat": "30x8g/paper tray, 8 trays/CTN",
+  "storageConditions": "Store in a cool and dry place away from direct sunlight",
+  "shelfLife": "12 months; Min shelf life on delivery: 3months",
+  "ingredientsList": "Ingredients: Inaka Miso (Soybean, Water, Rice, Salt, Alcohol), Spinach, Spring Onion, Tapioca Starch, Flavour Enhancer (E621), Salt, Sugar, Yeast Extract, Kelp Extract, Wakame Seaweed.",
+  "errors": [],
+  "warnings": []
+}
