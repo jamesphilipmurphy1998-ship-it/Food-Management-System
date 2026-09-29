@@ -364,7 +364,7 @@
       // false positives ("RM Milk Coconut Choakoch" tagged dairy off the word "milk" in its
       // name) and, more dangerously, false negatives that looked like a confirmed empty list.
       allergens: [],
-      fvn: Data.autoDetectFVN(name, cat)
+      fvn: false
     };
   }
 
@@ -558,7 +558,7 @@
       supplier: item.supplierVal || "",
       // See the other call site's comment -- allergens are never guessed from the name.
       allergens: [],
-      fvn: Data.autoDetectFVN(item.name, item.cat)
+      fvn: false
     };
   }
 

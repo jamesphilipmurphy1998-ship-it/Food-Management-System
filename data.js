@@ -289,14 +289,6 @@ window.NutriCalcData = (function () {
     return "";
   }
 
-  function autoDetectFVN(name, cat) {
-    const n = name.toLowerCase();
-    const c = (cat || "").toLowerCase();
-    if (c.indexOf("fruit") !== -1 || c.indexOf("vegetable") !== -1 || c.indexOf("nut") !== -1 || c.indexOf("seed") !== -1) return true;
-    const fvnTerms = ["apple", "banana", "orange", "lemon", "lime", "berry", "grape", "melon", "peach", "pear", "plum", "cherry", "mango", "pineapple", "kiwi", "fig", "date", "raisin", "sultana", "coconut", "tomato", "onion", "garlic", "pepper", "carrot", "broccoli", "spinach", "cabbage", "pea", "bean", "lentil", "corn", "sweetcorn", "courgette", "aubergine", "beetroot", "celery", "leek", "mushroom", "potato", "sweet potato", "parsnip", "turnip", "swede", "squash", "pumpkin", "almond", "walnut", "hazelnut", "cashew", "pecan", "pistachio", "peanut", "brazil nut", "macadamia", "sunflower seed", "pumpkin seed", "sesame seed", "flaxseed", "chia seed"];
-    return fvnTerms.some(function (t) { return n.indexOf(t) !== -1; });
-  }
-
   return {
     EU_ALLERGENS: EU_ALLERGENS,
     RI: RI,
@@ -319,7 +311,6 @@ window.NutriCalcData = (function () {
     NC_FIELDS: NC_FIELDS,
     isCodeLike: isCodeLike,
     extractCode: extractCode,
-    autoMapColumn: autoMapColumn,
-    autoDetectFVN: autoDetectFVN
+    autoMapColumn: autoMapColumn
   };
 })();

@@ -7351,7 +7351,7 @@
       costUOM: (costUOM != null && String(costUOM).trim() !== "") ? String(costUOM).trim() : "",
       supplier: supplierVal || "",
       allergens: [],
-      fvn: Data.autoDetectFVN(name, cat),
+      fvn: false,
       // Anything sourced from an import (spreadsheet today, an API feed later) is trusted
       // data, not a work-in-progress draft — only items built by hand via the "+ New
       // Ingredient"/"+ New Recipe" forms should start out "in development".
@@ -7551,7 +7551,7 @@
       costUOM: costUom,
       supplier: item.supplierVal || "",
       allergens: [],
-      fvn: Data.autoDetectFVN(item.name, item.cat),
+      fvn: false,
       approved: true
     };
   }
@@ -7757,7 +7757,7 @@
             costUOM: itemData.costUom || "KG",
             supplier: itemData.supplier || "",
             allergens: [],
-            fvn: Data.autoDetectFVN(itemData.itemName, itemData.cat)
+            fvn: false
           };
           ingredients.push(newIng);
           importedIng++;
@@ -7896,7 +7896,7 @@ desc: "Imported from " + (fname || "spreadsheet"),
           costUOM: item.costUom || "KG",
           supplier: item.supplier || "",
           allergens: [],
-          fvn: Data.autoDetectFVN(item.itemName, item.cat),
+          fvn: false,
           approved: true
         };
         ingredients.push(existingBase);
@@ -7996,7 +7996,7 @@ desc: "Imported from " + (fname || "spreadsheet"),
             costUOM: item.costUom || "KG",
             supplier: item.supplier,
             allergens: [],
-            fvn: Data.autoDetectFVN(item.itemName, item.cat),
+            fvn: false,
             approved: true
           };
           ingredients.push(newIng);

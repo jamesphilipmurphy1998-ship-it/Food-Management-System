@@ -568,28 +568,14 @@ public sealed class ImportService(InMemoryStore store) : IImportService
             // ever set by the spec extraction pipeline (a real supplier declaration, human-
             // confirmed) or manual entry -- see SPEC-EXTRACTION.md.
             Allergens = [],
-            Fvn = AutoDetectFvn(item.ItemName, item.Cat),
+            // Fvn must never be guessed from the name either -- AutoDetectFvn() name-keyword
+            // matched "bean" against "Inari Cooked Bean Curd" and marked it Fruit/Vegetable/Nut,
+            // a false positive (bean curd/tofu isn't FVN for HFSS purposes). FVN affects HFSS
+            // scoring, a real regulatory impact. Only ever set by spec confirmation or manual
+            // entry from here on.
+            Fvn = false,
             Approved = true
         };
-    }
-
-    // Ported from data.js autoDetectFVN — keep the two in sync.
-    private static bool AutoDetectFvn(string name, string? cat)
-    {
-        var n = (name ?? "").ToLowerInvariant();
-        var c = (cat ?? "").ToLowerInvariant();
-        if (c.Contains("fruit") || c.Contains("vegetable") || c.Contains("nut") || c.Contains("seed")) return true;
-        string[] fvnTerms =
-        [
-            "apple", "banana", "orange", "lemon", "lime", "berry", "grape", "melon", "peach", "pear", "plum",
-            "cherry", "mango", "pineapple", "kiwi", "fig", "date", "raisin", "sultana", "coconut", "tomato",
-            "onion", "garlic", "pepper", "carrot", "broccoli", "spinach", "cabbage", "pea", "bean", "lentil",
-            "corn", "sweetcorn", "courgette", "aubergine", "beetroot", "celery", "leek", "mushroom", "potato",
-            "sweet potato", "parsnip", "turnip", "swede", "squash", "pumpkin", "almond", "walnut", "hazelnut",
-            "cashew", "pecan", "pistachio", "peanut", "brazil nut", "macadamia", "sunflower seed", "pumpkin seed",
-            "sesame seed", "flaxseed", "chia seed"
-        ];
-        return fvnTerms.Any(t => n.Contains(t));
     }
 
     private static void UpdateIngredient(Ingredient target, ItemData src)
@@ -612,7 +598,11 @@ public sealed class ImportService(InMemoryStore store) : IImportService
         if (!string.IsNullOrWhiteSpace(src.Supplier)) target.Supplier = src.Supplier;
         if (!string.IsNullOrWhiteSpace(src.Cat) && src.Cat != "Other") target.Cat = src.Cat;
         target.Approved = true;
-        target.Fvn = AutoDetectFvn(target.Name, target.Cat);
+        // Fvn is deliberately NOT touched here either, same reasoning as Allergens below --
+        // AutoDetectFvn() name-keyword-matched "bean" against "Inari Cooked Bean Curd" and
+        // marked it Fruit/Vegetable/Nut, a false positive (bean curd/tofu isn't FVN for HFSS
+        // purposes) that would have re-fired and overwritten any human correction on every
+        // resync. FVN affects HFSS scoring -- a real regulatory impact, not cosmetic.
         // Allergens are deliberately NOT touched here. This used to call AutoDetectAllergens()
         // on every re-upload, which re-guessed from the name and overwrote whatever was here --
         // including real, human-confirmed allergen data the spec extraction pipeline had
