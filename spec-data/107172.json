@@ -1,0 +1,30 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/107172 SS2 Reduced Salt Soy Sauce V1 - Base Laminate change - 120626.xlsx",
+  "appliedAt": "2026-09-29T13:04:50.844Z",
+  "name": "RM Soy Sauce Sachet (low salt)",
+  "code": "107172",
+  "altCode": null,
+  "nutrition": {
+    "kj": 267,
+    "kcal": 63,
+    "fat": 0,
+    "sat": 0,
+    "carb": 6.9,
+    "sugar": 0.6,
+    "protein": 8.7,
+    "fibre": 0.5,
+    "salt": 7.97
+  },
+  "allergens": [
+    "Cereals containing gluten",
+    "Soya"
+  ],
+  "packSize": "10ml sachets x 800 per case",
+  "packFormat": "10ml Sachet",
+  "storageConditions": "Store unopened in a cool dry place away from direct sunlight.",
+  "shelfLife": "12 months shelf life from manufacturer /  9 months minimum shelf life on delivery",
+  "ingredientsList": "Water, soya beans, wheat, salt, alcohol (ethanol), vinegar",
+  "errors": [],
+  "warnings": []
+}

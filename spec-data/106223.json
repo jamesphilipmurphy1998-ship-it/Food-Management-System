@@ -1,0 +1,27 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106223 Cabbage White Shredded RM Spec V3 04.09.2026.xlsx",
+  "appliedAt": "2026-09-29T13:02:05.547Z",
+  "name": "RM Cabbage White Shredded 1KG",
+  "code": "106223",
+  "altCode": null,
+  "nutrition": {
+    "kj": 101,
+    "kcal": 24,
+    "fat": 0.1,
+    "sat": 0,
+    "carb": 4.8,
+    "sugar": 4.8,
+    "protein": 1.2,
+    "fibre": 3,
+    "salt": 0.0175
+  },
+  "allergens": [],
+  "packSize": "1kg",
+  "packFormat": "Blue Food Grade Bag",
+  "storageConditions": "Chilled (0 - 5 C)",
+  "shelfLife": "Date of Production + 5 days, Delivery + 4 days",
+  "ingredientsList": null,
+  "errors": [],
+  "warnings": []
+}

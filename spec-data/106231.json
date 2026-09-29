@@ -1,0 +1,30 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106231 (106072)Teriyaki Sauce 6kg C0158 - Wasabi RM Spec V4 (08.10.2025).xlsx",
+  "appliedAt": "2026-09-29T13:03:05.551Z",
+  "name": "RM Teriyaki Sauce 6 KG",
+  "code": "106231",
+  "altCode": "106072",
+  "nutrition": {
+    "kj": 907,
+    "kcal": 213,
+    "fat": 0,
+    "sat": 0,
+    "carb": 50.3,
+    "sugar": 46.4,
+    "protein": 3.3,
+    "fibre": 0.3,
+    "salt": 4.87
+  },
+  "allergens": [
+    "Cereals containing gluten",
+    "Soya"
+  ],
+  "packSize": "6Kg Jerrican",
+  "packFormat": "5Litre Jerrican",
+  "storageConditions": "Store unopened in a cool dry place away from direct sunlight",
+  "shelfLife": "12 Months / Minimum shelf life on delivery 9 months",
+  "ingredientsList": "Sugar, soy sauce (water, soya beans, wheat, salt, alcohol (ethanol)), water, sake, modified starch, colour: E150c, thickener: xanthan gum",
+  "errors": [],
+  "warnings": []
+}

@@ -1,0 +1,27 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106172 (105035) B4002 Mizkan Honteri Mirin Seasoning (18L) RM Spec V3 (27.10.2025).xlsx",
+  "appliedAt": "2026-09-29T13:01:15.475Z",
+  "name": "RM Mizkan Honteri Mirin - Sweet Seasoning 18L",
+  "code": "106172",
+  "altCode": "105035",
+  "nutrition": {
+    "kj": 1298,
+    "kcal": 306,
+    "fat": 0.5,
+    "sat": 0.3,
+    "carb": 74,
+    "sugar": 52,
+    "protein": 0.5,
+    "fibre": 0.6,
+    "salt": 0.15
+  },
+  "allergens": [],
+  "packSize": "18L",
+  "packFormat": "Heat-sealed Plastic bag with tap",
+  "storageConditions": "Store in a cool, dry place away from direct sunlight.",
+  "shelfLife": "Shelf life 365 days\nMin shelf life 5 months (150DAYS)  (Please refer to your sales representative)",
+  "ingredientsList": "Glucose syrup, Water, Spirit vinegar, Fermented rice alcohol (Water, Rice, Alcohol, Salt, Rice malt), Sugar, Acidity regulator: Citric acid, Cane molasses.",
+  "errors": [],
+  "warnings": []
+}

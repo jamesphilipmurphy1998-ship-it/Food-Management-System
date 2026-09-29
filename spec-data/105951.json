@@ -1,0 +1,27 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/105951 (105014) Potato Starch (Roquette) - RM Spec V5 25.09.2026.xlsx",
+  "appliedAt": "2026-09-29T12:56:20.512Z",
+  "name": "RM Potato Starch",
+  "code": "105951",
+  "altCode": null,
+  "nutrition": {
+    "kj": 1370,
+    "kcal": 320,
+    "fat": 0,
+    "sat": 0,
+    "carb": 80.7,
+    "sugar": 0,
+    "protein": 0.06,
+    "fibre": 0,
+    "salt": 0.013
+  },
+  "allergens": [],
+  "packSize": "25kg",
+  "packFormat": "25kg valve bag (ultrasinic seal available for some products) / 1.125T per pallet",
+  "storageConditions": "We recommend to preserve the product in its unopened original packaging, preferably protected from wide variations of temperature and humidity. Upon opening, use the product as quickly as possible to prevent moisture regain.",
+  "shelfLife": "Minimum durability date of the packaged product : manufacturing date + 24 months. Expiry date of the packaged product: manufacturing date + 5 years.",
+  "ingredientsList": "Potato starch",
+  "errors": [],
+  "warnings": []
+}

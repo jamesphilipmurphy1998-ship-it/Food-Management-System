@@ -1,0 +1,30 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/102584 (102584) Inari Tofu RM Spec-V2 (25.10.2024).xlsx",
+  "appliedAt": "2026-09-29T12:54:47.108Z",
+  "name": "RM Inari Cooked Bean Curd Ytk",
+  "code": "102584",
+  "altCode": null,
+  "nutrition": {
+    "kj": 789,
+    "kcal": 189,
+    "fat": 10.2,
+    "sat": 1.97,
+    "carb": 12.3,
+    "sugar": 14.1,
+    "protein": 10.5,
+    "fibre": 1,
+    "salt": 1.24
+  },
+  "allergens": [
+    "Cereals containing gluten",
+    "Soya"
+  ],
+  "packSize": "900g/ 40 pc / Drained weight: 700 (after 7 mins draining)",
+  "packFormat": "Plastic bag. Heat sealed",
+  "storageConditions": "Keep frozen -18°C",
+  "shelfLife": "730 days Min shelf life on deliver:  90 days",
+  "ingredientsList": "Water, Soybean curd (31%) (Water, Soybean, Soybean oil, Firming agents (E511, E509)), Sugar, Soy sauce (Water, Defatted Soybean, Wheat (Gluten), Salt, Alcohol), Rice vinegar ( Rice, Sugar, Rice koji, Water, Salt).",
+  "errors": [],
+  "warnings": []
+}

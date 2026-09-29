@@ -1,0 +1,31 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/105952 (105039) Kikkoman Teriyaki Sauce - RM Spec V7 (27.08.2025).xlsx",
+  "appliedAt": "2026-09-29T12:59:00.043Z",
+  "name": "RM Teriyaki Sauce Kikkoman (CPU Only)",
+  "code": "105952",
+  "altCode": "105039",
+  "nutrition": {
+    "kj": 392.5,
+    "kcal": 92.5,
+    "fat": 0,
+    "sat": 0,
+    "carb": 11,
+    "sugar": 10.5,
+    "protein": 6.25,
+    "fibre": 1.05,
+    "salt": 9.55
+  },
+  "allergens": [
+    "Cereals containing gluten",
+    "Soya",
+    "Sulphur dioxide"
+  ],
+  "packSize": "4L (4000ml)",
+  "packFormat": "BIB (Bag in Box)",
+  "storageConditions": "Ambient (Store in a cool, dry place away from direct sunlight)",
+  "shelfLife": "18 months / Min shelf life 90 days",
+  "ingredientsList": "Soy sauce (Water, Soybeans, Wheat, Salt), Wine (Contains sulphur dioxide), Sugar, Water, Spirit vinegar, Salt, Spices extracts, Onion powder, Garlic powder.",
+  "errors": [],
+  "warnings": []
+}

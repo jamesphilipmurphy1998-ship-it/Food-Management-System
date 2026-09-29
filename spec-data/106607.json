@@ -1,0 +1,27 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106607 (106719)  Yutaka Shredded Pickled Ginger RM Spec (CPU) V3.xlsx",
+  "appliedAt": "2026-09-29T13:03:45.518Z",
+  "name": "Yutaka Shredded Pickled Ginger Benishoga",
+  "code": "106607",
+  "altCode": "106719",
+  "nutrition": {
+    "kj": 51,
+    "kcal": 12,
+    "fat": 0,
+    "sat": 0,
+    "carb": 2.7,
+    "sugar": 0,
+    "protein": 0.2,
+    "fibre": 1.4,
+    "salt": 3
+  },
+  "allergens": [],
+  "packSize": "Unit net weight : 1500g      Unit drained weight : 1000g",
+  "packFormat": "Plastic bag. Heat sealed",
+  "storageConditions": "Store in a cool and dry place",
+  "shelfLife": "18 months and 90days upon delivery to  Wasabi",
+  "ingredientsList": "Ginger (66.5%), Water, Salt, Acidity regulators ( Acetic Acid, Citric Acid) , Preservative: Potassium Sorbate , Sweeteners (*Aspartame , Sodium Saccharin, Sucralose) ,Colour: E163\n\n*Contains Aspartame a source of Phenylalanine",
+  "errors": [],
+  "warnings": []
+}

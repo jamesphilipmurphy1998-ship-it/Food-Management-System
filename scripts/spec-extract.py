@@ -213,16 +213,23 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
     except Exception as e:
         return {"status": "cannot_extract", "sourceFile": path, "errors": ["Could not open file as .xlsx: %s" % e], "warnings": []}
 
+    # A workbook can contain a Chartsheet (an embedded chart with no cell grid) alongside its
+    # normal worksheets -- confirmed against a real spec (Tahini, 2026-09-29) that crashed every
+    # cross-sheet consistency check outright, since Chartsheet has no .iter_rows() at all. Using
+    # this filtered list (instead of sheet_names directly) wherever every sheet needs scanning
+    # keeps a chart tab from taking down an otherwise-normal extraction.
+    sheet_names = [n for n in wb.sheetnames if hasattr(wb[n], "iter_rows")]
+
     # --- Locate the three sheets this extraction depends on, by name pattern, not fixed index ---
-    recipe_sheet_name = next((n for n in wb.sheetnames if "Ingredient & Recipe" in n), None)
-    nut_sheet_name = next((n for n in wb.sheetnames if "Nutrition Information" in n), None)
-    allergen_sheet_name = next((n for n in wb.sheetnames if "Intolerance" in n), None)
+    recipe_sheet_name = next((n for n in sheet_names if "Ingredient & Recipe" in n), None)
+    nut_sheet_name = next((n for n in sheet_names if "Nutrition Information" in n), None)
+    allergen_sheet_name = next((n for n in sheet_names if "Intolerance" in n), None)
     if not recipe_sheet_name:
-        errors.append("No sheet matching 'Ingredient & Recipe' found -- cannot determine product code. Sheet names present: %s" % wb.sheetnames)
+        errors.append("No sheet matching 'Ingredient & Recipe' found -- cannot determine product code. Sheet names present: %s" % sheet_names)
     if not nut_sheet_name:
-        errors.append("No sheet matching 'Nutrition Information' found. Sheet names present: %s" % wb.sheetnames)
+        errors.append("No sheet matching 'Nutrition Information' found. Sheet names present: %s" % sheet_names)
     if not allergen_sheet_name:
-        errors.append("No sheet matching 'Intolerance' found -- CANNOT determine allergens, refusing to proceed. Sheet names present: %s" % wb.sheetnames)
+        errors.append("No sheet matching 'Intolerance' found -- CANNOT determine allergens, refusing to proceed. Sheet names present: %s" % sheet_names)
     if errors:
         return {"status": "cannot_extract", "sourceFile": path, "errors": errors, "warnings": warnings}
 
@@ -250,7 +257,7 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
     doc_self_consistent = all(
         not (labeled_cell(wb[sn], "Product Code") and str(labeled_cell(wb[sn], "Product Code")).strip())
         or str(labeled_cell(wb[sn], "Product Code")).strip() == raw_code_from_doc
-        for sn in wb.sheetnames if sn != recipe_sheet_name
+        for sn in sheet_names if sn != recipe_sheet_name
     )
     raw_code = raw_code_from_doc
     if override_code and doc_self_consistent and not raw_code_from_doc:
@@ -282,7 +289,7 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
     # when the code came from --override-code, since doc_self_consistent (checked above, against
     # the ORIGINAL document value) already proved every sheet agreed before the override applied.
     if not (override_code and doc_self_consistent and raw_code != raw_code_from_doc):
-        for sn in wb.sheetnames:
+        for sn in sheet_names:
             if sn == recipe_sheet_name:
                 continue
             s = wb[sn]
@@ -456,7 +463,7 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
     # value as coming from the wrong place, so this is intentionally narrower/more literal than
     # the generic pattern rather than trying to generalise across two different label layouts.
     pack_size = None
-    manufacturer_sheet_name = next((n for n in wb.sheetnames if "Manufacturer Detail" in n), None)
+    manufacturer_sheet_name = next((n for n in sheet_names if "Manufacturer Detail" in n), None)
     if manufacturer_sheet_name:
         ms = wb[manufacturer_sheet_name]
         row = find_row_starting_with(ms, "1-d)")
@@ -476,7 +483,7 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
 
     pack_format = None
     storage_conditions = None
-    packaging_sheet_name = next((n for n in wb.sheetnames if "Packaging Detail" in n), None)
+    packaging_sheet_name = next((n for n in sheet_names if "Packaging Detail" in n), None)
     if packaging_sheet_name:
         ps = wb[packaging_sheet_name]
         row = find_row_starting_with(ps, "4-a)")
@@ -497,7 +504,7 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
     else:
         warnings.append("No sheet matching 'Packaging Detail' found -- Pack Format not extracted")
 
-    durability_sheet_name = next((n for n in wb.sheetnames if "Durability" in n), None)
+    durability_sheet_name = next((n for n in sheet_names if "Durability" in n), None)
     if durability_sheet_name:
         ds = wb[durability_sheet_name]
         row = find_row_starting_with(ds, "5-f)")
