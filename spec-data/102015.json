@@ -1,0 +1,26 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/102015 (105616) Avocado - RM Spec V5 (13.01.2025).xlsx",
+  "appliedAt": "2026-09-29T13:54:07.371Z",
+  "name": "RM Avocado",
+  "code": "102015",
+  "altCode": "105616",
+  "nutrition": {
+    "kj": 816,
+    "kcal": 198,
+    "fat": 19.8,
+    "sat": 4.7,
+    "carb": 1.9,
+    "sugar": 0.5,
+    "protein": 1.6,
+    "salt": 0.008
+  },
+  "allergens": [],
+  "packSize": "1x 14 in case with an individual weight 258-313g (5% tolerance for moisture loss = 245g)",
+  "packFormat": "food grade cardboard box",
+  "storageConditions": "2-8c",
+  "shelfLife": "D+5. Shelf life to Wasabi minimum D+2",
+  "ingredientsList": "AVOCADO",
+  "errors": [],
+  "warnings": []
+}

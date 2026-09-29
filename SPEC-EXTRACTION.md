@@ -1545,3 +1545,27 @@ all 114 codes against the 74 spec files sitting in the OneDrive folder -- only 2
 
 The remaining 112 of the 114 uncovered base RM ingredients have no spec document in the folder
 yet -- still awaiting sourcing from suppliers before extraction is possible.
+
+### 2026-09-29 (later still) — Avocado applied; folder re-checked for new arrivals
+
+User asked to re-check the spec folder for new files. One new arrival since the last check:
+`102015 (105616) Avocado - RM Spec V5 (13.01.2025).xlsx`, matching **RM Avocado (102015)** from
+the still-missing list above.
+
+- **RM Avocado (102015/105616) → "PEAR HASS AVOCADO (RIPE)".** Second real-world hit of the
+  cross-sheet-mismatch pattern found on 107490: 10 of 11 sheets read "102015 (105616)" and the
+  Product Name "PEAR HASS AVOCADO (RIPE)" is identical on every sheet including the outlier, but
+  the Nutrition Information sheet's own code cell read a stray "10764" -- confirmed a typo, not
+  a copy-pasted document, same reasoning as before. Used `--confirm-cross-sheet-mismatch`.
+  Also hit a genuine **no-Fibre-row template variant**: this spec's nutrition sheet has no
+  Fibre/Fiber label anywhere at all (verified by reading the full sheet -- goes straight from
+  Salt to the closing note), not just a blank cell in an existing row -- handled via
+  `--allow-blank-nutrition fibre`, same as prior missing-row cases. Storage Conditions ("2-8c")
+  and Shelf Life ("D+5. Shelf life to Wasabi minimum D+2", D = Delivery) both flagged by the
+  plausibility checks as unusual phrasing but confirmed correct against the source cells. Used
+  in **83 recipes** (mostly sushi/maki items) -- the largest recipe fan-out of any spec applied
+  this session. Applied and post-upload-verified.
+
+**Standing habit reinforced:** whenever the user asks to re-check the spec folder, diff the
+current file listing against the last known listing (rather than re-scanning all 75+ filenames
+by eye) to catch new arrivals quickly.
