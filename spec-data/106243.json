@@ -1,0 +1,28 @@
+{
+  "status": "ok",
+  "sourceFile": "baseline snapshot from live DB (original extraction JSON no longer available)",
+  "snapshotAt": "2026-09-29T07:36:37.143Z",
+  "name": "RM Fried Tofu NEW",
+  "code": "106243",
+  "altCode": null,
+  "nutrition": {
+    "kj": 1053,
+    "kcal": 252,
+    "fat": 19.4,
+    "sat": 5.78,
+    "carb": 2.2,
+    "sugar": 0.12,
+    "protein": 17.5,
+    "fibre": 0,
+    "salt": 0.2
+  },
+  "allergens": [
+    "Soya"
+  ],
+  "packSize": "2/5kg（2bags per case, each bag net weight 5kg）",
+  "packFormat": "Blue plastic bag",
+  "storageConditions": "Keep under -18°C",
+  "ingredientsList": null,
+  "errors": [],
+  "warnings": []
+}

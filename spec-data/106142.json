@@ -1,0 +1,26 @@
+{
+  "status": "ok",
+  "sourceFile": "baseline snapshot from live DB (original extraction JSON no longer available)",
+  "snapshotAt": "2026-09-29T07:36:37.093Z",
+  "name": "RM Konbudashi Soup Stock",
+  "code": "106142",
+  "altCode": null,
+  "nutrition": {
+    "kj": 883,
+    "kcal": 211,
+    "fat": 0,
+    "sat": 0,
+    "carb": 33,
+    "sugar": 19,
+    "protein": 19,
+    "fibre": 2,
+    "salt": 47
+  },
+  "allergens": [],
+  "packSize": "1kg",
+  "packFormat": "Primary: Multilayer Film, Secondary: Cardboard",
+  "storageConditions": "Store in a cool, dry place. Keep away from direct sunlight. Once opened, keep refrigerated and use as soon as possible",
+  "ingredientsList": null,
+  "errors": [],
+  "warnings": []
+}

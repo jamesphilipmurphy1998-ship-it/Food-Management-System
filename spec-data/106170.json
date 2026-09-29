@@ -1,0 +1,28 @@
+{
+  "status": "ok",
+  "sourceFile": "baseline snapshot from live DB (original extraction JSON no longer available)",
+  "snapshotAt": "2026-09-29T07:36:37.095Z",
+  "name": "RM Tom Yum Mae Ploy",
+  "code": "106170",
+  "altCode": null,
+  "nutrition": {
+    "kj": 1017,
+    "kcal": 244,
+    "fat": 14.6,
+    "sat": 2.31,
+    "carb": 27.2,
+    "sugar": 18.9,
+    "protein": 3.38,
+    "fibre": 0,
+    "salt": 13.86
+  },
+  "allergens": [
+    "Soya"
+  ],
+  "packSize": "4000 g",
+  "packFormat": null,
+  "storageConditions": "Ambient temperature. Cool dry place. Not expose to sunlight.",
+  "ingredientsList": null,
+  "errors": [],
+  "warnings": []
+}

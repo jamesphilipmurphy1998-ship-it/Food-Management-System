@@ -1,0 +1,28 @@
+{
+  "status": "ok",
+  "sourceFile": "baseline snapshot from live DB (original extraction JSON no longer available)",
+  "snapshotAt": "2026-09-29T07:36:37.113Z",
+  "name": "Gluten-Free Soy Sauce Sachet",
+  "code": "100681",
+  "altCode": null,
+  "nutrition": {
+    "kj": 204,
+    "kcal": 48,
+    "fat": 0.5,
+    "sat": 0,
+    "carb": 3,
+    "sugar": 0.2,
+    "protein": 8.5,
+    "fibre": 0.7,
+    "salt": 14.31
+  },
+  "allergens": [
+    "Soya"
+  ],
+  "packSize": "10ml sachets x 800 per case",
+  "packFormat": "10ml Sachet",
+  "storageConditions": "Store unopened in a cool dry place away from direct sunlight.",
+  "ingredientsList": null,
+  "errors": [],
+  "warnings": []
+}

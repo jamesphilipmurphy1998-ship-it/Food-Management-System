@@ -1,0 +1,28 @@
+{
+  "status": "ok",
+  "sourceFile": "baseline snapshot from live DB (original extraction JSON no longer available)",
+  "snapshotAt": "2026-09-29T07:36:37.152Z",
+  "name": "RM Tuna Bar SF YF (1 x 1.2kg-1.6kg pack)",
+  "code": "107200",
+  "altCode": null,
+  "nutrition": {
+    "kj": 0,
+    "kcal": 0,
+    "fat": 0,
+    "sat": 0,
+    "carb": 0,
+    "sugar": 0,
+    "protein": 0,
+    "fibre": 0,
+    "salt": 0
+  },
+  "allergens": [
+    "Fish"
+  ],
+  "packSize": null,
+  "packFormat": null,
+  "storageConditions": null,
+  "ingredientsList": null,
+  "errors": [],
+  "warnings": []
+}

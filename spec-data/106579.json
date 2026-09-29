@@ -1,0 +1,26 @@
+{
+  "status": "ok",
+  "sourceFile": "baseline snapshot from live DB (original extraction JSON no longer available)",
+  "snapshotAt": "2026-09-29T07:36:37.101Z",
+  "name": "White Onion Diced 20mm Bag Frozen",
+  "code": "106579",
+  "altCode": null,
+  "nutrition": {
+    "kj": 150,
+    "kcal": 36,
+    "fat": 0.2,
+    "sat": 0,
+    "carb": 7.5,
+    "sugar": 5.3,
+    "protein": 1.2,
+    "fibre": 1.4,
+    "salt": 0.01
+  },
+  "allergens": [],
+  "packSize": "10kg",
+  "packFormat": "Blue liner (inner), Carton (outer)",
+  "storageConditions": "Keep frozen, -18 or below",
+  "ingredientsList": null,
+  "errors": [],
+  "warnings": []
+}

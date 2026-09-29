@@ -1,0 +1,29 @@
+{
+  "status": "ok",
+  "sourceFile": "baseline snapshot from live DB (original extraction JSON no longer available)",
+  "snapshotAt": "2026-09-29T07:36:37.170Z",
+  "name": "RM Oatley oat milk",
+  "code": "107255",
+  "altCode": null,
+  "nutrition": {
+    "kj": 0,
+    "kcal": 0,
+    "fat": 0,
+    "sat": 0,
+    "carb": 0,
+    "sugar": 0,
+    "protein": 0,
+    "fibre": 0,
+    "salt": 0
+  },
+  "allergens": [
+    "Milk",
+    "Cereals containing gluten"
+  ],
+  "packSize": null,
+  "packFormat": null,
+  "storageConditions": null,
+  "ingredientsList": null,
+  "errors": [],
+  "warnings": []
+}

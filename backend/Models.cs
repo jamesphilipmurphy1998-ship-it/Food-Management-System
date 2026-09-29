@@ -37,6 +37,10 @@ public sealed class Ingredient
     public string PackSize { get; set; } = "";
     public string PackFormat { get; set; } = "";
     public string StorageConditions { get; set; } = "";
+    /// <summary>The full legal ingredient declaration (composition list) for this raw material,
+    /// as it would appear on a label — e.g. "Rapeseed Oil, Water, Spirit Vinegar, Sugar, Salt...".
+    /// Used to build the ingredient listing for finished products that use this ingredient.</summary>
+    public string IngredientsList { get; set; } = "";
     public List<string> Allergens { get; set; } = [];
     public bool Fvn { get; set; }
     public bool Approved { get; set; }

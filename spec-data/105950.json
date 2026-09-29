@@ -1,0 +1,29 @@
+{
+  "status": "ok",
+  "sourceFile": "baseline snapshot from live DB (original extraction JSON no longer available)",
+  "snapshotAt": "2026-09-29T07:36:37.099Z",
+  "name": "RM Java Curry Mix House Foods",
+  "code": "105950",
+  "altCode": null,
+  "nutrition": {
+    "kj": 2291,
+    "kcal": 548,
+    "fat": 42,
+    "sat": 23.3,
+    "carb": 40,
+    "sugar": 15.1,
+    "protein": 5.7,
+    "fibre": 3.6,
+    "salt": 8.6
+  },
+  "allergens": [
+    "Cereals containing gluten",
+    "Soya"
+  ],
+  "packSize": "20kg",
+  "packFormat": "Film",
+  "storageConditions": "Store in a cool, dry place away from direct sunlight. Once opened keep refrigerated in a sealed container",
+  "ingredientsList": null,
+  "errors": [],
+  "warnings": []
+}

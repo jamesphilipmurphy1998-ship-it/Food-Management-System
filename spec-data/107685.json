@@ -1,0 +1,26 @@
+{
+  "status": "ok",
+  "sourceFile": "baseline snapshot from live DB (original extraction JSON no longer available)",
+  "snapshotAt": "2026-09-29T07:36:37.124Z",
+  "name": "RM IQF Carrot Diced 10 mm",
+  "code": "107685",
+  "altCode": null,
+  "nutrition": {
+    "kj": 125,
+    "kcal": 30,
+    "fat": 0.5,
+    "sat": 0.1,
+    "carb": 6,
+    "sugar": 5.6,
+    "protein": 0.7,
+    "fibre": 2.4,
+    "salt": 0.1
+  },
+  "allergens": [],
+  "packSize": "10kg",
+  "packFormat": "Liner (inner), Carton (outer)",
+  "storageConditions": "-18°C",
+  "ingredientsList": null,
+  "errors": [],
+  "warnings": []
+}

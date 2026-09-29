@@ -1,0 +1,26 @@
+{
+  "status": "ok",
+  "sourceFile": "baseline snapshot from live DB (original extraction JSON no longer available)",
+  "snapshotAt": "2026-09-29T07:36:37.122Z",
+  "name": "RM IQF Julienne Carrot",
+  "code": "107497",
+  "altCode": null,
+  "nutrition": {
+    "kj": 35,
+    "kcal": 146,
+    "fat": 0.3,
+    "sat": 0.1,
+    "carb": 7.9,
+    "sugar": 7.4,
+    "protein": 0.6,
+    "fibre": 2.4,
+    "salt": 0.065
+  },
+  "allergens": [],
+  "packSize": "10kg",
+  "packFormat": null,
+  "storageConditions": "-18 degreas Celsius",
+  "ingredientsList": null,
+  "errors": [],
+  "warnings": []
+}

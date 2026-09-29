@@ -1,0 +1,28 @@
+{
+  "status": "ok",
+  "sourceFile": "baseline snapshot from live DB (original extraction JSON no longer available)",
+  "snapshotAt": "2026-09-29T07:36:37.144Z",
+  "name": "RM Noodle Industrial",
+  "code": "103895",
+  "altCode": null,
+  "nutrition": {
+    "kj": 1488,
+    "kcal": 351,
+    "fat": 1.1,
+    "sat": 0.2,
+    "carb": 70.6,
+    "sugar": 2.2,
+    "protein": 12.6,
+    "fibre": 0,
+    "salt": 0
+  },
+  "allergens": [
+    "Cereals containing gluten"
+  ],
+  "packSize": "9kg",
+  "packFormat": "Food grade blue bag folded in outer box",
+  "storageConditions": "Store in a cool dry place, off the floor, at ambient temperature.",
+  "ingredientsList": null,
+  "errors": [],
+  "warnings": []
+}

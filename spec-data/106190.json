@@ -1,0 +1,26 @@
+{
+  "status": "ok",
+  "sourceFile": "baseline snapshot from live DB (original extraction JSON no longer available)",
+  "snapshotAt": "2026-09-29T07:36:37.104Z",
+  "name": "RM Rice Vermicelli",
+  "code": "106190",
+  "altCode": null,
+  "nutrition": {
+    "kj": 1473,
+    "kcal": 352,
+    "fat": 0.6,
+    "sat": 0.3,
+    "carb": 78,
+    "sugar": 1.2,
+    "protein": 7.8,
+    "fibre": 1.7,
+    "salt": 0.06
+  },
+  "allergens": [],
+  "packSize": "20/400g",
+  "packFormat": "Transparent plastic bag",
+  "storageConditions": "Store in a cool and dry place, away from direct sunlight.",
+  "ingredientsList": null,
+  "errors": [],
+  "warnings": []
+}

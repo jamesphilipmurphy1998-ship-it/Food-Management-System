@@ -16,6 +16,7 @@
 // Requires a signed-in session cookie jar at /tmp/qa_cookies.txt (or set COOKIE_JAR env var) --
 // on Windows pass the real Windows path (see SPEC-EXTRACTION.md), not the Git-Bash /tmp/... form.
 const fs = require("fs");
+const path = require("path");
 const { execSync } = require("child_process");
 
 const API_BASE = process.env.NUTRICOST_API_BASE || "http://192.168.0.50:5001";
@@ -165,7 +166,7 @@ const afterAllergens = (extraction.allergens || []).slice().sort();
 const allergensChanged = JSON.stringify(beforeAllergens) !== JSON.stringify(afterAllergens);
 if (allergensChanged) diff.push({ field: "allergens", before: beforeAllergens, after: afterAllergens });
 
-["packSize", "packFormat", "storageConditions"].forEach((f) => {
+["packSize", "packFormat", "storageConditions", "ingredientsList"].forEach((f) => {
   const after = extraction[f];
   if (after == null) return; // not extracted from this spec -- don't touch it
   const before = matched[f] || "";
@@ -189,7 +190,7 @@ const intendedNutrition = {};
 nutritionFields.forEach((f) => { if (extraction.nutrition[f] != null) { updated[f] = extraction.nutrition[f]; intendedNutrition[f] = extraction.nutrition[f]; } });
 if (allergensChanged) updated.allergens = afterAllergens;
 const intendedPackFields = {};
-["packSize", "packFormat", "storageConditions"].forEach((f) => { if (extraction[f] != null) { updated[f] = extraction[f]; intendedPackFields[f] = extraction[f]; } });
+["packSize", "packFormat", "storageConditions", "ingredientsList"].forEach((f) => { if (extraction[f] != null) { updated[f] = extraction[f]; intendedPackFields[f] = extraction[f]; } });
 
 const result = curlPut(`${API_BASE}/api/ingredients/${matched.id}`, updated);
 console.log(`\nPUT status: ${result.status}`);
@@ -222,6 +223,35 @@ Object.keys(intendedPackFields).forEach((f) => {
 
 if (mismatches.length === 0) {
   console.log("POST-UPLOAD VERIFICATION: PASSED — every intended field matches what's live.");
+
+  // Archive the extracted data (not the source spec file) keyed by code, so that if the DB is
+  // ever wiped and reimported from a new cost/code feed, this already-human-confirmed data can
+  // be matched back onto the reimported ingredient by code and reapplied automatically --
+  // see scripts/spec-reapply-all.js. This is the human-approved record; it must reflect what
+  // was actually verified live just now, not the raw extraction (a --confirm-name-mismatch or
+  // --override-code run means the extraction's own code/name field may not be the canonical one).
+  const specDataDir = path.join(__dirname, "..", "spec-data");
+  if (!fs.existsSync(specDataDir)) fs.mkdirSync(specDataDir, { recursive: true });
+  const archive = {
+    status: "ok",
+    sourceFile: extraction.sourceFile || null,
+    appliedAt: new Date().toISOString(),
+    name: matched.name,
+    code: matched.code,
+    altCode: extraction.altCode || null,
+    nutrition: intendedNutrition,
+    allergens: allergensChanged ? afterAllergens : (matched.allergens || []),
+    packSize: intendedPackFields.packSize != null ? intendedPackFields.packSize : (matched.packSize || null),
+    packFormat: intendedPackFields.packFormat != null ? intendedPackFields.packFormat : (matched.packFormat || null),
+    storageConditions: intendedPackFields.storageConditions != null ? intendedPackFields.storageConditions : (matched.storageConditions || null),
+    ingredientsList: intendedPackFields.ingredientsList != null ? intendedPackFields.ingredientsList : (matched.ingredientsList || null),
+    errors: [],
+    warnings: []
+  };
+  const outPath = path.join(specDataDir, `${matched.code}.json`);
+  fs.writeFileSync(outPath, JSON.stringify(archive, null, 2) + "\n", "utf8");
+  console.log(`Archived to ${outPath} for future reapply.`);
+
   process.exit(0);
 } else {
   console.log("POST-UPLOAD VERIFICATION FAILED — the following field(s) do not match what was intended to be written:");

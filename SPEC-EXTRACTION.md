@@ -394,6 +394,40 @@ upload can never touch cost, supplier, code, or anything else on the record.
 (from the original BOM import, untouched by any of today's spec writes) and the nutrition/
 allergen/pack data this pipeline wrote earlier the same day. Neither has erased the other.
 
+## Surviving a full DB wipe: the `spec-data/` archive
+
+The guarantee above covers the *incremental* cost-sync case. It does not cover a **full wipe and
+reimport** — e.g. when a new live-data API/feed comes online and the ingredients table gets
+cleared and rebuilt from scratch with fresh codes/costs. That would take every nutrition/
+allergen/pack/ingredients-list value this pipeline has written with it, since none of it lives
+anywhere except the `ingredients` row itself.
+
+**Fix (built 2026-09-29):** every successful `spec-apply.js --apply` run now also writes a copy
+of the extracted data — not the source spec file, just the small structured result: nutrition,
+allergens, pack size/format/storage, ingredients list, name, and code — to
+`spec-data/<code>.json`, committed to git alongside the rest of the repo. This only happens
+*after* post-upload verification passes, so every archived file already represents data that was
+both human-approved and confirmed live, never a guess.
+
+- **`scripts/spec-snapshot-baseline.js`** — one-off bootstrap, already run 2026-09-29. Rebuilt
+  `spec-data/` from the *then-current* live state for every ingredient that already had
+  spec-derived data (60 ingredients), since the original extraction JSONs from earlier in the
+  session had already been cleaned up from scratchpad temp folders before this archive existed.
+  Not needed again — `spec-apply.js` now archives automatically going forward.
+- **`scripts/spec-reapply-all.js`** — run this after any full wipe + reimport. It loops every
+  `spec-data/<code>.json`, matches against the freshly-imported live ingredients **by code**
+  (same matching logic as `spec-apply.js`), diffs, and writes back any that changed. Dry run by
+  default; `--apply` writes. **No per-ingredient confirmation is asked** — each archive is
+  already a previously-approved decision, so re-asking would just be asking the same question
+  twice. Anything that doesn't match a code in the new import is reported separately as
+  UNMATCHED and left untouched, for a person to review by hand (a renamed/renumbered code on
+  reimport is exactly the kind of thing that still needs a human look, same as a first-time
+  upload with no code match).
+- Codes are the join key. If a reimport keeps the same codes (which is the normal case for a
+  cost/code refresh — the code is the stable identifier, only cost and possibly name/pack
+  change), reapply is fully automatic. If codes get renumbered, only those specific ingredients
+  need manual re-matching; everything else still reapplies untouched.
+
 ## Write workflow (built)
 
 Per the earlier discussion on reliability: **propose, don't auto-write.** Two scripts:

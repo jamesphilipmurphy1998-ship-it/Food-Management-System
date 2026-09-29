@@ -1,0 +1,26 @@
+{
+  "status": "ok",
+  "sourceFile": "baseline snapshot from live DB (original extraction JSON no longer available)",
+  "snapshotAt": "2026-09-29T07:36:37.128Z",
+  "name": "RM Chives",
+  "code": "106128",
+  "altCode": null,
+  "nutrition": {
+    "kj": 112,
+    "kcal": 27,
+    "fat": 0.7,
+    "sat": 0.15,
+    "carb": 1.9,
+    "sugar": 1.9,
+    "protein": 3.3,
+    "fibre": 2.5,
+    "salt": 0.01
+  },
+  "allergens": [],
+  "packSize": "30 x 100g",
+  "packFormat": "Clear film flow wrapped",
+  "storageConditions": "+2°C",
+  "ingredientsList": null,
+  "errors": [],
+  "warnings": []
+}

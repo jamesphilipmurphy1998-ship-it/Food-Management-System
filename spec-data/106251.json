@@ -1,0 +1,26 @@
+{
+  "status": "ok",
+  "sourceFile": "baseline snapshot from live DB (original extraction JSON no longer available)",
+  "snapshotAt": "2026-09-29T07:36:37.141Z",
+  "name": "RM Xanthan Gum",
+  "code": "106251",
+  "altCode": null,
+  "nutrition": {
+    "kj": 1344,
+    "kcal": 320,
+    "fat": 0,
+    "sat": 0,
+    "carb": 80,
+    "sugar": 0,
+    "protein": 3.8,
+    "fibre": 0,
+    "salt": 0.975
+  },
+  "allergens": [],
+  "packSize": "25KG BAGS",
+  "packFormat": "Bag",
+  "storageConditions": "DRY, AMBIENT CONDITIONS IN SEALED BAG OUT OF DIRECT SUNLIGHT",
+  "ingredientsList": null,
+  "errors": [],
+  "warnings": []
+}

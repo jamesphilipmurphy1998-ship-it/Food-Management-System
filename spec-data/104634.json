@@ -1,0 +1,26 @@
+{
+  "status": "ok",
+  "sourceFile": "baseline snapshot from live DB (original extraction JSON no longer available)",
+  "snapshotAt": "2026-09-29T07:36:37.116Z",
+  "name": "Sriracha Mayo Sachet",
+  "code": "104634",
+  "altCode": null,
+  "nutrition": {
+    "kj": 1619,
+    "kcal": 393,
+    "fat": 40,
+    "sat": 2.7,
+    "carb": 7.3,
+    "sugar": 5.3,
+    "protein": 0.6,
+    "fibre": 0.7,
+    "salt": 2
+  },
+  "allergens": [],
+  "packSize": "15 g",
+  "packFormat": "Sachet",
+  "storageConditions": "Ambient",
+  "ingredientsList": "Vegan Mayonnaise (60%) (Rapeseed Oil, Water, Spirit Vinegar, Sugar, Salt, Modified Starch, Modified Potato Starch, Stabilisers [Xanthan Gum, Guar Gum], Preservative [Potassium Sorbate], Lemon Juice Concentrate, Ground Turmeric, Colour [Paprika Extract]), Sriracha Sauce (40%) (Red Peppers, Red Chillies, Sugar, Spirit Vinegar, Garlic Puree, Salt, Modified Maize Starch, Preservative [Potassium Sorbate], Chilli Powder).",
+  "errors": [],
+  "warnings": []
+}

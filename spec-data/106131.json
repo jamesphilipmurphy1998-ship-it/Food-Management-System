@@ -1,0 +1,29 @@
+{
+  "status": "ok",
+  "sourceFile": "baseline snapshot from live DB (original extraction JSON no longer available)",
+  "snapshotAt": "2026-09-29T07:36:37.108Z",
+  "name": "RM Prawn Breaded",
+  "code": "106131",
+  "altCode": null,
+  "nutrition": {
+    "kj": 656,
+    "kcal": 156,
+    "fat": 1.8,
+    "sat": 0.5,
+    "carb": 25,
+    "sugar": 2.8,
+    "protein": 10,
+    "fibre": 0,
+    "salt": 1.1
+  },
+  "allergens": [
+    "Cereals containing gluten",
+    "Crustaceans"
+  ],
+  "packSize": "300g (10 pieces)",
+  "packFormat": "Tray",
+  "storageConditions": "Keep frozen at -18℃. Once defrosted keep refrigerated and consume within 24 hours",
+  "ingredientsList": null,
+  "errors": [],
+  "warnings": []
+}

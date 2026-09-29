@@ -1,0 +1,28 @@
+{
+  "status": "ok",
+  "sourceFile": "baseline snapshot from live DB (original extraction JSON no longer available)",
+  "snapshotAt": "2026-09-29T07:36:37.146Z",
+  "name": "RM Onion Powder",
+  "code": "106955",
+  "altCode": null,
+  "nutrition": {
+    "kj": 1381,
+    "kcal": 325,
+    "fat": 0.5,
+    "sat": 0.1,
+    "carb": 83.3,
+    "sugar": 37.4,
+    "protein": 9,
+    "fibre": 9.2,
+    "salt": 0.053
+  },
+  "allergens": [
+    "Sulphur dioxide"
+  ],
+  "packSize": "20kg",
+  "packFormat": "2x heat sealed liners (inner), Box (outer)",
+  "storageConditions": "cool,dry, abient warehouse",
+  "ingredientsList": null,
+  "errors": [],
+  "warnings": []
+}

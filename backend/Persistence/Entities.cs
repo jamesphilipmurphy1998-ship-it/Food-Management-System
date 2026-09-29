@@ -26,6 +26,7 @@ public sealed class IngredientEntity
     public string PackSize { get; set; } = "";
     public string PackFormat { get; set; } = "";
     public string StorageConditions { get; set; } = "";
+    public string IngredientsList { get; set; } = "";
     public List<string> Allergens { get; set; } = [];
     public bool Fvn { get; set; }
     public bool Approved { get; set; }

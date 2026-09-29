@@ -1,0 +1,26 @@
+{
+  "status": "ok",
+  "sourceFile": "baseline snapshot from live DB (original extraction JSON no longer available)",
+  "snapshotAt": "2026-09-29T07:36:37.093Z",
+  "name": "RM Sugar Granulated (CPU ONLY)",
+  "code": "106161",
+  "altCode": null,
+  "nutrition": {
+    "kj": 1700,
+    "kcal": 400,
+    "fat": 0,
+    "sat": 0,
+    "carb": 100,
+    "sugar": 100,
+    "protein": 0,
+    "fibre": 0,
+    "salt": 0
+  },
+  "allergens": [],
+  "packSize": "25kg Easy Open Sack",
+  "packFormat": "25kg Easy Open Sack",
+  "storageConditions": "Cool, dry environment, below 65%RH and at 10-20oC avoiding temperature fluctuations in excess of 5oC in any 24h period. The product should not be subject to any draughts. Avoid direct light and sources of ignition. Do not store close to substances with strong odours.",
+  "ingredientsList": null,
+  "errors": [],
+  "warnings": []
+}

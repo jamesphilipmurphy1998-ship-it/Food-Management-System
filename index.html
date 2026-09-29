@@ -1230,6 +1230,11 @@
       <div class="form-group"><label class="form-label">Pack Format</label><input class="form-input" type="text" id="new-ing-pack-format" placeholder="e.g. Bag, Box, Tub"></div>
       <div class="form-group"><label class="form-label">Storage Conditions</label><input class="form-input" type="text" id="new-ing-storage-conditions" placeholder="e.g. Ambient, Chilled, Frozen"></div>
     </div>
+    <div class="form-group">
+      <label class="form-label">Ingredients (legal ingredient declaration)</label>
+      <textarea class="form-input" id="new-ing-ingredients-list" rows="3" placeholder="e.g. Rapeseed Oil, Water, Spirit Vinegar, Sugar, Salt, Modified Starch..."></textarea>
+      <p style="font-size:11px;color:var(--nc-gray-400);margin:2px 0 0">The full ingredient composition list, as it would appear on a label. Copy from the supplier spec's Legal Ingredient Declaration field.</p>
+    </div>
     <p style="font-size:11px;color:var(--nc-gray-400);margin:8px 0 4px;font-weight:600">ALLERGENS (select all that apply)</p>
     <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px" id="new-ing-allergens"></div>
     <div class="form-group">
@@ -1898,7 +1903,7 @@
 <script src="hfss.js?v=20260923-cache-buster"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="app.js?v=20260928-nutrition-untransposed"></script>
+<script src="app.js?v=20260928-ingredients-list"></script>
 <script src="excel-import.js?v=20260916-parentnoofportions-col-k"></script>
 <script src="reports.js?v=20260923-cache-buster"></script>
 </body>

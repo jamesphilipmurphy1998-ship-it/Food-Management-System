@@ -1,0 +1,26 @@
+{
+  "status": "ok",
+  "sourceFile": "baseline snapshot from live DB (original extraction JSON no longer available)",
+  "snapshotAt": "2026-09-29T07:36:37.114Z",
+  "name": "RM Paprika Powder",
+  "code": "106160",
+  "altCode": null,
+  "nutrition": {
+    "kj": 1180,
+    "kcal": 282,
+    "fat": 12.9,
+    "sat": 2.1,
+    "carb": 54,
+    "sugar": 10.3,
+    "protein": 14.1,
+    "fibre": 0,
+    "salt": 0.17
+  },
+  "allergens": [],
+  "packSize": "1kg",
+  "packFormat": "Film Bag",
+  "storageConditions": "Store in cool (<21 °C (70 °F)) and dry place in unopened packaging, away from direct \nsunlight",
+  "ingredientsList": null,
+  "errors": [],
+  "warnings": []
+}

@@ -1,0 +1,28 @@
+{
+  "status": "ok",
+  "sourceFile": "baseline snapshot from live DB (original extraction JSON no longer available)",
+  "snapshotAt": "2026-09-29T07:36:37.131Z",
+  "name": "RM Black Bean Paste",
+  "code": "107168",
+  "altCode": null,
+  "nutrition": {
+    "kj": 470.7,
+    "kcal": 112.3,
+    "fat": 3.1,
+    "sat": 0,
+    "carb": 8.9,
+    "sugar": 0.5,
+    "protein": 9.3,
+    "fibre": 5.8,
+    "salt": 5.1
+  },
+  "allergens": [
+    "Soya"
+  ],
+  "packSize": "5 kg",
+  "packFormat": "Bag",
+  "storageConditions": "Ambient",
+  "ingredientsList": null,
+  "errors": [],
+  "warnings": []
+}

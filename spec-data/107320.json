@@ -1,0 +1,26 @@
+{
+  "status": "ok",
+  "sourceFile": "baseline snapshot from live DB (original extraction JSON no longer available)",
+  "snapshotAt": "2026-09-29T07:36:37.140Z",
+  "name": "RM IQF Shitake Mushroom",
+  "code": "107320",
+  "altCode": null,
+  "nutrition": {
+    "kj": 234,
+    "kcal": 56,
+    "fat": 0.2,
+    "sat": 0.1,
+    "carb": 14.4,
+    "sugar": 3.6,
+    "protein": 1.6,
+    "fibre": 2.1,
+    "salt": 0
+  },
+  "allergens": [],
+  "packSize": "1x15kg",
+  "packFormat": "Blue Polyliner (inner), Carton (outer)",
+  "storageConditions": "Frozen",
+  "ingredientsList": null,
+  "errors": [],
+  "warnings": []
+}

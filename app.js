@@ -2832,6 +2832,8 @@
     if (packFormatEl) packFormatEl.value = data.packFormat || "";
     var storageConditionsEl = document.getElementById("new-ing-storage-conditions");
     if (storageConditionsEl) storageConditionsEl.value = data.storageConditions || "";
+    var ingredientsListEl = document.getElementById("new-ing-ingredients-list");
+    if (ingredientsListEl) ingredientsListEl.value = data.ingredientsList || "";
     document.getElementById("new-ing-fvn").checked = !!data.fvn;
     var approvedEl = document.getElementById("new-ing-approved");
     if (approvedEl) approvedEl.checked = !!data.approved;
@@ -2979,6 +2981,7 @@
       packSize: (function () { var el = document.getElementById("new-ing-pack-size"); return el ? el.value.trim() : ""; })(),
       packFormat: (function () { var el = document.getElementById("new-ing-pack-format"); return el ? el.value.trim() : ""; })(),
       storageConditions: (function () { var el = document.getElementById("new-ing-storage-conditions"); return el ? el.value.trim() : ""; })(),
+      ingredientsList: (function () { var el = document.getElementById("new-ing-ingredients-list"); return el ? el.value.trim() : ""; })(),
       allergens: allergens,
       fvn: document.getElementById("new-ing-fvn").checked
     };

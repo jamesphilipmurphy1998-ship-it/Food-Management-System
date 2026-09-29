@@ -1,0 +1,26 @@
+{
+  "status": "ok",
+  "sourceFile": "baseline snapshot from live DB (original extraction JSON no longer available)",
+  "snapshotAt": "2026-09-29T07:36:37.125Z",
+  "name": "RM Milk Coconut Choakoch",
+  "code": "106169",
+  "altCode": null,
+  "nutrition": {
+    "kj": 753,
+    "kcal": 180,
+    "fat": 18,
+    "sat": 17,
+    "carb": 2,
+    "sugar": 0,
+    "protein": 1.5,
+    "fibre": 1,
+    "salt": 0.375
+  },
+  "allergens": [],
+  "packSize": "20Kg BIB",
+  "packFormat": "Aseptic bag",
+  "storageConditions": "Ambient",
+  "ingredientsList": null,
+  "errors": [],
+  "warnings": []
+}

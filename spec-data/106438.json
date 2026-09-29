@@ -1,0 +1,26 @@
+{
+  "status": "ok",
+  "sourceFile": "baseline snapshot from live DB (original extraction JSON no longer available)",
+  "snapshotAt": "2026-09-29T07:36:37.134Z",
+  "name": "RM Red Pepper Sliced 30x60mm IH Foods",
+  "code": "106438",
+  "altCode": null,
+  "nutrition": {
+    "kj": 134,
+    "kcal": 32,
+    "fat": 0.4,
+    "sat": 0.1,
+    "carb": 6.4,
+    "sugar": 6.1,
+    "protein": 1,
+    "fibre": 0,
+    "salt": 0.001
+  },
+  "allergens": [],
+  "packSize": "10 kg",
+  "packFormat": "Blue Food Grade Bag",
+  "storageConditions": "Chilled ( 1 - 5 C)",
+  "ingredientsList": null,
+  "errors": [],
+  "warnings": []
+}
