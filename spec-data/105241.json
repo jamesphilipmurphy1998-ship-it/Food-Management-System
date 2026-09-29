@@ -1,0 +1,25 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/105241 Wasabi Brand Ginger Sachet RM Specification V3.xlsx",
+  "appliedAt": "2026-09-29T10:56:41.220Z",
+  "name": "Ginger Sachet",
+  "code": "105241",
+  "altCode": null,
+  "nutrition": {
+    "kj": 32,
+    "kcal": 7.65,
+    "fat": 0.04,
+    "sat": 0.02,
+    "carb": 0.1,
+    "sugar": 0,
+    "protein": 0.26,
+    "salt": 2.81
+  },
+  "allergens": [],
+  "packSize": "5g/sachet",
+  "packFormat": "Sachet",
+  "storageConditions": "Keep in a cool and dry and place",
+  "ingredientsList": null,
+  "errors": [],
+  "warnings": []
+}

@@ -1130,3 +1130,27 @@ codes to find what's new, rather than re-scanning everything.
   spec, but user explicitly chose to write the literal stated value (459.5) rather than the
   macro-calculated figure. Applied, verified. Flows into 98 recipes (Flaming Chicken/Korean
   Fire Chicken line, Chilli Oil products, and many sushi sets via the Wasabi Sachet chain).
+- **Diced Red Pepper (106228) → `RM Diced Red pepper 20mmx20mm PACK 5KG`.** Clean extraction,
+  sanity check passed. Name mismatch confirmed (word order/pluralisation only). Applied,
+  verified.
+- **Ginger Sachet (105241) → same name live.** Two real internal-consistency issues, each
+  confirmed individually. (1) Fibre stated 3.3g/100g while Carbohydrate is `<0.1g` -- physically
+  inconsistent, since fibre is normally a subset of total carb, and every other value in this
+  sachet is near-zero (fat 0.04g, sugar 0g). Read as a copy-paste artifact from an unrelated
+  product's row; left unset rather than written. (2) kJ/kcal are internally self-consistent
+  with each other (7.65kcal x 4.184 = 32.0kJ exactly, so not a swap) but don't reconcile against
+  the macro calculation (1.8kcal) even loosely -- no confident explanation found for numbers
+  this small; written as literally stated per explicit confirmation. Salt (2.81g/100g) is
+  plausible on its own for a salted/brined condiment sachet. Applied, verified.
+- **Pak Choi Sliced (106217) → `RM Pak Choi Sliced 1KG`.** The Wheat/wheat derivatives allergen
+  row's label text was entirely missing from the sheet (row 26, blank `A26`), which
+  `spec-extract.py` correctly refused to interpret automatically -- a missing category label
+  could mean a dropped question, not necessarily a formatting glitch. Investigated: the row's
+  Y/N answer cells were still present (`N`) in exactly the position Wheat occupies in every
+  other spec's standard row order (between Seed and Oat), and every other category in the sheet
+  also answered N for direct presence (Celery and Sulphites show cross-contamination risk only,
+  not direct presence). Read as a label-formatting glitch, not a dropped question --
+  human-confirmed before treating Wheat as N and proceeding. No existing override flag covers
+  this specific case (a missing LABEL, not a missing VALUE) -- patched manually as a one-off
+  rather than generalizing a new flag for something only seen once. Name mismatch confirmed.
+  Applied, verified.
