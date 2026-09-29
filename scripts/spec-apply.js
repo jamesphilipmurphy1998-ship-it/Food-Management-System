@@ -224,6 +224,19 @@ Object.keys(intendedPackFields).forEach((f) => {
 if (mismatches.length === 0) {
   console.log("POST-UPLOAD VERIFICATION: PASSED — every intended field matches what's live.");
 
+  // Record WHY this version changed, on the version-history row the PUT above just created --
+  // auto-filled from the spec's filename, never typed by hand. This is what lets someone open
+  // an ingredient's version history and see not just what v1/v2/v3 looked like, but why each
+  // change happened. The comment attaches to whatever version the PUT's snapshot diff produced
+  // (see backend Program.cs's single-item PUT endpoint) -- if the fields didn't actually change,
+  // no new version was created and this comment call is a harmless no-op against the prior one.
+  const sourceBaseName = extraction.sourceFile ? extraction.sourceFile.split(/[\\/]/).pop() : "unknown spec file";
+  const commentBody = { comment: `Spec upload: ${sourceBaseName}` };
+  const commentTmp = extractionPath + ".comment-body.json";
+  fs.writeFileSync(commentTmp, JSON.stringify(commentBody));
+  execSync(`curl -s -b "${COOKIE_JAR}" -X POST "${API_BASE}/api/ingredients/${matched.id}/latest-version-comment" -H "content-type: application/json" --data @"${commentTmp}"`);
+  fs.unlinkSync(commentTmp);
+
   // Archive the extracted data (not the source spec file) keyed by code, so that if the DB is
   // ever wiped and reimported from a new cost/code feed, this already-human-confirmed data can
   // be matched back onto the reimported ingredient by code and reapplied automatically --

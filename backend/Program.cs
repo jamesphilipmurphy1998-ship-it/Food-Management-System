@@ -850,9 +850,31 @@ app.MapPut("/api/ingredients/{id}", async (AppDbContext db, HttpContext ctx, str
     {
         return Results.Json(new { error = "This ingredient was sent to " + (entity.PendingApprovalReviewerName ?? "someone else") + " — only they can approve it." }, statusCode: 403);
     }
+    // Snapshot version history BEFORE the overwrite, same logic as the bulk PUT above — only
+    // writes a new version when the fields actually changed, so a routine no-op save (or one
+    // that only touches cost/supplier, which aren't in the snapshot) doesn't bump the version
+    // number. This was previously ONLY done by the bulk PUT, so every spec-apply.js write (which
+    // uses this single-record endpoint) silently produced no version history at all.
+    var oldModel = entity.ToModel();
+    var newSnapshot = IngredientSnapshot.Build(ingredient);
+    var latestVersion = await db.IngredientVersions.Where(v => v.IngredientId == id).OrderByDescending(v => v.VersionNumber).FirstOrDefaultAsync();
+    var now = DateTimeOffset.UtcNow;
+    if (latestVersion == null)
+    {
+        var oldSnapshot = IngredientSnapshot.Build(oldModel);
+        var nextNumber = 1;
+        db.IngredientVersions.Add(new IngredientVersionEntity { IngredientId = id, VersionNumber = nextNumber++, Snapshot = oldSnapshot, CreatedAtUtc = now });
+        if (newSnapshot != oldSnapshot)
+            db.IngredientVersions.Add(new IngredientVersionEntity { IngredientId = id, VersionNumber = nextNumber, Snapshot = newSnapshot, CreatedAtUtc = now });
+    }
+    else if (newSnapshot != latestVersion.Snapshot)
+    {
+        db.IngredientVersions.Add(new IngredientVersionEntity { IngredientId = id, VersionNumber = latestVersion.VersionNumber + 1, Snapshot = newSnapshot, CreatedAtUtc = now });
+    }
+
     ingredient.Id = id;
     db.Entry(entity).CurrentValues.SetValues(ingredient.ToEntity());
-    entity.UpdatedAt = DateTimeOffset.UtcNow;
+    entity.UpdatedAt = now;
     await db.SaveChangesAsync();
     return Results.Ok(entity.ToModel());
 });
@@ -1445,6 +1467,10 @@ file static class IngredientSnapshot
         costUom = i.CostUOM,
         density = i.Density,
         supplier = i.Supplier,
+        packSize = i.PackSize,
+        packFormat = i.PackFormat,
+        storageConditions = i.StorageConditions,
+        ingredientsList = i.IngredientsList,
         allergens = i.Allergens,
         fvn = i.Fvn,
         approved = i.Approved

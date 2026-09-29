@@ -110,6 +110,14 @@ archiveFiles.forEach((file) => {
     return;
   }
   results.applied++;
+
+  // Record why, same as spec-apply.js -- auto-filled, never typed by hand.
+  const sourceBaseName = archive.sourceFile ? archive.sourceFile.split(/[\\/]/).pop() : "unknown spec file";
+  const commentBody = { comment: `Reapplied from spec-data archive: ${sourceBaseName}` };
+  const commentTmp = path.join(SPEC_DATA_DIR, `.${archive.code}.comment-body.json`);
+  fs.writeFileSync(commentTmp, JSON.stringify(commentBody));
+  execSync(`curl -s -b "${COOKIE_JAR}" -X POST "${API_BASE}/api/ingredients/${matched.id}/latest-version-comment" -H "content-type: application/json" --data @"${commentTmp}"`);
+  fs.unlinkSync(commentTmp);
 });
 
 console.log(`\n--- Summary ---`);
