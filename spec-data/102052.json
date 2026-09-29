@@ -1,0 +1,30 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/102052 (105009) Sweet chilli dipping sauce - RM Spec V10 14.10.2025.xlsx",
+  "appliedAt": "2026-09-29T13:57:25.093Z",
+  "name": "RM Sweet Chilli Dipping Sauce (CPU Only)",
+  "code": "102052",
+  "altCode": "105009",
+  "nutrition": {
+    "kj": 775,
+    "kcal": 183,
+    "fat": 0.9,
+    "sat": 0.3,
+    "carb": 42.9,
+    "sugar": 36.3,
+    "protein": 0.8,
+    "fibre": 0.09,
+    "salt": 2.563725
+  },
+  "allergens": [
+    "Cereals containing gluten",
+    "Soya"
+  ],
+  "packSize": "10 kg (Net Wt.)",
+  "packFormat": "HDPE Container",
+  "storageConditions": "Room temperature",
+  "shelfLife": "1 year (12month)",
+  "ingredientsList": "Sweet chili sauce 33,5% (sugar, water, red pepper, garlic, salt, modified corn starch : E1422, acidity regulator: E260), water,corn syrup, sugar, high fructose corn syup,onion, red pepper paste (water, corn syrup, WHEAT flour, WHEAT, salt, red pepper powder, roasted SOYBEAN powder, alcohol, garlic, flavor enhancer:E621, SOYBEAN, onion, fermented SOYBEAN), garlic, vinegar, tomato paste , salt, modified corn starch: E1422, crushed pineapple, pineapple extract, SOYBEAN sauce(water, defatted SOYBEAN, salt, WHEAT flour, alcohol), alcohol, red pepper powder,stabiliser: E415, yeastt extrac powder, colour: E160c,flavor enhancer: E621, black pepper powder, acidity regulator(E330, E331), oleoresin capsicum, sweetener:E950, cinnamon powder, pineapple flavor oil",
+  "errors": [],
+  "warnings": []
+}

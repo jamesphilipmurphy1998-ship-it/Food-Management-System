@@ -1,0 +1,27 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/102022 (105593) Mizkan Sushi Seasoning - Wasabi RM Spec V4 (13.10.2025).xlsx",
+  "appliedAt": "2026-09-29T13:56:04.621Z",
+  "name": "RM Sushi Seasoning",
+  "code": "102022",
+  "altCode": "105593",
+  "nutrition": {
+    "kj": 1012,
+    "kcal": 239,
+    "fat": 2,
+    "sat": 1,
+    "carb": 52,
+    "sugar": 50,
+    "protein": 0.5,
+    "fibre": 0.6,
+    "salt": 11.8
+  },
+  "allergens": [],
+  "packSize": "18L",
+  "packFormat": "Heat-sealed plastic bag with tap.",
+  "storageConditions": "Ambient",
+  "shelfLife": "365 days / 90 days.",
+  "ingredientsList": "Sugar, Spirit vinegar, Rice Vinegar, Water, Salt, Demerara sugar",
+  "errors": [],
+  "warnings": []
+}

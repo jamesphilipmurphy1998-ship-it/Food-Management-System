@@ -1569,3 +1569,18 @@ the still-missing list above.
 **Standing habit reinforced:** whenever the user asks to re-check the spec folder, diff the
 current file listing against the last known listing (rather than re-scanning all 75+ filenames
 by eye) to catch new arrivals quickly.
+
+### 2026-09-29 (later still) — two more specs found via folder re-check
+
+- **RM Sushi Seasoning (102022/105593) → "Sushi Seasoning" (Mizkan).** Clean extraction, code
+  and name matched directly, no overrides needed. Storage ("Ambient") and Shelf Life ("365 days
+  / 90 days.") both confirmed. Used in **136 recipes** -- the largest fan-out of any spec
+  applied this session, essentially the entire sushi/maki/nigiri menu (sushi rice seasoning is
+  used almost everywhere). Applied and post-upload-verified.
+- **RM Sweet Chilli Dipping Sauce (CPU Only) (102052/105009) → "Sweet & Spicy Dipping Sauce".**
+  Name mismatch confirmed as the same product (live name uses "Sweet Chilli", spec uses "Sweet
+  & Spicy" -- same sauce). Storage ("Room temperature") and Shelf Life ("1 year (12month)")
+  both confirmed -- note: the user's first click on the Shelf Life question read as "not
+  correct," then immediately corrected to "mistakenly clicked, it is correct" on a follow-up
+  question. Used in **87 recipes**, essentially the whole sweet-chilli/spicy-chicken product
+  line. Applied and post-upload-verified.
