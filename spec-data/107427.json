@@ -1,0 +1,17 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/107427 (107467) Matcha Green Tea Spec V1.xlsx",
+  "appliedAt": "2026-09-29T13:27:49.662Z",
+  "name": "RM Organic Japanese Matcha Green Tea Powder (Premium Grade) 40g",
+  "code": "107427",
+  "altCode": null,
+  "nutrition": {},
+  "allergens": [],
+  "packSize": "40g",
+  "packFormat": "Composite doy pouch with Al layer and ziplock",
+  "storageConditions": "Store in a cool, dry place",
+  "shelfLife": "720 days total shelf life. 180 days minimum shelf life on delivery",
+  "ingredientsList": null,
+  "errors": [],
+  "warnings": []
+}

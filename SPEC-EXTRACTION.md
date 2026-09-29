@@ -1463,7 +1463,16 @@ requiring a typed reply.** This was already the intent throughout the session bu
 once on 107316's first pass -- corrected immediately per the requestor, logged here so it's
 never dropped again.
 
-Still open in this batch, not yet processed: **107427**
-(Matcha Green Tea -- every nutrition field reads blank/N-A in the spec), **107451** (Yuzu Vegan
+- **Organic Japanese Matcha Green Tea Powder (107427/CS159) → `RM Organic Japanese Matcha
+  Green Tea Powder (Premium Grade) 40g`.** All 9 nutrition fields blank -- investigated and
+  confirmed NOT a data gap: the spec explicitly states "N/A (Tea is exempt from nutrition
+  labelling)" in the source of nutrition column. Left blank as the genuinely correct answer,
+  not a missing value. Product Code cell held "CS159" (the manufacturer's own code)
+  consistently across every sheet -- overridden to 107427 per filename + exact name match.
+  Ingredients List row was empty on the spec -- not extracted. Storage Conditions and Shelf
+  Life confirmed per standing rule. Used in 1 recipe (Matcha Latte 12oz), flows up
+  automatically. Applied and post-upload-verified.
+
+Still open in this batch, not yet processed: **107451** (Yuzu Vegan
 Mayo), **107490** (Cooked Breakfast Sausage -- a genuine cross-sheet code mismatch, "SKU 807" on
 one sheet vs "107490" on the recipe sheet, needs investigation before proceeding).
