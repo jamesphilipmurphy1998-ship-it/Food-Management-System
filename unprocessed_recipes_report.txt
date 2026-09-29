@@ -1,0 +1,470 @@
+Non-packaging base ingredients (no nutrition yet) that at least one single-ingredient recipe/CPU item depends on:
+
+102015 RM Avocado (1 recipe(s)):
+  - BCP Avocado Prepared
+
+102052 RM Sweet Chilli Dipping Sauce (CPU Only) (2 recipe(s)):
+  - CPU RM Sweet Chilli Dipping Sauce
+  - 105009-B
+
+102058 RM Sushi Seaweed (Nori) (3 recipe(s)):
+  - BCP Nori for Handroll
+  - BCP Nori for Hosomaki
+  - BCP Nori for Roll Chumaki
+
+102063 RM Cucumber Whole (1 recipe(s)):
+  - BCP Cucumber Prepared
+
+102584 RM Inari Cooked Bean Curd Ytk (1 recipe(s)):
+  - BCP Inari Bean Curd Prepared
+
+102662 RM Sauce Yakisoba (1 recipe(s)):
+  - CPU RM Sauce Yakisoba
+
+102664 RM Sauce Soy Dark (1 recipe(s)):
+  - CPU RM Sauce Soy Dark
+
+103004 Water (1 recipe(s)):
+  - CPU RM Water
+
+103511 Vaccum Pouches Blue-Mariner (1 recipe(s)):
+  - CPU PM Vacuum Pouches Blue-Mariner
+
+103889 RM Tomato Ketchup (1 recipe(s)):
+  - CPU RM Tomato Ketchup
+
+104630 Chilli Powder - California Reaper (1 recipe(s)):
+  - CPU RM Chilli Powder California Reaper
+
+104714 RM Gyoza Chicken and Vegetable, 1KG Bag (3 recipe(s)):
+  - BHP Steamed Chicken Gyoza
+  - BCP Steamed Chicken Gyoza
+  - CPU RM Gyoza Chicken 1Kg Bag
+
+105241 Ginger Sachet (1 recipe(s)):
+  - Ginger Sachet (FREE)
+
+105940 RM KTC Toasted Sesame Oil (1 recipe(s)):
+  - CPU RM Oil Sesame
+
+105951 RM Potato Starch (1 recipe(s)):
+  - CPU RM Potato Starch
+
+105952 RM Teriyaki Sauce Kikkoman (CPU Only) (1 recipe(s)):
+  - CPU RM Sauce Teriyaki Kikkoman
+
+105953 (Delisted ) RM Sauce Soy Kikoman CPU only (1 recipe(s)):
+  - CPU RM Sauce Soy Kikkoman
+
+105962 (CPU Only) RM Yakitori Sauce Kikkoman (1 recipe(s)):
+  - CPU RM Yakitori Sauce
+
+105970 RM Carrot Julienne 3mm Bag 10KG (1 recipe(s)):
+  - CPU RM Carrot Grated 2-4mm
+
+105971 RM Carrot Baton 10x10x60mm (1 recipe(s)):
+  - CPU RM Carrot 6cmx1cm baton
+
+105978 Soy Sauce Sachet (1 recipe(s)):
+  - Soy Sauce Sachet (FREE)
+
+105981 RM SS1 Soy Sauce Shoda (1 recipe(s)):
+  - CPU RM Japanese Soy Sauce
+
+106003 RM White Miso Paste Hikari (1 recipe(s)):
+  - CPU RM Miso Paste
+
+106005 RM Functional Plain Brine Newlyweds Sack (1 recipe(s)):
+  - CPU RM Brine Powder
+
+106007 (Delisted) RM Sweet Chilli Sauce Jigsaw Pail (1 recipe(s)):
+  - CPU RM Jigsaw Dipping Sauce
+
+106028 RM Fried Chicken Marinade Newlyweds Sack (1 recipe(s)):
+  - CPU RM RED MARINADE
+
+106041 RM Sarant Mexican Honey (1 recipe(s)):
+  - CPU RM HONEY
+
+106077 RM Sweet & Savoury Shitake Sauce Shoda Sauces (1 recipe(s)):
+  - CPU RM SAVOURY AND SHITAKE SAUCE
+
+106099 RM Pumpkin Croquette (1 recipe(s)):
+  - CPU RM Pumpkin Croquette Frzn
+
+106100 RM Sauce Soy Wasabi (1 recipe(s)):
+  - (Delisted) CPU RM Sause Soy
+
+106102 RM Teriyaki Sauce Sachet (1 recipe(s)):
+  - CPU RM Teriyaki Sauce Sachet
+
+106103 RM Red Pepper Paste (1 recipe(s)):
+  - CPU RM Red Pepper Paste
+
+106113 106113 - Sides x 6 (1 recipe(s)):
+  - CPU PM Wasabi Side Transit Box Europak
+
+106132 RM Sauce Sweet Chilli Yutaka (1 recipe(s)):
+  - CPU RM Sauce Sweet Chilli Yutaka
+
+106136 RM Breadcrumbs Panko 14Mm Yellow Yutaka (1 recipe(s)):
+  - CPU RM Breadcrumbs Panko 14mm Yellow
+
+106138 RM Coriander Bunch (2 recipe(s)):
+  - (Delisted) CPU RM Coriander Bunch
+  - BCP Coriander Prepared
+
+106141 RM Beansprouts (1 recipe(s)):
+  - CPU RM BEANSPROUTS
+
+106153 RM Savoury Seasoning (1 recipe(s)):
+  - CPU RM Savoury Seasoning
+
+106154 RM White Pepper (1 recipe(s)):
+  - CPU RM White Pepper
+
+106155 RM Oil Rapeseed (5L branch & CPU High risk use) (1 recipe(s)):
+  - CPU RM RAPESEED OIL 5 LTR
+
+106159 RM Flour Plain JJ (1 recipe(s)):
+  - CPU RM Flour Plain JJ
+
+106162 RM Pepper Red quare 25 MM (1 recipe(s)):
+  - CPU RM Pepper Red 25mm square
+
+106163 RM Pepper Green Square 25 MM (1 recipe(s)):
+  - CPU RM Pepper Green 25mm square
+
+106165 RM Peas Greens Frozen Choice (1 recipe(s)):
+  - CPU RM Peas Green Frzn
+
+106168 RM Oyster Sauce (1 recipe(s)):
+  - CPU RM Oyster Sauce
+
+106172 RM Mizkan Honteri Mirin - Sweet Seasoning 18L (1 recipe(s)):
+  - CPU RM Mirin
+
+106174 RM Sliced Pak Choi 2.5 Kg (1 recipe(s)):
+  - CPU RM Pak Choi
+
+106187 RM Chicken breast calibrated 210-250g - Ex Inner (1 recipe(s)):
+  - CPU RM Chicken Breast for Dicing
+
+106188 RM Chicken Thigh Skineless Boneless (1 recipe(s)):
+  - CPU RM Chicken Thigh Skinless Boneless
+
+106189 RM Flour Corn (1 recipe(s)):
+  - CPU RM Corn Flour
+
+106192 RM Baking Powder (1 recipe(s)):
+  - CPU RM Baking Powder
+
+106193 RM Pineapple Cut Tin (1 recipe(s)):
+  - CPU RM Pineapple (Tinned)
+
+106194 RM Ajinomoto Msg Bag (2 recipe(s)):
+  - CPU RM MSG Ajimonoto
+  - 105038-B
+
+106196 RM Glucose Syrup (1 recipe(s)):
+  - CPU RM Glucose Syrup
+
+106197 RM Rice Long Grain (Grocery) (1 recipe(s)):
+  - CPU RM Rice Long Grain
+
+106198 RM chicken Wings 55g-75g (1 recipe(s)):
+  - CPU RM Chicken Wing
+
+106199 RM PANKO JAPANESE SUPERCOURSE (1 recipe(s)):
+  - CPU RM Breadcrumb Panko Japanese
+
+106205 RM New Beef Slice (1 recipe(s)):
+  - CPU RM Beef Sliced 4mm
+
+106206 RM Cabbage Wholehead (1 recipe(s)):
+  - CPU RM Cabbage Wholehead
+
+106207 (delisted) RM Onion Slice 5mm (2 recipe(s)):
+  - (Delisted) CPU RM Onion Sliced 5mm
+  - (Delisted) CPU RM Onion Slice 5mm TRIAL
+
+106210 RM Pork Neck Slice (1 recipe(s)):
+  - CPU RM Pork Neck Sliced
+
+106211 RM Garlic Whole Peel (1 recipe(s)):
+  - CPU RM Fresh whole garlic
+
+106214 RM Rice Sushi (1 recipe(s)):
+  - CPU RM Sushi Rice
+
+106215 RM Salmon 5-6 HOG Fresh chilled (1 recipe(s)):
+  - CPU RM Salmon HOG 5-6Kg
+
+106220 RM Onion Spring Sliced 500G (2 recipe(s)):
+  - (Delisted) HR SPRING ONION SLICED
+  - (Delisted) CPU RM Spring Onion Sliced
+
+106226 RM Red pepper sliced 7cmx1cm Pack 5KG (1 recipe(s)):
+  - CPU RM Red pepper 7cmx1cm sliced
+
+106227 RM Yellow pepper sliced 7cmx1cm Pack 5KG (1 recipe(s)):
+  - CPU RM Yellow pepper 7cmx1cm sliced
+
+106228 RM Diced Red pepper 20mmx20mm PACK 5KG (1 recipe(s)):
+  - CPU RM Red pepper 20mmx20mm diced
+
+106229 RM Diced Yellow pepper 20mmx20mm PACK 5KG (1 recipe(s)):
+  - CPU RM Yellow pepper 20mmx20mm Diced
+
+106231 RM Teriyaki Sauce 6 KG (2 recipe(s)):
+  - 106072-B
+  - CPU RM Shoda Teriyaki Sauce
+
+106234 RM Sauce Gyoza Dipping Sachet (1 recipe(s)):
+  - CPU RM Gyoza Dipping Sauce Sachet
+
+106235 RM PUREE GINGER NUGGET IQF (1 recipe(s)):
+  - CPU RM Ginger Puree Frzn
+
+106236 (Delisted) RM PUREE GREEN CHILLI NUGGET IQF (1 recipe(s)):
+  - CPU RM Green Chilli Puree Frzn
+
+106238 RM SEMOLINA FINE (1 recipe(s)):
+  - CPU RM Semolina Fine
+
+106250 RM Tuna Chunks In Brine (1 recipe(s)):
+  - BCP Drained Tuna Pouch
+
+106253 RM Teriyaki Sauce / CPU Only (1 recipe(s)):
+  - CPU RM Sauce Teriyaki Kikkoman
+
+106254 RM Gyoza Vegetable, 1KG Bag (3 recipe(s)):
+  - BHP Steamed Veg Gyoza
+  - CPU RM Gyoza Vegetable 1Kg Bag
+  - BCP Steamed Veg Gyoza
+
+106255 RM Pear Puree (1 recipe(s)):
+  - CPU RM Pear Puree
+
+106256 (Delisted) RM Red Pepper Powder Wang (1 recipe(s)):
+  - CPU RM Red Pepper Powder (Coarse)
+
+106281 RM IQF 1" Cut Green Beans Yearsley Case (1 recipe(s)):
+  - CPU RM GREEN BEANS
+
+106355 RM Cooked Prawn Tail-Off Size 31/40 (2 recipe(s)):
+  - BCP Prawns Defrosted
+  - CPU RM Cooked Prawn 1Kg Bag
+
+106441 (Delisted) RM IQF DICED MANGO 20X20MM 1KG (1 recipe(s)):
+  - BCP Diced Mango
+
+106444 Katsu Mayonnaise AAK Sauce 15g (1 recipe(s)):
+  - CPU RM KATSU MAYONNAISE SACHET
+
+106502 RM Starch Karage Breader Newly Weds Foods MK2 (1 recipe(s)):
+  - CPU RM STARCH KARAAGE BREADER MK2
+
+106503 RM Pride White Vinegar Westmill Ingredient 5L (1 recipe(s)):
+  - CPU RM Vinegar White Distilled
+
+106519 RM Katsu Predust Coating (1 recipe(s)):
+  - CPU RM KATSU PREDUST
+
+106581 RM Edamame Beans IQF (1 recipe(s)):
+  - CPU RM Edamame Beans
+
+106607 Yutaka Shredded Pickled Ginger Benishoga (2 recipe(s)):
+  - CPU RM Yutaka Shredded Pickled Ginger Benishoga
+  - BCP Pink Pickled Ginger
+
+106608 (Delisted)Thai Green Curry Paste Food Fellas (1 recipe(s)):
+  - (Delisted) CPU RM THAI GREEN CURRY PASTE
+
+106610 Ramen Broth Vegatable with Boosted Unami (1 recipe(s)):
+  - CPU RM Vegan Ramen stock
+
+106615 IQF Sliced Portobello Mushroom (1 recipe(s)):
+  - CPU RM IQF MUSHROOM
+
+106765 Seaweed Wakame Salad Frozen Bag (1 recipe(s)):
+  - BCP Chukka Wakame Seaweed Drained
+
+106803 (Delisted) FG Spicy Salmon and Prawn rice Bites 1KG (1 recipe(s)):
+  - (Delisted)BHP Spicy Salmon & Prawn Rice Bites
+
+106832 (Delisted) RM Pulled Pork Cooked (3 recipe(s)):
+  - CPU RM Pulled Pork CMC Cooked
+  - BCP Pulled Pork
+  - BHP Pulled Pork
+
+106833 RM Pickled Asian Slaw 1kg (1 recipe(s)):
+  - BCP Asian Slaw
+
+106834 RM Vegan Kimchi Jongga (2 recipe(s)):
+  - CPU RM Vegan kimchi Jongga
+  - BCP Vegan Kimchi Jonga
+
+106946 RM Duck Gyoza Frozen 1KG (2 recipe(s)):
+  - BHP Steamed Duck Gyoza
+  - CPU RM Duck Gyoza Frozen 1KG
+
+106953 (Delsited) RM Yuzu Juice (Frozen) 1kg- PET (1 recipe(s)):
+  - (Delisted) RM Yuzu Juice
+
+106954 (Delisted) RM Udon Noodle (1 recipe(s)):
+  - CPU RM UDON NOODLES
+
+106956 RM Mushroom Powder (1 recipe(s)):
+  - CPU RM MUSHROOM POWDER
+
+106957 RM Pre-mix Yakisoba Sauce (shoda) (1 recipe(s)):
+  - CPU RM Pre-mix Yakisoba Sauce (Shoda)
+
+106959 RM Puree Red Chilli Nugget IQF (1 recipe(s)):
+  - CPU RM Puree Red Chilli Nugget IQF
+
+106961 RM Gyoza Dipping Sauce Pot 30g (1 recipe(s)):
+  - CPU RM Gyoza Sauce Dipping Pot 30g
+
+106962 (Delisted) RM Hoisin Sauce Dipping Pot 30g (1 recipe(s)):
+  - (Delisted) CPU RM Hoisin Sauce Dipping Pot 30g
+
+106963 (Delisted) RM Diced Potato 25mm 5kg Bag (1 recipe(s)):
+  - CPU RM Diced Potato 25mm
+
+106964 (Delisted) RM Mixed Chunky Veg 5kg (1 recipe(s)):
+  - CPU RM Mixed Chunky Veg
+
+107088 RM Not RTE-Gyoza Japanese-style apple dumpling (1 recipe(s)):
+  - BHP Apple Gyoza
+
+107110 (Delisted)NF Japanese-Style Green Curry Sleeve V4 (1 recipe(s)):
+  - (Delisted) CPU PM Japanese Green Curry Rice Sleeve
+
+107149 (Delisted) RM Blanched yellow pickled mooli (1 recipe(s)):
+  - BCP Pickled Yellow Mooli
+
+107169 (Delisted) RM Wasabi & Yuzu Mayonnaise (1 recipe(s)):
+  - BCP Wasabi Yuzu Mayo
+
+107172 RM Soy Sauce Sachet (low salt) (1 recipe(s)):
+  - Low Salt Soy Sauce Sachet (Free)
+
+107175 (Delisted) NF Vegetable Gyoza Ramen Sleeve V3 (1 recipe(s)):
+  - CPU PM Veg Gyoza Ramen Sleeve
+
+107176 (Delisted) NF Spicy Chicken Ramen Sleeve V3 (1 recipe(s)):
+  - CPU PM Spicy Chicken Ramen Sleeve
+
+107180 RM Red Miso Paste (1 recipe(s)):
+  - P00020
+
+107200 RM Tuna Bar SF YF (1 x 1.2kg-1.6kg pack) (1 recipe(s)):
+  - BCP Tuna Nigiri Slice
+
+107203 RM Paprika Extract (1 recipe(s)):
+  - P00025
+
+107240 RM Flat Noodles (Ribbon) (1 recipe(s)):
+  - P00039
+
+107247 RM Cooked Back Bacon (1 recipe(s)):
+  - BHP Cooked Back Bacon
+
+107278 RM Rice Vinegar (1 recipe(s)):
+  - P00038
+
+107312 RM Cracked Black Pepper (1 recipe(s)):
+  - P00065
+
+107313 RM Ground Chilli (1 recipe(s)):
+  - P00030
+
+107314 RM Tahini Paste (1 recipe(s)):
+  - P00037
+
+107315 RM Turmeric (1 recipe(s)):
+  - P00049
+
+107316 RM Crushed Chilli Flakes (1 recipe(s)):
+  - P00035
+
+107317 RM IQF Leeks (1 recipe(s)):
+  - P00046
+
+107319 RM Chicken breast boneless & skinless IQF Defrosted (1 recipe(s)):
+  - P00053
+
+107322 RM Beef Mince Frozen (Red tractor) (1 recipe(s)):
+  - P00047
+
+107328 (Delisted) RM Candied Red Jalapenos (1 recipe(s)):
+  - P00031
+
+107332 (Delisted) NF Soy & Garlic Biang Biang Noodles Sleeve V1 (1 recipe(s)):
+  - P00048
+
+107334 (Delisted) NF Flaming Korean Fire Chicken Sleeve V1 (1 recipe(s)):
+  - P00029
+
+107346 RM Salt Tub (2 recipe(s)):
+  - 105022-B
+  - CPU RM Salt
+
+107350 (Delisted) RM Brown Rice (1 recipe(s)):
+  - P00034
+
+107390 RM Simply Vanilla Syrup rPET bottle (1 recipe(s)):
+  - Extra Vanilla Shot
+
+107451 RM Vegan Wasabi & Yuzu mayo (1 recipe(s)):
+  - BCP Vegan Wasabi Yuzu Mayo
+
+107489 RM Poached Egg (Free range) (1 recipe(s)):
+  - BHP Poached Eggs
+
+107490 RM Cooked Breakfast Sausage (1 recipe(s)):
+  - (Delisted) BHP Breakfast Sausage (Luton)
+
+107496 RM Potato Puffs - Pre-fried – frozen (1 recipe(s)):
+  - BHP Hash Brown Bites
+
+107498 RM Plum Puree (1 recipe(s)):
+  - P00062
+
+107499 RM Chinese Five Spice (1 recipe(s)):
+  - P00061
+
+107501 RM Hoisin Sauce (Bulk) (1 recipe(s)):
+  - P00063
+
+107541 RM Velvet Chicken - fully cooked (1 recipe(s)):
+  - P00059
+
+107558 RM Rainbow Slaw (1 recipe(s)):
+  - BCP Rainbow Slaw
+
+107559 RM Edamame Hummus (1 recipe(s)):
+  - BCP Edamame Hummus
+
+107560 RM Butternut Squash 25mm Dice (1 recipe(s)):
+  - BCP Roasted Butternut Squash
+
+107561 RM Sweetcorn Salsa (1 recipe(s)):
+  - BCP Sweetcorn Salsa
+
+107594 (Delisted) NF Yakisoba Noodles to Share Sleeve V8 (1 recipe(s)):
+  - (Delisted) CPU PM Sleeve Noodles to Share
+
+107670 (Delisted) NF Meal for 2 Carry Carton Sleeve V13 (1 recipe(s)):
+  - (Delisted) CPU PM Sleeve-Box Bento Meal for Two
+
+107721 (Delsited) RM IQF Julienne Carrot (Used for Sauces) (1 recipe(s)):
+  - P00082
+
+107734 FG WASABI SMALL PANKO KATSU (Cold Food) 2 KG (1 recipe(s)):
+  - 105865-2
+
+107735 RM IQF Garlic Puree Nuggets (1 recipe(s)):
+  - P00083
