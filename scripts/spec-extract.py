@@ -24,6 +24,13 @@ automatic inference, and the output is always stamped with a warning naming exac
 overridden and why, so it's never silently indistinguishable from a code the document itself
 stated correctly.
 
+--allow-blank-nutrition FIELD[,FIELD2,...] covers a named nutrition field that's genuinely
+unusable in this spec, in any of three ways: (a) the cell is blank, (b) the row itself doesn't
+exist in this template at all, or (c) the cell holds a non-numeric value a human has confirmed
+is a real source notation, not a parsing bug (e.g. McCance & Widdowson's "N" for "present, no
+reliable quantified amount"). All three leave the field unset (never written as 0), and all
+three require a human to have actually looked at the specific cell first.
+
 --confirm-cross-sheet-mismatch is separate and much narrower: it does NOT change which code is
 used (that's still whatever's on the recipe sheet, or --override-code if also given). It only
 permits proceeding when exactly one or a few sheets disagree with the rest, after a human has
@@ -373,6 +380,17 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
                     nutrition[field] = parsed
                 elif problem == "blank":
                     blank_fields[field] = label
+                elif field in allow_blank_nutrition:
+                    # A non-numeric value a human has explicitly named via
+                    # --allow-blank-nutrition, confirming (after being shown the actual cell,
+                    # each time) that it's a genuine non-numeric source notation -- e.g. McCance
+                    # & Widdowson's "N" ("present, no reliable quantified amount"), as opposed to
+                    # blank/missing (handled above) or a real parsing bug. Left unset, same as a
+                    # genuinely blank cell -- never coerced to 0 or guessed at.
+                    warnings.append(
+                        "Nutrition value for %r was %r -- not a number, and not blank either "
+                        "(a non-numeric source notation) -- left unset per --allow-blank-nutrition "
+                        "(human-confirmed this specific value can't be written as a number)." % (label, raw_val))
                 else:
                     errors.append("Nutrition value for %r is not usable: %r (%s) -- refusing to write it" % (label, raw_val, problem))
 

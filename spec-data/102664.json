@@ -1,0 +1,29 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/102664 (105043) Dark Soy Sauce - RM Spec V7 (09.10.2025).xlsx",
+  "appliedAt": "2026-09-29T14:06:14.272Z",
+  "name": "RM Sauce Soy Dark",
+  "code": "102664",
+  "altCode": null,
+  "nutrition": {
+    "kj": 527,
+    "kcal": 126,
+    "fat": 0,
+    "carb": 21.5,
+    "sugar": 8.8,
+    "protein": 8.6,
+    "salt": 23.3
+  },
+  "allergens": [
+    "Cereals containing gluten",
+    "Soya",
+    "Sulphur dioxide"
+  ],
+  "packSize": "2 x 8 Litre",
+  "packFormat": "Pails",
+  "storageConditions": "Normal temperature, Dry, Ventilated, Advice cold storage after open",
+  "shelfLife": "18 months",
+  "ingredientsList": "Water, Soybean, Sugar, Salt, Wheat Flour",
+  "errors": [],
+  "warnings": []
+}

@@ -600,11 +600,16 @@ Per the earlier discussion on reliability: **propose, don't auto-write.** Two sc
        filled in on the same row-set. Applies the standard UK/EU conversion, Salt = Sodium × 2.5
        ÷ 1000 — a legal conversion factor, not a guess, but still gated behind this flag so nothing
        gets derived without a person having looked at the specific numbers first.
-     - **`--allow-blank-nutrition FIELD[,FIELD2,...]`** — only for a field that's genuinely blank
-       in the spec with **no alternate value anywhere on the sheet** (unlike Salt/Sodium above,
-       there's nothing to derive it from). The named field is simply omitted from the write, so
-       `--apply` leaves whatever that field currently holds on the live ingredient untouched — it
-       is never written as 0. A blank field NOT named here is still a hard error.
+     - **`--allow-blank-nutrition FIELD[,FIELD2,...]`** — covers three related but distinct
+       cases, all requiring the same per-field, per-run human confirmation: (a) a field that's
+       genuinely blank in the spec with no alternate value anywhere on the sheet, (b) a
+       nutrition row that doesn't exist at all in this template (e.g. an older layout with no
+       Fibre row), or (c) a cell holding a **non-numeric value** a human has confirmed is a real
+       source notation rather than a parsing bug (extended 2026-09-29 — e.g. McCance &
+       Widdowson's `"N"`, meaning "present, no reliable quantified amount", hit on the Cucumber
+       spec). In every case the named field is simply omitted from the write, so `--apply`
+       leaves whatever that field currently holds on the live ingredient untouched — it is never
+       written as 0. A blank/missing/unparseable field NOT named here is still a hard error.
      - **`--confirm-cross-sheet-mismatch`** (added 2026-09-29, for spec 107490) — the narrowest
        of the four. Every other flag above only ever fills a blank or substitutes a
        self-consistent value; a genuine disagreement between sheets (one sheet's Product Code
@@ -1584,3 +1589,47 @@ by eye) to catch new arrivals quickly.
   correct," then immediately corrected to "mistakenly clicked, it is correct" on a follow-up
   question. Used in **87 recipes**, essentially the whole sweet-chilli/spicy-chicken product
   line. Applied and post-upload-verified.
+
+### 2026-09-29 (later still) — four more specs found via folder re-check; --allow-blank-nutrition extended to non-numeric source notations
+
+- **RM Sushi Seaweed / Nori (102058/105621) → "Dried Seaweed for Sushinori".** Clean nutrition,
+  name mismatch confirmed same product. Storage ("Keep it dry at room temperature away from
+  driect sunlight" -- spec's own typo, kept verbatim) and Shelf Life ("24months. Min on
+  delivery is 22 months") both confirmed. Applied and post-upload-verified.
+- **RM Cucumber Whole (102063) → "Cucumbers x12".** Blank code (literal `0`), overridden via
+  filename + name match. Hit a **new class of unparseable nutrition value**: Saturate Fat read
+  `'N'`, cited as sourced from McCance & Widdowson -- confirmed this is that reference's own
+  standard notation for "present in significant quantities but no reliable information on the
+  amount," genuinely non-numeric, not a typo or parsing bug. Until now `--allow-blank-nutrition`
+  only covered a blank cell or an entirely missing row -- **extended it to also cover a
+  non-numeric value a human has explicitly confirmed against the actual cell**, same opt-in
+  shape as the other two cases (see `spec-extract.py` changes below). Pack Format ("n/a"),
+  Storage ("+2°C"), and Shelf Life ("shelf life is not applicable to fresh produce products,
+  min shelf life on delivery into Wasabi D+4 days.") all confirmed as literal spec values,
+  flagged by plausibility checks as unusual phrasing but correct. Name mismatch confirmed same
+  product. Applied and post-upload-verified.
+- **RM Sauce Yakisoba (102662/105042) → "Yakisoba Sauce".** Same no-Fibre-row template variant
+  as the Avocado spec -- verified by reading the full nutrition sheet, no Fibre/Fiber label
+  anywhere. Clean otherwise, code/name matched directly (no mismatch this time). Storage and
+  18-month/4-month Shelf Life both confirmed. Applied and post-upload-verified.
+- **RM Sauce Soy Dark (102664/105043) → unnamed ("Dark Soy Sauce" by filename).** The most
+  unusual case so far: **both** Product Name and Product Code cells were a literal `0` on
+  **every single sheet** of the document -- not just the code, the name too, so there was
+  nothing in the document itself to cross-check against. Confirmed via (a) the filename "Dark
+  Soy Sauce - RM Spec V7", and (b) the ingredient breakdown on the recipe sheet (Water,
+  Soybean, Sugar, Salt, Wheat Flour -- unambiguously a soy sauce), then overridden with
+  `--override-code 102664`. The name-mismatch guard fired as expected (spec name came through
+  as literal `"0"`) and was confirmed the same way as any other mismatch. Saturate Fat and
+  Fibre cells both read literal `"N/A"` in the spec (verified) -- left blank via the newly
+  extended `--allow-blank-nutrition sat,fibre`. Storage ("Normal temperature, Dry, Ventilated,
+  Advice cold storage after open") and Shelf Life ("18 months") confirmed. Applied and
+  post-upload-verified.
+
+**`--allow-blank-nutrition` scope extended (spec-extract.py):** previously only covered (a) a
+genuinely blank cell or (b) a nutrition row missing from the template entirely. Now also covers
+(c) a cell holding a non-numeric value a human has confirmed is a real source notation rather
+than a parsing bug -- e.g. McCance & Widdowson's `"N"`. All three still require the field to be
+explicitly named in the flag, all three still leave the field unset (never coerced to 0), and
+all three still require asking the person about that specific cell every time, per the standing
+rule -- this only widens *what kind* of "genuinely blank" a human can confirm, not who gets to
+skip being asked.

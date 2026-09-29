@@ -1,0 +1,26 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/102063 (105622)Wasabi RM Spec - 3446CS Cucumber x12  21.08.2025.xlsx",
+  "appliedAt": "2026-09-29T14:02:05.673Z",
+  "name": "RM Cucumber Whole",
+  "code": "102063",
+  "altCode": null,
+  "nutrition": {
+    "kj": 60,
+    "kcal": 14,
+    "fat": 0.6,
+    "carb": 1.2,
+    "sugar": 1.2,
+    "protein": 1,
+    "fibre": 0.7,
+    "salt": 0.01
+  },
+  "allergens": [],
+  "packSize": "12 per box",
+  "packFormat": "n/a",
+  "storageConditions": "+2°C",
+  "shelfLife": "shelf life is not applicable to fresh produce products, min shelf life on delivery into Wasabi D+4 days.",
+  "ingredientsList": "Cucumbers",
+  "errors": [],
+  "warnings": []
+}

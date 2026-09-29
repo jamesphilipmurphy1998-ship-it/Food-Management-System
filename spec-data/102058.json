@@ -1,0 +1,27 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/102058 (105621) Dried Seaweed for sushi nori -RM Spec V1 (9.4.24).xlsx",
+  "appliedAt": "2026-09-29T13:59:07.189Z",
+  "name": "RM Sushi Seaweed (Nori)",
+  "code": "102058",
+  "altCode": "105621",
+  "nutrition": {
+    "kj": 1431.89,
+    "kcal": 342.23,
+    "fat": 4.04,
+    "sat": 1.1,
+    "carb": 37.79,
+    "sugar": 0,
+    "protein": 43.71,
+    "fibre": 17.29,
+    "salt": 0.93
+  },
+  "allergens": [],
+  "packSize": "100sheets/bag, 250g * 42 Cases",
+  "packFormat": "100sheets/bag, 250gx 42cases",
+  "storageConditions": "Keep it dry at room temperature away from driect sunlight",
+  "shelfLife": "24months. Min on delivery is 22 months",
+  "ingredientsList": "Dried Seaweed for sushi nori(100%)",
+  "errors": [],
+  "warnings": []
+}

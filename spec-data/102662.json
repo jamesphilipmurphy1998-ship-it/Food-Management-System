@@ -1,0 +1,26 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/102662 (105042) Yakisoba Sauce  RM Spec V7 (20.09.2024).xlsx",
+  "appliedAt": "2026-09-29T14:03:18.746Z",
+  "name": "RM Sauce Yakisoba",
+  "code": "102662",
+  "altCode": "105042",
+  "nutrition": {
+    "kj": 610,
+    "kcal": 143,
+    "fat": 0.1,
+    "sat": 0,
+    "carb": 34.1,
+    "sugar": 31.3,
+    "protein": 0.2,
+    "salt": 7.1
+  },
+  "allergens": [],
+  "packSize": "15Kg Jerricans",
+  "packFormat": "15Kg Jerrican",
+  "storageConditions": "Store unopened in a cool dry place away from direct sunlight.",
+  "shelfLife": "6 months / Minimum shelf life on delivery 4 months",
+  "ingredientsList": "Water, sugar, spirit vinegar, salt, onion puree, molasses, tamarind paste, cornflour, garlic puree, cloves, ginger puree",
+  "errors": [],
+  "warnings": []
+}
