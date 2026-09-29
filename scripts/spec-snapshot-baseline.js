@@ -31,10 +31,17 @@ let written = 0, skipped = 0;
 allIngredients.forEach((ing) => {
   const code = (ing.code || "").trim();
   if (!code) { skipped++; return; }
+  // Only archive ingredients that actually went through the spec pipeline. A checked allergen
+  // box alone is NOT that signal -- plenty of ingredients have a legacy allergen tag (from
+  // manual entry, or an old import, sometimes on things that aren't even raw materials, e.g.
+  // pack-label/sleeve rows) with no nutrition and no spec behind it at all. Backing those up
+  // here would mean spec-reapply-all.js writes them back onto a reimported record as if they
+  // were a human-confirmed spec upload, when nobody ever ran a spec through this pipeline for
+  // them. Real nutrition (kcal > 0) or an actual ingredients-list string are the only two
+  // fields nothing else in the app currently populates -- so either one is real signal.
   const hasNutrition = ing.kcal > 0;
   const hasIngredientsList = !!(ing.ingredientsList && ing.ingredientsList.trim());
-  const hasAllergenDecision = (ing.allergens || []).length > 0;
-  if (!hasNutrition && !hasIngredientsList && !hasAllergenDecision) { skipped++; return; }
+  if (!hasNutrition && !hasIngredientsList) { skipped++; return; }
 
   const archive = {
     status: "ok",
