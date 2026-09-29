@@ -1,0 +1,29 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/107451 Yuzu Vegan Mayo RM Spec V3 (02.03.2026).xlsx",
+  "appliedAt": "2026-09-29T13:31:08.688Z",
+  "name": "RM Vegan Wasabi & Yuzu mayo",
+  "code": "107451",
+  "altCode": null,
+  "nutrition": {
+    "kj": 2330,
+    "kcal": 566,
+    "fat": 59,
+    "sat": 3.9,
+    "carb": 8.6,
+    "sugar": 5.5,
+    "protein": 1,
+    "fibre": 0.2,
+    "salt": 1.5
+  },
+  "allergens": [
+    "Mustard"
+  ],
+  "packSize": "4 x 2kg",
+  "packFormat": "Pail",
+  "storageConditions": "Chilled < 8 (ᵒC)",
+  "shelfLife": "180 days & 135 days",
+  "ingredientsList": "Rapeseed Oil, Water, Yuzu Juice (7%), Sugar, Wasabi Powder (3.9%) (Horseradish Powder, Wasabi Japonica Powder, MUSTARD Powder, Spirulina Powder), Lemon Juice Concentrate, Rice Vinegar, Salt, Orange Juice Concentrate, MUSTARD Powder, Modified Starch, Modified Potato Starch, Preservative (Potassium Sorbate), Stabilisers (Xanthan Gum, Guar Gum), Colour (Chlorophyll), Colour (Lutein).",
+  "errors": [],
+  "warnings": []
+}

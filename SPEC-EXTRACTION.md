@@ -1473,6 +1473,13 @@ never dropped again.
   Life confirmed per standing rule. Used in 1 recipe (Matcha Latte 12oz), flows up
   automatically. Applied and post-upload-verified.
 
-Still open in this batch, not yet processed: **107451** (Yuzu Vegan
-Mayo), **107490** (Cooked Breakfast Sausage -- a genuine cross-sheet code mismatch, "SKU 807" on
+- **Yuzu Vegan Mayo (107451) → `RM Vegan Wasabi & Yuzu mayo`.** Clean extraction, code and
+  nutrition matched directly with no overrides needed. Name mismatch ("Yuzu Vegan Mayo" vs.
+  "RM Vegan Wasabi & Yuzu mayo") confirmed as the same product under a fuller live name.
+  Shelf life "180 days & 135 days" verified against the source cell directly (180 = shelf life
+  from manufacturer, 135 = minimum on delivery, per the row label). Storage Conditions
+  "Chilled < 8 (°C)" confirmed. Used in 6 recipes, flows up automatically. Applied and
+  post-upload-verified.
+
+Still open in this batch, not yet processed: **107490** (Cooked Breakfast Sausage -- a genuine cross-sheet code mismatch, "SKU 807" on
 one sheet vs "107490" on the recipe sheet, needs investigation before proceeding).
