@@ -440,6 +440,31 @@ both human-approved and confirmed live, never a guess.
   change), reapply is fully automatic. If codes get renumbered, only those specific ingredients
   need manual re-matching; everything else still reapplies untouched.
 
+## Version history: what an ingredient's nutrition looked like before
+
+The app has a version-history feature on every ingredient (a "Version" dropdown in the edit
+modal — select v1/v2/v3... to view that version's data read-only; the live/latest fields are
+always what recipes and everything else in the app actually use). **This was silently broken
+for months** — the single-record save endpoint that both routine UI edits and every
+`spec-apply.js` write goes through never created a version snapshot at all (only the separate
+bulk-import PUT did). Fixed 2026-09-29 (see backend `Program.cs`'s single-item ingredient PUT).
+
+Every spec-driven version now also gets an auto-filled comment naming the source spec file (via
+the existing `POST /api/ingredients/{id}/latest-version-comment` endpoint, called right after a
+successful write) — visible in the ingredient edit modal as a "Source: ..." line under the name/
+version/category row, which updates to show whichever document produced whatever version is
+currently selected.
+
+**Backfilled 2026-09-29** for all 38 ingredients already processed before this fix existed: a
+one-off SQL insert (not run through the API) created a `v1` row for each, using that ingredient's
+*current* live values as the snapshot (since there was never an earlier "before" state actually
+saved) and a comment naming the source spec where recoverable. 8 archives still had their real
+spec filename; the other 30 (this session's early baseline-snapshot recovery, see "Surviving a
+full DB wipe" above) only had "baseline snapshot from live DB" as their `sourceFile`, so those
+got a comment pointing back to this log instead of a fabricated filename. Nothing about future
+spec uploads needs this backfill again — `spec-apply.js`/`spec-reapply-all.js` handle it
+automatically from here on.
+
 ## Write workflow (built)
 
 Per the earlier discussion on reliability: **propose, don't auto-write.** Two scripts:
