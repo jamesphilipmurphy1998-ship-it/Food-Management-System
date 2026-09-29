@@ -1,0 +1,29 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/P00039 (107240) Ribbon Noodles RM Spec V1 (01.09.2025).xlsx",
+  "appliedAt": "2026-09-29T13:45:52.149Z",
+  "name": "RM Flat Noodles (Ribbon)",
+  "code": "107240",
+  "altCode": null,
+  "nutrition": {
+    "kj": 1464.4,
+    "kcal": 350,
+    "fat": 1.5,
+    "sat": 0.5,
+    "carb": 70.9,
+    "sugar": 1.7,
+    "protein": 13.1,
+    "fibre": 2.59,
+    "salt": 2.4
+  },
+  "allergens": [
+    "Cereals containing gluten"
+  ],
+  "packSize": null,
+  "packFormat": "Blue liner",
+  "storageConditions": "Ambient",
+  "shelfLife": "18months from factory, 16months on delivery\nIt has been tested the quality is the same for 24 months. \nprovide shelf life warrenty for 18 months.",
+  "ingredientsList": "wheat flour, salt, water",
+  "errors": [],
+  "warnings": []
+}

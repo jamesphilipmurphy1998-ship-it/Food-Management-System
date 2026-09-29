@@ -1,0 +1,27 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/(107560) Roasted Butternut Squash 25mm Dice RM Spec V1 (15.01.2026).xlsx",
+  "appliedAt": "2026-09-29T13:46:44.291Z",
+  "name": "RM Butternut Squash 25mm Dice",
+  "code": "107560",
+  "altCode": null,
+  "nutrition": {
+    "kj": 202,
+    "kcal": 49,
+    "fat": 1.1,
+    "sat": 0.1,
+    "carb": 10.4,
+    "sugar": 2,
+    "protein": 0.9,
+    "fibre": 3.2,
+    "salt": 0.8
+  },
+  "allergens": [],
+  "packSize": "8x1kg",
+  "packFormat": "Heat sealed, Gas flushed bag/ Film (Primary pack method)",
+  "storageConditions": "Store chilled",
+  "shelfLife": "P+10 days, D+7 days",
+  "ingredientsList": "Butternut Squash Necks, Rapeseed Oil, Salt, Coarse Ground Black Pepper",
+  "errors": [],
+  "warnings": []
+}

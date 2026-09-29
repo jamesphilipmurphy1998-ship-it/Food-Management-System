@@ -1516,3 +1516,32 @@ never dropped again.
 
 This closes out the current spec batch -- all four previously-open items (107316, 107427,
 107451, 107490) are now processed.
+
+### 2026-09-29 (later still) — base-RM coverage check; two more specs found and applied
+
+User asked for the list of base RM ingredients still without any spec applied (excluding
+BCP/CPU single-ingredient recipes, which flow up automatically and were never in scope). Out of
+403 live ingredients, filtered to `RM`-prefixed non-delisted items with zero nutrition and no
+pack/storage/shelf-life data: **114 base RM ingredients with no spec applied.** Cross-checked
+all 114 codes against the 74 spec files sitting in the OneDrive folder -- only 2 matched:
+
+- **RM Flat Noodles (Ribbon) (107240) → spec "Ribbon Noodle" (P00039).** Product Code cell held
+  a literal `0` (same falsy-zero pattern as 107316) -- overridden via `--override-code 107240`,
+  confirmed via filename + name match ("Ribbon Noodle" vs. "RM Flat Noodles (Ribbon)", name
+  mismatch confirmed same product). Pack Size genuinely not provided anywhere in this spec
+  template (no weight/quantity field, only inner/outer dimensions in cm + pallet config) --
+  left blank, confirmed as a real gap not an extraction miss. Pack Format read "Blue liner" --
+  flagged by the parser as not looking like a normal container type, but verified against the
+  source cell (`4-a) Inner packaging format/description`) as the literal, correct value.
+  Storage ("Ambient") and Shelf Life (a three-part sentence: "18months from factory, 16months
+  on delivery... tested the quality is the same for 24 months... warranty 18 months") both
+  confirmed. Used in 14 recipes. Applied and post-upload-verified.
+- **RM Butternut Squash 25mm Dice (107560) → spec "Roasted Butternut Squash 25mm Dice".**
+  Product Code cell held a literal `-107560` -- a typo'd extra minus sign, not a real negative
+  code. Corrected to 107560 via `--override-code`, confirmed via filename + exact name match
+  (no name-mismatch this time). Clean nutrition. Shelf Life read "P+10 days, D+7 days" (P =
+  Production, D = Delivery, per the spec's own notation) -- confirmed verbatim. Used in 2
+  recipes. Applied and post-upload-verified.
+
+The remaining 112 of the 114 uncovered base RM ingredients have no spec document in the folder
+yet -- still awaiting sourcing from suppliers before extraction is possible.
