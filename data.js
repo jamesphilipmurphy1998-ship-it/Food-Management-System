@@ -289,31 +289,6 @@ window.NutriCalcData = (function () {
     return "";
   }
 
-  function autoDetectAllergens(name, cat) {
-    const n = name.toLowerCase();
-    const detected = [];
-    const rules = [
-      { allergen: "Milk", patterns: ["milk", "cream", "butter", "cheese", "yogurt", "yoghurt", "whey", "casein", "lactose", "dairy"] },
-      { allergen: "Eggs", patterns: ["egg", "eggs", "albumin", "mayonnaise", "meringue"] },
-      { allergen: "Cereals containing gluten", patterns: ["wheat", "flour", "bread", "pasta", "barley", "rye", "oat", "spelt", "semolina", "couscous", "bulgur", "noodle"] },
-      { allergen: "Nuts", patterns: ["almond", "walnut", "hazelnut", "cashew", "pecan", "pistachio", "macadamia", "brazil nut", "chestnut"] },
-      { allergen: "Peanuts", patterns: ["peanut"] },
-      { allergen: "Soya", patterns: ["soy", "soya", "tofu", "tempeh", "edamame", "miso"] },
-      { allergen: "Fish", patterns: ["fish", "salmon", "tuna", "cod", "haddock", "mackerel", "anchov", "sardine", "trout", "bass", "plaice", "sole", "halibut"] },
-      { allergen: "Crustaceans", patterns: ["prawn", "shrimp", "crab", "lobster", "crayfish", "langoustine", "scampi"] },
-      { allergen: "Molluscs", patterns: ["mussel", "oyster", "squid", "clam", "octopus", "snail", "scallop", "cockle", "whelk"] },
-      { allergen: "Celery", patterns: ["celery", "celeriac"] },
-      { allergen: "Mustard", patterns: ["mustard"] },
-      { allergen: "Sesame", patterns: ["sesame", "tahini"] },
-      { allergen: "Lupin", patterns: ["lupin"] },
-      { allergen: "Sulphur dioxide", patterns: ["sulphite", "sulfite", "sulphur dioxide", "sulfur dioxide", "dried fruit", "wine", "vinegar"] }
-    ];
-    rules.forEach(function (r) {
-      if (r.patterns.some(function (p) { return n.indexOf(p) !== -1; })) detected.push(r.allergen);
-    });
-    return detected;
-  }
-
   function autoDetectFVN(name, cat) {
     const n = name.toLowerCase();
     const c = (cat || "").toLowerCase();
@@ -345,7 +320,6 @@ window.NutriCalcData = (function () {
     isCodeLike: isCodeLike,
     extractCode: extractCode,
     autoMapColumn: autoMapColumn,
-    autoDetectAllergens: autoDetectAllergens,
     autoDetectFVN: autoDetectFVN
   };
 })();

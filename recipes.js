@@ -46,6 +46,14 @@ window.NutriCalcRecipes = (function () {
     saveData();
   }
 
+  // Real delete-all, distinct from setRecipes([]) -- see storage.js's deleteAllRecipes for why
+  // the empty-array route silently fails to delete anything server side.
+  async function deleteAllRecipes() {
+    recipes = [];
+    pendingSave = false;
+    if (Storage) await Storage.deleteAllRecipes();
+  }
+
   function saveRecipe(recipe) {
     var now = new Date().toISOString();
     var existing = recipe.id && recipes.find(function (r) { return r.id === recipe.id; });
@@ -223,6 +231,7 @@ window.NutriCalcRecipes = (function () {
     setRecipes: setRecipes,
     saveRecipe: saveRecipe,
     deleteRecipe: deleteRecipe,
+    deleteAllRecipes: deleteAllRecipes,
     calcRecipeNutrition: calcRecipeNutrition,
     updateRecipeYieldPct: updateRecipeYieldPct,
     updateRecipeOwnCost: updateRecipeOwnCost,

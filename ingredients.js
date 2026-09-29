@@ -24,6 +24,13 @@ window.NutriCalcIngredients = (function () {
     saveData();
   }
 
+  // Real delete-all, distinct from setIngredients([]) -- see storage.js's deleteAllIngredients
+  // for why the empty-array route silently fails to delete anything server side.
+  async function deleteAllIngredients() {
+    ingredients = [];
+    if (Storage) await Storage.deleteAllIngredients();
+  }
+
   function saveIngredient(data) {
     var now = new Date().toISOString();
     var existing = data.id && ingredients.find(function (i) { return i.id === data.id; });
@@ -74,6 +81,7 @@ window.NutriCalcIngredients = (function () {
   return {
     getIngredients: getIngredients,
     setIngredients: setIngredients,
+    deleteAllIngredients: deleteAllIngredients,
     saveIngredient: saveIngredient,
     deleteIngredient: deleteIngredient,
     loadSampleIngredients: loadSampleIngredients,

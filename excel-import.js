@@ -357,7 +357,13 @@
       cost: costVal,
       costUOM: (costUOM != null && String(costUOM).trim() !== "") ? String(costUOM).trim() : "",
       supplier: supplierVal || "",
-      allergens: Data.autoDetectAllergens(name, cat),
+      // Allergens must never be guessed from the ingredient's name -- a BOM/cost import has no
+      // allergen data of its own, so this starts blank and only ever gets set by the spec
+      // extraction pipeline (a real supplier declaration, human-confirmed) or manual entry.
+      // Name-keyword matching used to run here (Data.autoDetectAllergens) and produced both
+      // false positives ("RM Milk Coconut Choakoch" tagged dairy off the word "milk" in its
+      // name) and, more dangerously, false negatives that looked like a confirmed empty list.
+      allergens: [],
       fvn: Data.autoDetectFVN(name, cat)
     };
   }
@@ -550,7 +556,8 @@
       cost: item.costVal || 0,
       costUOM: costUom,
       supplier: item.supplierVal || "",
-      allergens: Data.autoDetectAllergens(item.name, item.cat),
+      // See the other call site's comment -- allergens are never guessed from the name.
+      allergens: [],
       fvn: Data.autoDetectFVN(item.name, item.cat)
     };
   }

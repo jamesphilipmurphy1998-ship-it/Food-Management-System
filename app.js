@@ -3990,11 +3990,16 @@
   function clearAllIngredients(closeModalAfter) {
     var ingredients = Ingredients.getIngredients();
     if (ingredients.length === 0) { showToast("Ingredient library is already empty"); return false; }
-    if (!confirm("Delete all " + ingredients.length + " ingredients from the library? Recipes will keep their entries but ingredients will show as missing until you add them again.")) return false;
-    Ingredients.setIngredients([]);
-    renderAll();
-    showToast("All ingredients removed from library");
-    if (closeModalAfter) closeModal("modal-config-ingredients");
+    if (!confirm("Delete all " + ingredients.length + " ingredients from the library, permanently, on the server? Recipes will keep their entries but ingredients will show as missing until you add them again. This cannot be undone.")) return false;
+    showToast("Deleting all ingredients…");
+    Ingredients.deleteAllIngredients().then(function () {
+      renderAll();
+      showToast("All ingredients deleted from the server");
+      if (closeModalAfter) closeModal("modal-config-ingredients");
+    }).catch(function (err) {
+      renderAll();
+      showToast("Delete failed — some or all ingredients may still be on the server: " + (err && err.message ? err.message : err));
+    });
     return true;
   }
 
@@ -4005,16 +4010,50 @@
   function clearAllRecipes(closeModalAfter) {
     var recipes = Recipes.getRecipes();
     if (recipes.length === 0) { showToast("No recipes to remove"); return false; }
-    if (!confirm("Delete all " + recipes.length + " recipes? This cannot be undone.")) return false;
-    Recipes.setRecipes([]);
-    renderAll();
-    showToast("All recipes removed");
-    if (closeModalAfter) closeModal("modal-config-ingredients");
+    if (!confirm("Delete all " + recipes.length + " recipes, permanently, on the server? This cannot be undone.")) return false;
+    showToast("Deleting all recipes…");
+    Recipes.deleteAllRecipes().then(function () {
+      renderAll();
+      showToast("All recipes deleted from the server");
+      if (closeModalAfter) closeModal("modal-config-ingredients");
+    }).catch(function (err) {
+      renderAll();
+      showToast("Delete failed — some or all recipes may still be on the server: " + (err && err.message ? err.message : err));
+    });
     return true;
   }
 
   function clearAllRecipesFromModal() {
     clearAllRecipes(true);
+  }
+
+  // Combined wipe -- deletes recipes first, then ingredients. Order matters only in that
+  // recipe_lines reference ingredient ids with no DB-level foreign key (deleting ingredients
+  // first would just leave recipes pointing at now-missing ingredients, same as "Clear all
+  // ingredients" alone does) -- recipes-first just means nothing is ever left half-orphaned
+  // even for the brief moment between the two calls. Gated behind the "type WIPE" input in the
+  // modal itself (see index.html), on top of this confirm, since this deletes strictly more
+  // than either button alone and there's no undo.
+  function wipeEverythingFromModal() {
+    var ingredientCount = Ingredients.getIngredients().length;
+    var recipeCount = Recipes.getRecipes().length;
+    if (ingredientCount === 0 && recipeCount === 0) { showToast("Already empty"); return; }
+    if (!confirm("Permanently delete all " + recipeCount + " recipes and all " + ingredientCount + " ingredients (including every nutrition/allergen/pack value) from the server? This cannot be undone.")) return;
+    showToast("Wiping everything…");
+    Recipes.deleteAllRecipes().then(function () {
+      return Ingredients.deleteAllIngredients();
+    }).then(function () {
+      renderAll();
+      showToast("Everything deleted from the server");
+      var confirmInput = document.getElementById("wipe-everything-confirm-text");
+      if (confirmInput) confirmInput.value = "";
+      var wipeBtn = document.getElementById("wipe-everything-btn");
+      if (wipeBtn) wipeBtn.disabled = true;
+      closeModal("modal-config-ingredients");
+    }).catch(function (err) {
+      renderAll();
+      showToast("Wipe failed partway through — check what's left on the server: " + (err && err.message ? err.message : err));
+    });
   }
 
   function mergeDuplicateIngredientsInRecipe(recipe) {
@@ -7280,7 +7319,7 @@
       cost: costVal,
       costUOM: (costUOM != null && String(costUOM).trim() !== "") ? String(costUOM).trim() : "",
       supplier: supplierVal || "",
-      allergens: Data.autoDetectAllergens(name, cat),
+      allergens: [],
       fvn: Data.autoDetectFVN(name, cat),
       // Anything sourced from an import (spreadsheet today, an API feed later) is trusted
       // data, not a work-in-progress draft — only items built by hand via the "+ New
@@ -7480,7 +7519,7 @@
       cost: item.costVal || 0,
       costUOM: costUom,
       supplier: item.supplierVal || "",
-      allergens: Data.autoDetectAllergens(item.name, item.cat),
+      allergens: [],
       fvn: Data.autoDetectFVN(item.name, item.cat),
       approved: true
     };
@@ -7686,7 +7725,7 @@
             cost: itemData.costVal,
             costUOM: itemData.costUom || "KG",
             supplier: itemData.supplier || "",
-            allergens: Data.autoDetectAllergens(itemData.itemName, itemData.cat),
+            allergens: [],
             fvn: Data.autoDetectFVN(itemData.itemName, itemData.cat)
           };
           ingredients.push(newIng);
@@ -7825,7 +7864,7 @@ desc: "Imported from " + (fname || "spreadsheet"),
           cost: item.costVal,
           costUOM: item.costUom || "KG",
           supplier: item.supplier || "",
-          allergens: Data.autoDetectAllergens(item.itemName, item.cat),
+          allergens: [],
           fvn: Data.autoDetectFVN(item.itemName, item.cat),
           approved: true
         };
@@ -7925,7 +7964,7 @@ desc: "Imported from " + (fname || "spreadsheet"),
             cost: item.costVal,
             costUOM: item.costUom || "KG",
             supplier: item.supplier,
-            allergens: Data.autoDetectAllergens(item.itemName, item.cat),
+            allergens: [],
             fvn: Data.autoDetectFVN(item.itemName, item.cat),
             approved: true
           };
@@ -8049,6 +8088,7 @@ desc: "Imported from " + (fname || "spreadsheet"),
   window.clearAllIngredients = clearAllIngredients;
   window.clearAllIngredientsFromModal = clearAllIngredientsFromModal;
   window.clearAllRecipesFromModal = clearAllRecipesFromModal;
+  window.wipeEverythingFromModal = wipeEverythingFromModal;
   window.removeDuplicates = removeDuplicates;
   window.searchRecipeLibrary = searchRecipeLibrary;
   window.applyRecipeSearch = applyRecipeSearch;

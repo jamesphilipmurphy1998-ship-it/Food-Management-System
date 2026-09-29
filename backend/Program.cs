@@ -944,6 +944,19 @@ app.MapDelete("/api/ingredients/{id}", async (AppDbContext db, string id) =>
     return Results.NoContent();
 });
 
+// Bulk delete-all -- separate from the single-item DELETE above, and deliberately its own
+// endpoint rather than something the client could trigger via PUT/upsert semantics. The
+// "Clear all ingredients" button in Configure Ingredients used to call setIngredients([]) client
+// side, which only diffs and pushes CHANGED records in the new array -- an empty array has no
+// records to diff, so nothing was ever actually sent to the server, and the "wipe" only ever
+// cleared the browser's local cache (refreshFromApi() on next load silently restored
+// everything from the untouched server data). This endpoint is the real delete.
+app.MapDelete("/api/ingredients", async (AppDbContext db) =>
+{
+    var count = await db.Ingredients.ExecuteDeleteAsync();
+    return Results.Ok(new { deleted = count });
+});
+
 // Single-ingredient fetch — mirrors GET /api/recipes/{id}, used to refresh one ingredient's
 // approval/pending state against the server when opening it (a long-lived tab's local cache can
 // go stale the same way a recipe's can).
@@ -1128,6 +1141,16 @@ app.MapPut("/api/recipes", async (AppDbContext db, HttpContext ctx, List<Recipe>
     }
     await db.SaveChangesAsync();
     return Results.Ok(new { count = recipes.Count });
+});
+
+// Bulk delete-all -- see the matching comment on DELETE /api/ingredients above; same bug, same
+// fix. recipe_lines cascade-delete at the database level (see AppDbContext's
+// OnDelete(DeleteBehavior.Cascade) on Recipe -> Lines), so a raw ExecuteDeleteAsync on Recipes
+// takes its lines with it without needing to delete them separately first.
+app.MapDelete("/api/recipes", async (AppDbContext db) =>
+{
+    var count = await db.Recipes.ExecuteDeleteAsync();
+    return Results.Ok(new { deleted = count });
 });
 
 app.MapDelete("/api/recipes/{id}", async (AppDbContext db, string id) =>

@@ -1672,6 +1672,14 @@
       <p style="font-size:12px;color:var(--nc-gray-500);margin:-2px 0 8px">Remove all recipes from the library. Ingredients are not affected.</p>
       <button class="btn btn-danger" onclick="clearAllRecipesFromModal()" title="Delete all recipes">Clear all recipes</button>
     </div>
+    <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--nc-gray-200)">
+      <h3 style="font-size:13px;font-weight:700;margin:0 0 8px;color:var(--nc-red)">Wipe everything</h3>
+      <p style="font-size:12px;color:var(--nc-gray-500);margin:-2px 0 8px">Permanently deletes every ingredient AND every recipe from the server &mdash; including all nutrition, allergen, and pack data. Use this before reimporting a fresh BOM/cost feed. Type <code>WIPE</code> below to enable the button.</p>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input class="form-input" style="width:120px" id="wipe-everything-confirm-text" placeholder="Type WIPE" oninput="document.getElementById('wipe-everything-btn').disabled = (this.value !== 'WIPE')">
+        <button class="btn btn-danger" id="wipe-everything-btn" disabled onclick="wipeEverythingFromModal()" title="Delete all ingredients and all recipes, permanently, on the server">Wipe all ingredients + recipes</button>
+      </div>
+    </div>
 
     <div id="duplicates-panel" style="display:none">
       <div class="card" style="background:var(--nc-gray-50);border:1px dashed var(--nc-gray-300)">
@@ -1896,15 +1904,15 @@
   </div>
 </div>
 
-<script src="data.js?v=20260916-parentnoofportions"></script>
-<script src="storage.js?v=20260923-per-record-concurrency"></script>
-<script src="ingredients.js?v=20260923-cache-buster"></script>
-<script src="recipes.js?v=20260917-nutrition-weight-fix"></script>
+<script src="data.js?v=20260929-no-allergen-guessing"></script>
+<script src="storage.js?v=20260929-real-delete-all"></script>
+<script src="ingredients.js?v=20260929-real-delete-all"></script>
+<script src="recipes.js?v=20260929-real-delete-all"></script>
 <script src="hfss.js?v=20260923-cache-buster"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="app.js?v=20260928-ingredients-list"></script>
-<script src="excel-import.js?v=20260916-parentnoofportions-col-k"></script>
+<script src="app.js?v=20260929-no-allergen-guessing"></script>
+<script src="excel-import.js?v=20260929-no-allergen-guessing"></script>
 <script src="reports.js?v=20260923-cache-buster"></script>
 </body>
 </html>

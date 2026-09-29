@@ -559,41 +559,18 @@ public sealed class ImportService(InMemoryStore store) : IImportService
             Cost = item.CostPerKg,
             CostUOM = !string.IsNullOrWhiteSpace(item.CostUom) ? item.CostUom : "KG",
             Supplier = item.Supplier,
-            Allergens = AutoDetectAllergens(item.ItemName),
+            // Allergens must never be guessed from the ingredient's name -- a BOM/cost import
+            // carries no allergen data of its own. This used to call AutoDetectAllergens(), a
+            // name-keyword matcher that tagged e.g. "RM Milk Coconut Choakoch" as containing the
+            // Milk allergen purely because "milk" appears in its name -- a false positive, and
+            // worse, capable of an equally silent false negative (a real allergen with no
+            // matching word in the name reads as a confirmed empty list). Allergens are only
+            // ever set by the spec extraction pipeline (a real supplier declaration, human-
+            // confirmed) or manual entry -- see SPEC-EXTRACTION.md.
+            Allergens = [],
             Fvn = AutoDetectFvn(item.ItemName, item.Cat),
             Approved = true
         };
-    }
-
-    // Ported from data.js autoDetectAllergens — keep the two in sync. Backend-imported
-    // ingredients were previously left with an empty allergen list entirely (this function
-    // didn't exist here), which is compliance-relevant, not just cosmetic.
-    private static List<string> AutoDetectAllergens(string name)
-    {
-        var n = (name ?? "").ToLowerInvariant();
-        var rules = new (string Allergen, string[] Patterns)[]
-        {
-            ("Milk", ["milk", "cream", "butter", "cheese", "yogurt", "yoghurt", "whey", "casein", "lactose", "dairy"]),
-            ("Eggs", ["egg", "eggs", "albumin", "mayonnaise", "meringue"]),
-            ("Cereals containing gluten", ["wheat", "flour", "bread", "pasta", "barley", "rye", "oat", "spelt", "semolina", "couscous", "bulgur", "noodle"]),
-            ("Nuts", ["almond", "walnut", "hazelnut", "cashew", "pecan", "pistachio", "macadamia", "brazil nut", "chestnut"]),
-            ("Peanuts", ["peanut"]),
-            ("Soya", ["soy", "soya", "tofu", "tempeh", "edamame", "miso"]),
-            ("Fish", ["fish", "salmon", "tuna", "cod", "haddock", "mackerel", "anchov", "sardine", "trout", "bass", "plaice", "sole", "halibut"]),
-            ("Crustaceans", ["prawn", "shrimp", "crab", "lobster", "crayfish", "langoustine", "scampi"]),
-            ("Molluscs", ["mussel", "oyster", "squid", "clam", "octopus", "snail", "scallop", "cockle", "whelk"]),
-            ("Celery", ["celery", "celeriac"]),
-            ("Mustard", ["mustard"]),
-            ("Sesame", ["sesame", "tahini"]),
-            ("Lupin", ["lupin"]),
-            ("Sulphur dioxide", ["sulphite", "sulfite", "sulphur dioxide", "sulfur dioxide", "dried fruit", "wine", "vinegar"])
-        };
-        var detected = new List<string>();
-        foreach (var (allergen, patterns) in rules)
-        {
-            if (patterns.Any(p => n.Contains(p))) detected.Add(allergen);
-        }
-        return detected;
     }
 
     // Ported from data.js autoDetectFVN — keep the two in sync.
@@ -634,12 +611,15 @@ public sealed class ImportService(InMemoryStore store) : IImportService
             target.AltCodes.Add(src.Code2);
         if (!string.IsNullOrWhiteSpace(src.Supplier)) target.Supplier = src.Supplier;
         if (!string.IsNullOrWhiteSpace(src.Cat) && src.Cat != "Other") target.Cat = src.Cat;
-        // The sheet is the source of truth for anything it touches — also doubles as a backfill
-        // for records created before Fvn/Allergens detection existed here at all, since every
-        // future re-upload now re-derives them instead of leaving them permanently empty.
         target.Approved = true;
         target.Fvn = AutoDetectFvn(target.Name, target.Cat);
-        target.Allergens = AutoDetectAllergens(target.Name);
+        // Allergens are deliberately NOT touched here. This used to call AutoDetectAllergens()
+        // on every re-upload, which re-guessed from the name and overwrote whatever was here --
+        // including real, human-confirmed allergen data the spec extraction pipeline had
+        // written, on every routine cost resync. SPEC-EXTRACTION.md's "Persistence guarantee"
+        // section documents this merge path as never touching allergens at all; this call
+        // contradicted that guarantee. Allergens are only ever set by the spec pipeline or
+        // manual entry -- never re-derived here.
         target.VersionHistory.Add(DateTimeOffset.UtcNow.ToString("O"));
     }
 

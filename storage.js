@@ -332,6 +332,30 @@ window.NutriCalcStorage = (function () {
     }
   }
 
+  // Real bulk deletes, hitting DELETE /api/ingredients and /api/recipes (no {id} -- deletes
+  // everything). Deliberately separate from setIngredients([])/setRecipes([]): those only sync
+  // CHANGED records found in the new array, so an empty array has nothing to diff against and
+  // silently sends no request at all -- the local cache would go empty but the server keeps
+  // everything, and the next refreshFromApi() quietly restores it. "Clear all" needs a real
+  // delete call, not an empty upsert. Returns a promise so the caller can wait for server
+  // confirmation before treating the library as actually cleared.
+  async function deleteAllIngredients() {
+    ingredientsCache = [];
+    localSetIngredients(ingredientsCache);
+    if (useApiMode && API_BASE_URL) {
+      await apiRequestAsync("DELETE", "/ingredients", null);
+    }
+    lastSyncedIngredientsById.clear();
+  }
+  async function deleteAllRecipes() {
+    recipesCache = [];
+    localSetRecipes(recipesCache);
+    if (useApiMode && API_BASE_URL) {
+      await apiRequestAsync("DELETE", "/recipes", null);
+    }
+    lastSyncedRecipesById.clear();
+  }
+
   // Initial non-blocking refresh from backend.
   setTimeout(function () { refreshFromApi(); }, 0);
 
@@ -342,6 +366,8 @@ window.NutriCalcStorage = (function () {
     setRecipes: setRecipes,
     deleteIngredient: deleteIngredient,
     deleteRecipe: deleteRecipe,
+    deleteAllIngredients: deleteAllIngredients,
+    deleteAllRecipes: deleteAllRecipes,
     refreshFromApi: refreshFromApi,
     useLocal: function () { useApiMode = false; },
     useApi: function (baseUrl) {
