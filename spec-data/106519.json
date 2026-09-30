@@ -1,0 +1,29 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106519 (106567) Newly Weds Katsu Predust - RM SPEC V3 (10.10.2025).xlsx",
+  "appliedAt": "2026-09-30T14:59:19.727Z",
+  "name": "RM Katsu Predust Coating",
+  "code": "106519",
+  "altCode": "106567",
+  "nutrition": {
+    "kj": 1606,
+    "kcal": 379,
+    "fat": 1.1,
+    "sat": 0.3,
+    "carb": 82.4,
+    "sugar": 0.4,
+    "protein": 8.4,
+    "fibre": 2.7,
+    "salt": 0.0125
+  },
+  "allergens": [
+    "Cereals containing gluten"
+  ],
+  "packSize": "25.00kg",
+  "packFormat": "Ripp n Flow blue bag",
+  "storageConditions": "Ambient",
+  "shelfLife": "12 months (75% of total/ 9 Months)",
+  "ingredientsList": "WHEATFLOUR (CALCIUM CARBONATE, IRON, NIACIN,  THIAMIN), RICE",
+  "errors": [],
+  "warnings": []
+}

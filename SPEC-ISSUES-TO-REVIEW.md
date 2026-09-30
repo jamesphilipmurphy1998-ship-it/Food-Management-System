@@ -138,3 +138,24 @@ real shelf life from elsewhere in the document/supplier), re-run extraction and 
 **Status:** paused, awaiting user review on the brewed-vs-dry-beans nutrition question before
 any code override or write is attempted. `RM Coffee Beans - Ueshima Kobe BLEND` remains
 unspecced.
+
+---
+
+## 106198 — Prime Chicken Wing 50-70g
+
+**File:** `106198_1 (105073) Chicken Wings (W Miedzyrzecu) 50-70g RM Spec V7 (13.08.2026).xlsx`
+
+**Issue:** 11 of the 12 sheets in this workbook agree on Product Code `106198 (105073)` and
+Product Name `Prime Chicken Wing 50-70g` — the one exception is the `15&16&17 Meat & Fish & Veg`
+sheet, which shows Product Code `15193 (103736)` while still agreeing on the same Product Name
+(`Prime Chicken Wing 50-70g`). `spec-extract.py` correctly refuses to proceed (cross-sheet code
+mismatch) rather than guess which code is right.
+
+**Investigated:** the near-unanimous agreement (11/12 sheets) plus matching product name on
+every sheet including the odd one out strongly suggests `15193 (103736)` is a stale leftover
+code from an earlier version of this spec template that was reused/repurposed for a new
+customer code, not a sign of corrupted or swapped data. Same pattern as the 106188 Chicken
+Thigh case earlier this session (resolved via `--confirm-cross-sheet-mismatch`). User chose to
+pause and investigate further rather than confirm immediately — nothing has been written yet.
+
+**Not yet extracted/applied.** `RM chicken Wings 55g-75g` (106198) remains unspecced.

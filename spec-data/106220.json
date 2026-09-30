@@ -1,0 +1,27 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106220 Spring Onion Specification RM Spec V7 (07.09.2026).xlsx",
+  "appliedAt": "2026-09-30T14:56:56.063Z",
+  "name": "RM Onion Spring Sliced 500G",
+  "code": "106220",
+  "altCode": null,
+  "nutrition": {
+    "kj": 98,
+    "kcal": 23,
+    "fat": 0.5,
+    "sat": 0.1,
+    "carb": 3,
+    "sugar": 2.8,
+    "protein": 2,
+    "fibre": 1.5,
+    "salt": 0.0175
+  },
+  "allergens": [],
+  "packSize": "500g",
+  "packFormat": "Blue Food Grade Bag",
+  "storageConditions": "Chilled (0 - 5 C)",
+  "shelfLife": "Date of Production + 4 days, Delivery + 3 days",
+  "ingredientsList": null,
+  "errors": [],
+  "warnings": []
+}

@@ -2013,3 +2013,28 @@ typos included, unless told otherwise) still applies by default.
   Shelf Life ("Total Life: 130 days / MLOD: 97 days") confirmed. Name mismatch ("JF5001 Gyoza
   Sauce" vs "RM Gyoza Dipping Sauce Pot 30g") confirmed same product by code match and pack
   size/allergen consistency. Applied and post-upload-verified.
+
+### 2026-09-30 (later still) — four more specs found via folder re-check
+
+- **106158 Crab Salad Mix (altCode 105620) → "RM Salad Crab".** Storage Conditions used a
+  superscript-zero degree glyph ("0-5 ⁰C") -- verified via `rich_text=True` load, plain `str`
+  cell value, no corruption, just an unusual (but readable) degree character. Name mismatch
+  (word order) confirmed same product. Applied and post-upload-verified.
+- **106198_1 Chicken Wings — PAUSED, not applied.** 11 of 12 sheets agree on Product Code
+  `106198 (105073)`; the `15&16&17 Meat & Fish & Veg` sheet alone shows a stale `15193 (103736)`
+  while still agreeing on Product Name. User chose to pause and investigate further rather than
+  confirm the cross-sheet-mismatch override immediately. Logged in
+  [SPEC-ISSUES-TO-REVIEW.md](SPEC-ISSUES-TO-REVIEW.md); `RM chicken Wings 55g-75g` (106198)
+  remains unspecced.
+- **106220 Spring Onion → "RM Onion Spring Sliced 500G".** Clean extraction, empty Ingredients
+  List row left blank. Name mismatch (word order) confirmed same product. Applied and
+  post-upload-verified.
+- **106254 (105088) Veg Gyoza → "RM Gyoza Vegetable, 1KG Bag".** Combined Frozen/Chilled dual
+  storage-condition text and a two-part pack size ("20g/Piece and 1kg/Bag") both taken verbatim
+  from source, not split/simplified. Name mismatch (generic "Frozen Vegetable Gyoza 20g" vs
+  product's own naming) confirmed same product by code + allergen/ingredient match. Applied and
+  post-upload-verified.
+- **106519 (106567) Newly Weds Katsu Predust → "RM Katsu Predust Coating".** No name mismatch —
+  spec's "Katsu Predust" matches the live ingredient's name directly, and both share the same
+  supplier (Newly Weds Foods). Storage Conditions "Ambient" and Shelf Life confirmed. Applied
+  and post-upload-verified.
