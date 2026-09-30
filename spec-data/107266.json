@@ -1,0 +1,28 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/107266 Semi Skimmed Milk 2.27ltr RM Spec V1 (17.07.2025).xlsx",
+  "appliedAt": "2026-09-30T15:43:49.358Z",
+  "name": "RM Semi Skimmed Milk for Coffee",
+  "code": "107266",
+  "altCode": null,
+  "nutrition": {
+    "kj": 206,
+    "kcal": 49,
+    "fat": 1.7,
+    "sat": 1,
+    "carb": 5,
+    "sugar": 5,
+    "protein": 3.4,
+    "salt": 0.15
+  },
+  "allergens": [
+    "Milk"
+  ],
+  "packSize": "1 x 2.27ltr",
+  "packFormat": "Craft Carton (0% HDPE Plastic)",
+  "storageConditions": "Chilled",
+  "shelfLife": "11 days at Manufacture & 3 days into wasabi",
+  "ingredientsList": "Milk",
+  "errors": [],
+  "warnings": []
+}

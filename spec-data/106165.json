@@ -1,0 +1,27 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106165 (105030) TECH-PROCESS-19 Wasabi RM Spec-Peas V5 24.01.2025.xlsx",
+  "appliedAt": "2026-09-30T15:40:20.982Z",
+  "name": "RM Peas Greens Frozen Choice",
+  "code": "106165",
+  "altCode": null,
+  "nutrition": {
+    "kj": 354,
+    "kcal": 84,
+    "fat": 0.7,
+    "sat": 0.1,
+    "carb": 11.2,
+    "sugar": 5.9,
+    "protein": 5.5,
+    "fibre": 5.5,
+    "salt": 0.01
+  },
+  "allergens": [],
+  "packSize": "10kg",
+  "packFormat": "Liner",
+  "storageConditions": "frozen -18",
+  "shelfLife": "30 months",
+  "ingredientsList": "peas",
+  "errors": [],
+  "warnings": []
+}

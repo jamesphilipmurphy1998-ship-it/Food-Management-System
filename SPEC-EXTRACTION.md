@@ -2146,3 +2146,30 @@ typos included, unless told otherwise) still applies by default.
 - **106363 8" Dry Fine No Egg Turmeric & Paprika Noodle (altCode 106703).** Same missing-Fibre-row
   template pattern, verified row-by-row -- source cited as "External lab, UKAS Accredited".
   Applied with Fibre left unset, post-upload-verified.
+
+### 2026-09-30 (later still) — full folder cross-check finds five more pre-existing unprocessed specs
+
+- **Second, more thorough gap-closing pass**: re-ran the full-folder cross-check (all 145 files
+  vs. every remaining-RM code, including paused ones) after the first pass above, and found five
+  more genuinely unprocessed pre-existing files: 106164, 106165, 106168, 106834, 107266.
+- **106164 Crispy Onion (override to code 106164, filename "ONI103 Crispy onion 2.5kg").**
+  Product Name AND Product Code were both "0" on every sheet -- worse than the usual blank-code
+  pattern. Confirmed via ingredient composition (Onions, Palm Oil, Wheat Flour, Salt) matching
+  fried/crispy onion, and filename. **Pack-size typo caught and corrected**: the Weight/Volume
+  cell literally read "2.5g x 4", but the adjacent Legal Name cell on the same sheet read "LL
+  Crispy Onions 2.5kg e x 4" -- an internal contradiction in the source document. User
+  independently confirmed ("its a case with 4 2.5kg bags i think") before correcting to "2.5kg x
+  4"; the correction and its reasoning were recorded in the extraction JSON's warnings before
+  applying, not silently substituted. Applied with Fibre populated normally, post-upload-verified.
+- **106165 Peas (override to 106165/105030) → "RM Peas Greens Frozen Choice".** Standard
+  falsy-zero blank-code pattern. Pack Format "Liner" flagged by the plausibility check but
+  confirmed via the Inner Packaging Material field (LDPE) as a legitimate plastic liner bag, same
+  family as earlier "Polyliner"/"Blue Polyliner" specs. Applied and post-upload-verified.
+- **106168 Vegetarian Oyster Sauce (altCode 105052).** Same missing-Fibre-row template pattern.
+  Salt (13g/100g) is very high but stated explicitly via in-house lab analysis for a concentrated
+  sauce base -- reviewed and accepted. Applied with Fibre left unset, post-upload-verified.
+- **106834 Kimchi Vegan (override to 106834/106916) → "RM Vegan Kimchi Jongga".** Standard
+  falsy-zero blank-code pattern. Applied and post-upload-verified.
+- **107266 Semi Skimmed Milk 2.27ltr → "RM Semi Skimmed Milk for Coffee".** Fibre genuinely
+  blank/N-A in the source -- expected for a dairy liquid, no fibre content. Applied and
+  post-upload-verified.

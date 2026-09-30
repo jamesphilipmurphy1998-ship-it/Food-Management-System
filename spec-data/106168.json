@@ -1,0 +1,28 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106168 (105052) Veggie Oyster Sauce - RM Spec V6 (13.10.2023).xlsx",
+  "appliedAt": "2026-09-30T15:41:24.055Z",
+  "name": "RM Oyster Sauce",
+  "code": "106168",
+  "altCode": "105052",
+  "nutrition": {
+    "kj": 793.7,
+    "kcal": 189.7,
+    "fat": 0.4,
+    "sat": 0,
+    "carb": 45.2,
+    "sugar": 42.2,
+    "protein": 1.1,
+    "salt": 13
+  },
+  "allergens": [
+    "Cereals containing gluten"
+  ],
+  "packSize": "20Kg",
+  "packFormat": "This Product is supplied in 18 litre food grade tamper evident PP tubs.",
+  "storageConditions": "Will keep for 6 months if stored unopened under cool and dry conditions.",
+  "shelfLife": "6 months",
+  "ingredientsList": "Water, Sugar, Salt, Molasses, Non-modified starch DS5, Yeast extract, Barley malt extract and Garlic extract.",
+  "errors": [],
+  "warnings": []
+}

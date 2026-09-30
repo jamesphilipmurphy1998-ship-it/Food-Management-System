@@ -1,0 +1,29 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106164 ONI103  Cripsy onion  2.5kg 161025.xlsx",
+  "appliedAt": "2026-09-30T15:36:39.420Z",
+  "name": "RM Onions Crispy Fried",
+  "code": "106164",
+  "altCode": null,
+  "nutrition": {
+    "kj": 2450,
+    "kcal": 590,
+    "fat": 44,
+    "sat": 21,
+    "carb": 40,
+    "sugar": 9,
+    "protein": 6,
+    "fibre": 5,
+    "salt": 1.2
+  },
+  "allergens": [
+    "Cereals containing gluten"
+  ],
+  "packSize": "2.5kg x 4",
+  "packFormat": "Bag",
+  "storageConditions": "Store in a cool, dry place.",
+  "shelfLife": "12 months / 6 months",
+  "ingredientsList": "Onions (75%) , Palm Oil, Wheat Flour, Salt.",
+  "errors": [],
+  "warnings": []
+}
