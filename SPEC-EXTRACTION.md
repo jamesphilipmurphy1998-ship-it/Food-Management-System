@@ -1490,6 +1490,14 @@ requiring a typed reply.** This was already the intent throughout the session bu
 once on 107316's first pass -- corrected immediately per the requestor, logged here so it's
 never dropped again.
 
+**New standing rule (2026-09-30, added after the Pack Size parsing bug above): Pack Size and
+Pack Format must each be shown and confirmed as their own explicit line — "Pack Size: xxx" and
+"Pack Format: xxx" — in every confirmation prompt from now on, never merged into one combined
+line or bullet.** This is a direct consequence of the bug where Pack Size silently absorbed
+container/count wording that belonged in Pack Format (e.g. "6 x 1kg" instead of "1kg" + "x6" in
+Pack Format) — forcing each field into its own visible, separately-labelled line makes that kind
+of contamination obvious to a human reviewer at confirmation time, before it's ever written.
+
 - **Organic Japanese Matcha Green Tea Powder (107427/CS159) → `RM Organic Japanese Matcha
   Green Tea Powder (Premium Grade) 40g`.** All 9 nutrition fields blank -- investigated and
   confirmed NOT a data gap: the spec explicitly states "N/A (Tea is exempt from nutrition
