@@ -2072,3 +2072,23 @@ typos included, unless told otherwise) still applies by default.
   consistently across every sheet of the spec with no cross-sheet conflict. User explicitly
   confirmed the code match was the determining factor before applying. Applied and
   post-upload-verified.
+
+- **Transcription-error incident and process fix**: while confirming 106205 above, the user
+  spotted that an earlier manually-typed "remaining ingredients" list had mislabeled code 106205
+  as "RM Pork Neck Slice" -- the actual name of the adjacent code 106210. Root cause: a human
+  transcription slip while scanning script output by eye, not a data or pipeline bug (the actual
+  spec-apply match/diff/verify path never relies on eyeballing; it matches by exact code equality
+  in code and re-fetches to verify). User's reaction, rightly: "we cannot have transcription
+  errors imagine if allergens were incorrect." **Fix adopted going forward: never hand-retype a
+  code/name/field list for the user again -- always have a script print the list directly from
+  the live API and share that output as-is.** Saved as a standing memory rule
+  (`feedback_no_manual_transcription`). The full remaining-RM list was then regenerated this way
+  and re-verified against the earlier list; no further transcription errors were found.
+
+### 2026-09-30 (later still) — one more spec found via folder re-check (two file versions, newer used)
+
+- **106159 Plain Wheat Flour (altCode 105016), V6 used over V5 found alongside it.** Same
+  missing-Fibre-row template pattern as 106154 White Pepper -- verified row-by-row, no Fibre row
+  exists in this Nutrition Information sheet at all. Saturates explicitly "n/a" in source; Salt
+  stated as "Trace" (read as 0). Source cited throughout: McCance & Widdowson's 6th Summary
+  Edition, a real reference. Applied with Fibre and Saturates left unset, post-upload-verified.
