@@ -1,0 +1,27 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/(107558) - Rainbow Slaw RM Spec V1 (08.04.2026).xlsx",
+  "appliedAt": "2026-09-30T15:20:41.141Z",
+  "name": "RM Rainbow Slaw",
+  "code": "107558",
+  "altCode": null,
+  "nutrition": {
+    "kj": 229,
+    "kcal": 54,
+    "fat": 0.29,
+    "sat": 0.2,
+    "carb": 12.2,
+    "sugar": 11.8,
+    "protein": 0.949,
+    "fibre": 2.275,
+    "salt": 0.5725
+  },
+  "allergens": [],
+  "packSize": "8x1kg",
+  "packFormat": "Heat sealed bag / film (Primary pack method)",
+  "storageConditions": "Store chilled",
+  "shelfLife": "P+7 days, D+5 days",
+  "ingredientsList": "Pink Star Cabbage, White Cabbage, Carrot, Yellow Carrot, Mooli, White Wine Vinegar, White Sugar, Salt",
+  "errors": [],
+  "warnings": []
+}

@@ -2098,3 +2098,14 @@ typos included, unless told otherwise) still applies by default.
 - **107606 Sesame Dressing.** Clean extraction, code and name matched the live ingredient
   directly with no override or mismatch needed. Storage Conditions used a superscript-o degree
   glyph ("2-5 (ᵒC)") read plainly as part of the string. Applied and post-upload-verified.
+
+### 2026-09-30 (later still) — two more specs found via folder re-check
+
+- **107558 Rainbow Slaw → "RM Rainbow Slaw".** Clean extraction, code and name matched directly.
+  Applied and post-upload-verified.
+- **120087 Lamb Weston Potato Puffs — PAUSED, not applied.** Spec's own Product Code
+  (`120087`) doesn't exist in the live system; `RM Potato Puffs - Pre-fried – frozen` (107496,
+  supplier Fresh Direct (UK) Ltd) is unspecced and matches by product description, but the spec
+  names the brand/manufacturer as Lamb Weston, a different name than the live supplier field.
+  User asked to log and move on rather than investigate immediately. Logged in
+  [SPEC-ISSUES-TO-REVIEW.md](SPEC-ISSUES-TO-REVIEW.md); 107496 remains unspecced.

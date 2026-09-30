@@ -159,3 +159,35 @@ Thigh case earlier this session (resolved via `--confirm-cross-sheet-mismatch`).
 pause and investigate further rather than confirm immediately — nothing has been written yet.
 
 **Not yet extracted/applied.** `RM chicken Wings 55g-75g` (106198) remains unspecced.
+
+---
+
+## 120087 — Lamb Weston Potato Puffs 10x1Kg
+
+**File:** `120087 Spec Lamb Weston Potato Puff s 10x1Kg V1 (signed).xlsx`
+
+**Issue:** the spec's own Product Code cell reads `120087`, but no live ingredient exists with
+that code. `RM Potato Puffs - Pre-fried – frozen` (code `107496`, supplier Fresh Direct (UK)
+Ltd) is unspecced and matches this product by description (potato puffs), but the spec names
+the manufacturer/brand as Lamb Weston, a different name than the live supplier field.
+
+**Extracted data (not yet applied):**
+```json
+{
+  "name": "Lamb Weston Potato Puff s 10x1Kg",
+  "code": "120087",
+  "nutrition": {"kj": 654, "kcal": 156, "fat": 7.1, "sat": 0.67, "carb": 20, "sugar": 0.5, "protein": 1.9, "fibre": 2.6, "salt": 0.9},
+  "allergens": [],
+  "packSize": "10x1kg",
+  "packFormat": "Food grade vertical form sealed plastic bag",
+  "storageConditions": "frozen max -18c",
+  "shelfLife": "548 min 365 days from delivery",
+  "ingredientsList": "Potatoes (82%), Vegetable oils (rapeseed, sunflower, in varying proportions), Potato starch, Onion, Potato flakes, Salt, Dextrose, Flavouring (Onion extract), Spice."
+}
+```
+
+**Status:** paused, not applied. User asked to add to this list and move on rather than
+investigate further right now — whether `120087` should override to `107496`, or whether
+`107496`'s supplier is actually a distributor for Lamb Weston (same pattern as the 106205 Beef
+Slice supplier-name case), still needs a decision. `RM Potato Puffs - Pre-fried – frozen`
+(107496) remains unspecced in the meantime.
