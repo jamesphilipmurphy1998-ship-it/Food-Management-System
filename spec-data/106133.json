@@ -1,0 +1,29 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106133 (105601) Yutaka White Sesame Seeds 1kg  - RM Spec V3 (25.10.2024).xlsx",
+  "appliedAt": "2026-09-30T15:46:29.470Z",
+  "name": "RM Sesame Seeds White Roasted Yutaka",
+  "code": "106133",
+  "altCode": "105601",
+  "nutrition": {
+    "kj": 2190,
+    "kcal": 528,
+    "fat": 41.1,
+    "sat": 6.9,
+    "carb": 18,
+    "sugar": 2.4,
+    "protein": 21.6,
+    "fibre": 12.4,
+    "salt": 0.07
+  },
+  "allergens": [
+    "Sesame"
+  ],
+  "packSize": "1kg",
+  "packFormat": null,
+  "storageConditions": "Store cool and dry place",
+  "shelfLife": "540 days, minimum on delivery 3 months",
+  "ingredientsList": "White Sesame Seeds 100%",
+  "errors": [],
+  "warnings": []
+}

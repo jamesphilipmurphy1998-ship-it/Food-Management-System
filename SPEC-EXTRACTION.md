@@ -2173,3 +2173,16 @@ typos included, unless told otherwise) still applies by default.
 - **107266 Semi Skimmed Milk 2.27ltr → "RM Semi Skimmed Milk for Coffee".** Fibre genuinely
   blank/N-A in the source -- expected for a dairy liquid, no fibre content. Applied and
   post-upload-verified.
+
+### 2026-09-30 (later still) — snapshot-chain gap fixed; one more spec found
+
+- **Folder-snapshot chain fell behind**: the sequential `spec_filesNN.txt` diff chain used for
+  routine "check the folder for more" checks hadn't been updated after the two full-folder
+  cross-check passes above (which used separate one-off snapshots), so the next routine diff
+  showed several already-applied files as if newly arrived. Cross-referenced against
+  `spec-data/` to confirm only one of the flagged files was genuinely unprocessed; the chain has
+  now been resynced to the current folder listing.
+- **106133 White Sesame Seeds (altCode 105601) → "RM Sesame Seeds White Roasted Yutaka".** Same
+  template family as the earlier Edamame spec -- combined Shelf Life/Storage cell split as usual,
+  no Pack Format field in this variant (verified genuinely absent). Applied and
+  post-upload-verified.
