@@ -1,0 +1,29 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106355 (105426)-IQF Shrimps Wasabi RM Spec V2 (01.08.2024).xlsx",
+  "appliedAt": "2026-09-30T14:02:00.407Z",
+  "name": "RM Cooked Prawn Tail-Off Size 31/40",
+  "code": "106355",
+  "altCode": "105426",
+  "nutrition": {
+    "kj": 267.8,
+    "kcal": 64,
+    "fat": 0.39,
+    "sat": 0.1,
+    "carb": 1.1,
+    "sugar": 0,
+    "protein": 14.1,
+    "fibre": 0,
+    "salt": 1.08
+  },
+  "allergens": [
+    "Crustaceans"
+  ],
+  "packSize": "700g Net Weight (1kg Gross Weight)",
+  "packFormat": "Printed PA/PE bag",
+  "storageConditions": "-18C or below",
+  "shelfLife": "24 months (frozen) from production date; 6 months minimum shelf life on delivery",
+  "ingredientsList": "Shrimps (crustaceans)(96%), stabilisers (E451. E452), salt.",
+  "errors": [],
+  "warnings": []
+}

@@ -1,0 +1,27 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106235 (105066) Ginger Puree Nuggets RM Spec V4 (09.07.2026).xlsx",
+  "appliedAt": "2026-09-30T14:00:44.894Z",
+  "name": "RM PUREE GINGER NUGGET IQF",
+  "code": "106235",
+  "altCode": null,
+  "nutrition": {
+    "kj": 188,
+    "kcal": 44,
+    "fat": 0.8,
+    "sat": 0.2,
+    "carb": 8.1,
+    "sugar": 1.7,
+    "protein": 1.8,
+    "fibre": 2,
+    "salt": 0.03
+  },
+  "allergens": [],
+  "packSize": "1x10kg",
+  "packFormat": "Blue Polyliner",
+  "storageConditions": "Frozen",
+  "shelfLife": "24 months. Minimum shelf life on delivery 6 months",
+  "ingredientsList": "Ginger",
+  "errors": [],
+  "warnings": []
+}

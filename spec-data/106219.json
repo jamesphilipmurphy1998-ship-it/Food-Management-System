@@ -1,0 +1,26 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106219 Red Chillies Sliced 250g RM Spec V2 (04.09.2026).xlsx",
+  "appliedAt": "2026-09-30T13:59:21.720Z",
+  "name": "RM Chilli Red Sliced 250G",
+  "code": "106219",
+  "altCode": null,
+  "nutrition": {
+    "kj": 109,
+    "kcal": 26,
+    "fat": 0.3,
+    "sat": 0,
+    "carb": 4.2,
+    "sugar": 4.2,
+    "protein": 1.8,
+    "salt": 0.03
+  },
+  "allergens": [],
+  "packSize": "250g",
+  "packFormat": "Blue Food Grade Bag",
+  "storageConditions": "Chilled (0 - 5 C)",
+  "shelfLife": "Date of Production + 5 days, Delivery + 4 days",
+  "ingredientsList": null,
+  "errors": [],
+  "warnings": []
+}

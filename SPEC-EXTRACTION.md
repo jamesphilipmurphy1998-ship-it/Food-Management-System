@@ -1964,3 +1964,27 @@ typos included, unless told otherwise) still applies by default.
   Sauce Soy Wasabi" -- confirmed "Wasabi" refers to Wasabi Co Ltd's own private-label branding
   on this product, not a wasabi-flavoured sauce, before confirming. Applied and
   post-upload-verified.
+
+### 2026-09-30 (later still) — four more specs found via folder re-check
+
+- **RM Lettuce Chinese Leaf Sliced 1KG (106218) → "Sliced Chinese Leaf".** Storage Conditions
+  read "Chilled (0 - 5 C)" with no degree symbol -- re-verified against the raw rich-text cell
+  (plain string, no superscript trick), same document-author family as the earlier Carrot/
+  Kale/Coriander specs. Name mismatch (word order) confirmed same product. Applied and
+  post-upload-verified.
+- **RM Chilli Red Sliced 250G (106219) → "Sliced Red Chilli".** Fibre cell read `"N"`, sourced
+  from McCance & Widdowson reference "13-317" (visible in the sheet's own Source column) --
+  confirmed genuine non-numeric notation, same as the earlier Cucumber spec. Storage (same
+  "Chilled (0 - 5 C)" family) and Shelf Life confirmed. Name mismatch (word order) confirmed
+  same product. Applied and post-upload-verified.
+- **RM PUREE GINGER NUGGET IQF (106235) → "Frozen Ginger Puree Nuggets".** Pack Format "Blue
+  Polyliner" flagged by the plausibility check but confirmed a legitimate packaging term
+  (polyethylene liner bag), consistent with other "blue [material] bag/liner" descriptions this
+  session. Storage and Shelf Life confirmed. Name mismatch ("Frozen" = IQF, word order)
+  confirmed same product. Applied and post-upload-verified.
+- **RM Cooked Prawn Tail-Off Size 31/40 (106355/105426) → "IQF Shrimps".** Storage Conditions
+  "-18C or below" (no degree symbol) verified against the raw rich-text cell -- plain string, no
+  corruption. **Genuine shrimp-vs-prawn naming question investigated, not rubber-stamped**:
+  confirmed same product (UK specs commonly use the two terms interchangeably for this species),
+  not assumed by default given the two are sometimes genuinely different animals. Applied and
+  post-upload-verified.
