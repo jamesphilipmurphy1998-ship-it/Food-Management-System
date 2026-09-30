@@ -1,0 +1,27 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106189(105013)Wasabi RM Spec-Cornflour V7 07.08.26.xlsx",
+  "appliedAt": "2026-09-30T15:31:29.306Z",
+  "name": "RM Flour Corn",
+  "code": "106189",
+  "altCode": "105013",
+  "nutrition": {
+    "kj": 1488,
+    "kcal": 350,
+    "fat": 0.6,
+    "sat": 0,
+    "carb": 87.5,
+    "sugar": 0,
+    "protein": 0.5,
+    "fibre": 0,
+    "salt": 0.18
+  },
+  "allergens": [],
+  "packSize": "25kg",
+  "packFormat": "Paper sack, thread tear off",
+  "storageConditions": "Ambient. Store in a cool, dry place. Ensure bag is closed after use",
+  "shelfLife": "24 months shelf life from manufacturer, minimum 50% life upon delivery to Wasabi.",
+  "ingredientsList": "Cornflour",
+  "errors": [],
+  "warnings": []
+}

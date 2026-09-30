@@ -1,0 +1,28 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106363 (106703) Egg Free Turmeric Paprika Noodles RM Spec V4 (29.10.2024).xlsx",
+  "appliedAt": "2026-09-30T15:32:37.433Z",
+  "name": "RM 8\" Egg Free Turmeric & Paprika Noodles",
+  "code": "106363",
+  "altCode": "106703",
+  "nutrition": {
+    "kj": 1466,
+    "kcal": 346,
+    "fat": 0.9,
+    "sat": 0.2,
+    "carb": 70.8,
+    "sugar": 2.9,
+    "protein": 12.2,
+    "salt": 1.73
+  },
+  "allergens": [
+    "Cereals containing gluten"
+  ],
+  "packSize": "7.7KG",
+  "packFormat": "Food Grade Blue Bag – folded in outer box",
+  "storageConditions": "Store in a cool dry place, off the floor, at ambient temperature.",
+  "shelfLife": "356 Days; minimum life on delivery: 274days",
+  "ingredientsList": "Wheat flour (Wheat flour, Calcium, Iron, Niacin, Thiamin), Salt, Paprika, Turmeric, Acidity Regulators: Potassium Carbonate, Citric Acid, Sodium Carbonate.",
+  "errors": [],
+  "warnings": []
+}

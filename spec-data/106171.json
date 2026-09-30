@@ -1,0 +1,27 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106171 (105640)Lion Premium Vegan Mayo - RM Spec  V3 25.10.24.xlsx",
+  "appliedAt": "2026-09-30T15:30:00.241Z",
+  "name": "RM Mayonnaise Vegan",
+  "code": "106171",
+  "altCode": null,
+  "nutrition": {
+    "kj": 2366,
+    "kcal": 575,
+    "fat": 62.4,
+    "sat": 4.4,
+    "carb": 3.4,
+    "sugar": 1.6,
+    "protein": 0,
+    "fibre": 0,
+    "salt": 1.17
+  },
+  "allergens": [],
+  "packSize": "10 Litres",
+  "packFormat": "Single stacked buckets",
+  "storageConditions": "Ambient",
+  "shelfLife": "9 months / min shelf life on delivery: 4 months",
+  "ingredientsList": "Rapeseed Oil (65%), Water, Spirit Vinegar, Sugar, Salt, Modified Starch, Stabiliser (Xanthan Gum), Preservative (Potassium Sorbate), Lemon Juice Concentrate, Natural Flavouring, Colours (Turmeric, Paprika Extract).",
+  "errors": [],
+  "warnings": []
+}

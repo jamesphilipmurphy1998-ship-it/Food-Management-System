@@ -2122,3 +2122,27 @@ typos included, unless told otherwise) still applies by default.
   as White Pepper/Wheat Flour -- verified row-by-row, no Fibre row in this Nutrition sheet.
   Source cited: McCance & Widdowson 6th ed / USDA. Applied with Fibre left unset,
   post-upload-verified.
+
+### 2026-09-30 (later still) — folder-diff gap discovered; three pre-existing unprocessed specs found
+
+- **Process gap identified**: the "check the folder for more" workflow only diffs against the
+  *previous* folder snapshot, so files that were already sitting in the folder before this
+  session started tracking (i.e. never part of any diff) were silently never checked. User
+  caught this ("some of the specs in your list are in the folder already, check the folder") by
+  noticing files existed for ingredients still marked unspecced. Cross-referenced the full
+  current folder listing against every remaining-RM code (including paused ones) and found three
+  genuinely unprocessed pre-existing files: 106171, 106189, 106363 (106987 and 106199 were
+  already correctly logged as paused issues from before this session).
+- **106171 Lion Premium Vegan Mayo → "RM Mayonnaise Vegan" (override to 106171/105640).** The
+  spec's own Product Code cell consistently states `106237 (105636)` across all 11 sheets --
+  internally self-consistent, but that code doesn't exist anywhere in the live system. The
+  filename's code, `106171 (105640)`, does exist live and matches the product (vegan mayo).
+  Treated the internal code as a stale/wrong carry-over (e.g. a manufacturer's own reused
+  template) rather than trusting internal self-consistency blindly, since self-consistency alone
+  doesn't help when the consistent code matches nothing. Applied via override, post-upload-verified.
+- **106189 Cornflour (altCode 105013) → "RM Flour Corn".** Clean code match, no override needed.
+  Applied and post-upload-verified (double-checked live via a direct API re-fetch after the diff
+  output didn't clearly show every unchanged-vs-changed field in the terminal tail).
+- **106363 8" Dry Fine No Egg Turmeric & Paprika Noodle (altCode 106703).** Same missing-Fibre-row
+  template pattern, verified row-by-row -- source cited as "External lab, UKAS Accredited".
+  Applied with Fibre left unset, post-upload-verified.
