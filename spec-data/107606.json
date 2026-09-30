@@ -1,0 +1,30 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/(107606) Sesame Dressing RM Spec V1 (03.06.2026).xlsx",
+  "appliedAt": "2026-09-30T15:18:57.857Z",
+  "name": "RM Sesame Dressing",
+  "code": "107606",
+  "altCode": null,
+  "nutrition": {
+    "kj": 1266,
+    "kcal": 305,
+    "fat": 23,
+    "sat": 3.2,
+    "carb": 18,
+    "sugar": 15,
+    "protein": 6.5,
+    "fibre": 1.1,
+    "salt": 1.6
+  },
+  "allergens": [
+    "Sesame",
+    "Soya"
+  ],
+  "packSize": "6 x 1kg",
+  "packFormat": "Food grade rigid HDPE containers which are fitted with a heat induction tamper evident seal and easy pour cap.",
+  "storageConditions": "Chilled 2-5 (ᵒC)",
+  "shelfLife": "120 days & 90 days",
+  "ingredientsList": "Water, SESAME Paste (20%), Sugar, Soy Sauce (Water, SOYBEANS, Salt, Spirit Vinegar), Mirin Style Seasoning (Glucose Syrup, Sugar, Water, Spirit Vinegar, Rice Vinegar, Black Treacle [Cane Molasses, Inverted Sugar Syrup], Acidity Regulator [Citric Acid]), Rapeseed Oil, Toasted SESAME Seed Oil (5%), Lime Concentrate, Spirit Vinegar, Modified Potato Starch, Acidity Regulator (Lactic Acid), Dried Chillies, Caramelised Sugar Syrup.",
+  "errors": [],
+  "warnings": []
+}

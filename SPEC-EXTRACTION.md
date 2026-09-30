@@ -2092,3 +2092,9 @@ typos included, unless told otherwise) still applies by default.
   exists in this Nutrition Information sheet at all. Saturates explicitly "n/a" in source; Salt
   stated as "Trace" (read as 0). Source cited throughout: McCance & Widdowson's 6th Summary
   Edition, a real reference. Applied with Fibre and Saturates left unset, post-upload-verified.
+
+### 2026-09-30 (later still) — one more spec found via folder re-check
+
+- **107606 Sesame Dressing.** Clean extraction, code and name matched the live ingredient
+  directly with no override or mismatch needed. Storage Conditions used a superscript-o degree
+  glyph ("2-5 (ᵒC)") read plainly as part of the string. Applied and post-upload-verified.
