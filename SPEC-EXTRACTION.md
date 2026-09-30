@@ -1988,3 +1988,28 @@ typos included, unless told otherwise) still applies by default.
   confirmed same product (UK specs commonly use the two terms interchangeably for this species),
   not assumed by default given the two are sometimes genuinely different animals. Applied and
   post-upload-verified.
+
+### 2026-09-30 (later still) — three more specs found via folder re-check
+
+- **Cookie jar path resolution bug discovered and worked around**: `spec-apply.js`'s
+  `COOKIE_JAR` default (`/tmp/qa_cookies.txt`) only resolves correctly when curl is invoked from
+  a POSIX shell (Git Bash's MSYS path translation). `node`'s own `execSync` spawns `cmd.exe` on
+  Windows, which does not translate that path, so curl silently sent no cookie and the API
+  returned 401 Unauthorized -- surfaced as a confusing `allIngredients.find is not a function`
+  crash (the error body `{"error":"Unauthorized"}` isn't an array). Worked around per-invocation
+  by passing `COOKIE_JAR` as a Windows-style path (`C:\Users\JAMESM~1\AppData\Local\Temp\qa_cookies.txt`)
+  in the environment when calling `node scripts/spec-apply.js`. Not yet fixed in the script
+  itself since it's a one-time environment quirk, not a data-correctness issue.
+- **106222 Grated Carrot → "RM Carrot Grated 1KG".** Clean extraction (nutrition, storage,
+  shelf life). Ingredients List row was empty on the source sheet -- left blank, not guessed.
+  Name mismatch (word order + RM/pack-size prefix only) confirmed same product. Applied and
+  post-upload-verified.
+- **106226 Red Pepper Sliced 7mm 5Kg → "RM Red pepper sliced 7cmx1cm Pack 5KG".** Same document
+  family as the Carrot spec above -- clean extraction, empty Ingredients List row left blank.
+  Name mismatch (word order/prefix only) confirmed same product. Applied and post-upload-verified.
+- **JF5001 Gyoza Sauce V12 → "RM Gyoza Dipping Sauce Pot 30g" (106961, altCode 107067).** Filename
+  used the manufacturer's internal product code (JF5001) rather than the live system's code, but
+  the sheet's own Product Code cell gave 106961 directly. Storage ("Chilled 0-5°C") and combined
+  Shelf Life ("Total Life: 130 days / MLOD: 97 days") confirmed. Name mismatch ("JF5001 Gyoza
+  Sauce" vs "RM Gyoza Dipping Sauce Pot 30g") confirmed same product by code match and pack
+  size/allergen consistency. Applied and post-upload-verified.

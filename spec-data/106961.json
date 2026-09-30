@@ -1,0 +1,30 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/JF5001 Gyoza Sauce V12 07.08.2026.xlsx",
+  "appliedAt": "2026-09-30T14:24:17.190Z",
+  "name": "RM Gyoza Dipping Sauce Pot 30g",
+  "code": "106961",
+  "altCode": "107067",
+  "nutrition": {
+    "kj": 230,
+    "kcal": 54,
+    "fat": 0,
+    "sat": 0,
+    "carb": 11.8,
+    "sugar": 7.5,
+    "protein": 1.5,
+    "fibre": 0,
+    "salt": 5.1
+  },
+  "allergens": [
+    "Cereals containing gluten",
+    "Soya"
+  ],
+  "packSize": "30g Pot",
+  "packFormat": "30g Pot and Lid",
+  "storageConditions": "Chilled 0-5°C",
+  "shelfLife": "Total Life: 130 days\nMLOD: 97 days",
+  "ingredientsList": "Water, Light Soy Sauce (Soy Sauce [Water, Soya Beans, Wheat, Salt, Alcohol (Ethanol)], Water, Sugar, Salt), Rice Vinegar, Sugar, Cornflour, Salt.",
+  "errors": [],
+  "warnings": []
+}

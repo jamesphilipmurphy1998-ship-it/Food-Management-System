@@ -1,0 +1,27 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106226 Red Pepper Sliced 7mm 5Kg RM Spec V3 (09.09.2026).xlsx",
+  "appliedAt": "2026-09-30T14:23:38.352Z",
+  "name": "RM Red pepper sliced 7cmx1cm Pack 5KG",
+  "code": "106226",
+  "altCode": null,
+  "nutrition": {
+    "kj": 89,
+    "kcal": 21,
+    "fat": 0.2,
+    "sat": 0.05,
+    "carb": 4.3,
+    "sugar": 4.2,
+    "protein": 0.8,
+    "fibre": 2.2,
+    "salt": 0.0025
+  },
+  "allergens": [],
+  "packSize": "5kg",
+  "packFormat": "Blue Food Grade Bag",
+  "storageConditions": "Chilled (0 - 5 C)",
+  "shelfLife": "Date of Production + 5 days, Delivery + 4 days",
+  "ingredientsList": null,
+  "errors": [],
+  "warnings": []
+}

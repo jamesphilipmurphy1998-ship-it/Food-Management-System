@@ -1,0 +1,27 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106222 Grated Carrot 1Kg RM Spec V3 (04.09.2026).xlsx",
+  "appliedAt": "2026-09-30T14:23:12.597Z",
+  "name": "RM Carrot Grated 1KG",
+  "code": "106222",
+  "altCode": null,
+  "nutrition": {
+    "kj": 146,
+    "kcal": 34,
+    "fat": 0.4,
+    "sat": 0.1,
+    "carb": 7.7,
+    "sugar": 7.2,
+    "protein": 0.5,
+    "fibre": 3.9,
+    "salt": 0.0675
+  },
+  "allergens": [],
+  "packSize": "1kg",
+  "packFormat": "Blue Food Grade Bag",
+  "storageConditions": "Chilled (0 - 5 C)",
+  "shelfLife": "Date of Production + 5 days, Delivery + 4 days",
+  "ingredientsList": null,
+  "errors": [],
+  "warnings": []
+}
