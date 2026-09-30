@@ -1,0 +1,27 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106138 RM Coriander Spec 100g V1 15.06.2026.xlsx",
+  "appliedAt": "2026-09-30T11:59:08.947Z",
+  "name": "RM Coriander Bunch",
+  "code": "106138",
+  "altCode": null,
+  "nutrition": {
+    "kj": 74,
+    "kcal": 18,
+    "fat": 0.5,
+    "sat": 0,
+    "carb": 1.2,
+    "sugar": 0.9,
+    "protein": 2.1,
+    "fibre": 2.8,
+    "salt": 0.115
+  },
+  "allergens": [],
+  "packSize": "100g",
+  "packFormat": "Clear Bag",
+  "storageConditions": "Chilled ( 2 - 5C)",
+  "shelfLife": "Date of Production +4 days, Delivery +3 days",
+  "ingredientsList": "Coriander 100%",
+  "errors": [],
+  "warnings": []
+}

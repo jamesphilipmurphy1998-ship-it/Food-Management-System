@@ -1915,3 +1915,13 @@ typos included, unless told otherwise) still applies by default.
 - **RM Poached Egg (Free range) (107489) → "Great British Egg Company 30 x Individual
   Pre-Poached Free Range Eggs".** Clean extraction, code matched directly. Name mismatch
   (supplier's fuller product name) confirmed same product. Applied and post-upload-verified.
+
+### 2026-09-30 (later still) — one more spec found via folder re-check
+
+- **RM Coriander Bunch (106138) → "Unwashed Coriander".** Code cell read `"TCK spec code
+  WAS19/ 106138"` -- our real code was literally present as a substring, just appended after
+  the supplier's (TCK Fresh Produce Ltd) own internal reference format, so the parser's
+  first-token match only caught "TCK". Overridden to 106138 per direct inspection. Storage
+  ("Chilled ( 2 - 5C)", no degree symbol, same phrasing family as the earlier Carrot/Kale specs
+  from what looks like the same document author) and Shelf Life confirmed. Name mismatch
+  confirmed same product. Applied and post-upload-verified.
