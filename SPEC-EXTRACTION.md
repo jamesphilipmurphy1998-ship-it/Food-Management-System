@@ -1652,3 +1652,9 @@ skip being asked.
   product. Storage ("Frozen condition below -18°C") and Shelf Life ("24 month") confirmed.
   **This is one of the base ingredients behind the Chicken Gyoza / Chicken Gyoza Box recipes**
   flagged in the earlier missing-nutrition recipe scan. Applied and post-upload-verified.
+
+### 2026-09-30 — one more spec found via folder re-check
+
+- **RM KTC Toasted Sesame Oil (105940/105058) → "KTC Toasted Sesame Oil 1 x 20L".** Clean
+  extraction, code/name matched directly with no overrides or mismatches. Storage and the
+  two-part 24-month/18-month Shelf Life both confirmed. Applied and post-upload-verified.

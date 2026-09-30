@@ -478,11 +478,8 @@
       <div class="page-header">
         <h1>Ingredient Centre</h1>
         <div class="actions">
-          <button class="btn" onclick="openExcelImport()" style="color:var(--nc-green);border-color:var(--nc-green)">
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M2 2h5l1 1H14a1 1 0 011 1v9a1 1 0 01-1 1H2a1 1 0 01-1-1V3a1 1 0 011-1zm4 4l-3 3h2v3h2v-3h2l-3-3z"/></svg>
-            Import Excel / CSV
-          </button>
-          <button class="btn" onclick="loadSampleIngredients()">Load Sample DB</button>
+          <button class="btn" disabled>Placeholder 1</button>
+          <button class="btn" disabled>Placeholder 2</button>
           <button class="btn btn-primary" onclick="openNewIngredientModal()">
             <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2a1 1 0 011 1v4h4a1 1 0 110 2H9v4a1 1 0 11-2 0V9H3a1 1 0 010-2h4V3a1 1 0 011-1z"/></svg>
             New Ingredient
@@ -490,7 +487,7 @@
         </div>
       </div>
       <div class="ingredient-search-row" style="display:flex;align-items:flex-start;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
-        <div class="ingredient-search-wrap" style="flex:1;min-width:200px;">
+        <div class="ingredient-search-wrap" style="flex-basis:100%;min-width:200px;">
           <div class="search-bar" style="margin-bottom:0;">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M6.5 1a5.5 5.5 0 014.38 8.82l3.65 3.65a.75.75 0 01-1.06 1.06l-3.65-3.65A5.5 5.5 0 116.5 1zm0 1.5a4 4 0 100 8 4 4 0 000-8z"/></svg>
             <input type="text" placeholder="Search ingredients by name or category..." id="ingredient-search" oninput="searchIngredientLibrary()" onfocus="searchIngredientLibrary()" onkeydown="handleIngredientSearchKeydown(event)">

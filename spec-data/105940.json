@@ -1,0 +1,29 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/RM Spec-Toasted Sesameseed Oil V4 201025 APPROVED .xlsx",
+  "appliedAt": "2026-09-30T08:39:59.577Z",
+  "name": "RM KTC Toasted Sesame Oil",
+  "code": "105940",
+  "altCode": "105058",
+  "nutrition": {
+    "kj": 3393,
+    "kcal": 825,
+    "fat": 91.7,
+    "sat": 14.2,
+    "carb": 0,
+    "sugar": 0,
+    "protein": 0,
+    "fibre": 0,
+    "salt": 0
+  },
+  "allergens": [
+    "Sesame"
+  ],
+  "packSize": "1x20L",
+  "packFormat": "Bottle in Box (20L)",
+  "storageConditions": "Store at ambient temperatures, off the floor in a clean dry area.\nKeep away from strongly odorous materials and direct sunlight",
+  "shelfLife": "24 months from the date of production if kept unopened in the manufacturer's packaging\n18 Months: Minimum Shelf Life on the delivery",
+  "ingredientsList": "Toasted sesame seed oil",
+  "errors": [],
+  "warnings": []
+}
