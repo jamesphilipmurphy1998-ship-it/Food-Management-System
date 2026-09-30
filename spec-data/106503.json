@@ -1,0 +1,26 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106503 (105054) Pride White Vinegar 4 x 5 Litres RM Spec V2 (29.10.2024).xlsx",
+  "appliedAt": "2026-09-30T09:09:56.215Z",
+  "name": "RM Pride White Vinegar Westmill Ingredient 5L",
+  "code": "106503",
+  "altCode": "105054",
+  "nutrition": {
+    "kj": 69,
+    "kcal": 16,
+    "fat": 0,
+    "carb": 0.9,
+    "sugar": 0,
+    "protein": 0,
+    "fibre": 0,
+    "salt": 0
+  },
+  "allergens": [],
+  "packSize": "5 litres",
+  "packFormat": "Container/ Cap/seal/ Label",
+  "storageConditions": "Ambient storage, store in a cool dry place away from direct sunlight and other \nheat sources.",
+  "shelfLife": "24 months/ 8 months min shelf life on delievry",
+  "ingredientsList": "Spirit Vinegar 5% Acidity",
+  "errors": [],
+  "warnings": []
+}

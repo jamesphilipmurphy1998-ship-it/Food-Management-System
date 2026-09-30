@@ -1,0 +1,29 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106096 (105600) Yutaka Black Sesame Seeds 1kg - Spec V3 (25.10.24).xlsx",
+  "appliedAt": "2026-09-30T09:05:21.490Z",
+  "name": "RM Sesame Seeds Black Roasted Yutaka",
+  "code": "106096",
+  "altCode": "105600",
+  "nutrition": {
+    "kj": 2150,
+    "kcal": 518,
+    "fat": 38.22,
+    "sat": 5.7,
+    "carb": 21.5,
+    "sugar": 2.3,
+    "protein": 22,
+    "fibre": 11,
+    "salt": 0.09
+  },
+  "allergens": [
+    "Sesame"
+  ],
+  "packSize": "1kg",
+  "packFormat": null,
+  "storageConditions": "Store cool and dry place",
+  "shelfLife": "540 days, minimum on delivery 3 months",
+  "ingredientsList": "Black Sesame Seed 100%",
+  "errors": [],
+  "warnings": []
+}

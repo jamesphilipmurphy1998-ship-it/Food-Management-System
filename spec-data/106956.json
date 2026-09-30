@@ -1,0 +1,25 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106956  Mushroom powder MUSPO001 RM Spec V1  31.07.2024.xlsx",
+  "appliedAt": "2026-09-30T09:11:02.772Z",
+  "name": "RM Mushroom Powder",
+  "code": "106956",
+  "altCode": null,
+  "nutrition": {
+    "kj": 1318,
+    "kcal": 315,
+    "fat": 3.7,
+    "carb": 19.9,
+    "protein": 38.8,
+    "fibre": 22.9,
+    "salt": 0.425
+  },
+  "allergens": [],
+  "packSize": "10kgs",
+  "packFormat": "hand tied blue PE liner",
+  "storageConditions": "cool, dry/ ambient warehouse",
+  "shelfLife": "12 months from milling, minimum 6 months upon the delivery",
+  "ingredientsList": "dehydrated mushroom powder",
+  "errors": [],
+  "warnings": []
+}

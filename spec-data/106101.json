@@ -1,0 +1,29 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106101(105044) Sesame Oil Spec 20102025 .xlsx",
+  "appliedAt": "2026-09-30T09:06:05.388Z",
+  "name": "RM Oil Sesame",
+  "code": "106101",
+  "altCode": "105044",
+  "nutrition": {
+    "kj": 3760,
+    "kcal": 898,
+    "fat": 99.7,
+    "sat": 16.2,
+    "carb": 0,
+    "sugar": 0,
+    "protein": 0,
+    "fibre": 0,
+    "salt": 0
+  },
+  "allergens": [
+    "Sesame"
+  ],
+  "packSize": "1.6 L",
+  "packFormat": "CAN/CAP:LDPE",
+  "storageConditions": "ambient temperature",
+  "shelfLife": "24 months (Minimum shelf life on delivery : 20 months)",
+  "ingredientsList": "sesame oil 100%",
+  "errors": [],
+  "warnings": []
+}

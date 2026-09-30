@@ -1713,3 +1713,78 @@ skip being asked.
 fields onto one line for brevity (e.g. "125 kJ / 30 kcal", "0.5g / 0.1g" for Fat/Saturates) reads
 as two competing values for the SAME field, not two different fields -- confusing. Present each
 field on its own line going forward when summarizing an extraction for confirmation.
+
+**Standing rule reinforced 2026-09-30: every extraction must be shown to the user as a full
+field-by-field table BEFORE asking any confirmation question**, not just summarized after the
+fact or folded silently into a yes/no question. This was already good practice but made
+explicit per direct user instruction, to guarantee it happens every time for this AI and any
+future one picking this up.
+
+### 2026-09-30 (later still) — nine more specs found via folder re-check; combined-field template generalized into the parser
+
+Generalized the "Branches" template's combined Storage+Shelf Life field into `spec-extract.py`
+proper (previously handled as a one-off manual JSON for Shichimi Pepper) after it recurred on
+Black Sesame Seeds -- now automatic, no per-spec script change needed. Mechanism: when the
+standard `"5-f)"` row genuinely isn't found, falls back to a `find_row_containing()` search for
+a row whose label contains `"shelf life & storage conditions"` (covers this template's own
+numbering, e.g. `"8-b)"`), splits the cell on the first `"/"` into Shelf Life and Storage
+Conditions, and separately looks for a `"minimum shelf life on deli"` row (matches both
+"delivery" and a real "deliery" typo seen in a spec) to append onto Shelf Life. Method 1
+(standard separate rows) always tried first and never overridden; Method 2 only ever engages as
+a fallback. Both paths feed into the exact same mandatory-confirmation warnings regardless of
+which one produced the values, plus Method 2 adds its own extra warning calling out that the
+*split itself* needs confirming, not just the resulting values. Regression-tested clean against
+both the original Shichimi extraction and a known Method-1 spec (Avocado) before use.
+
+Nine new spec files found in one folder re-check:
+
+- **RM Sesame Seeds Black Roasted Yutaka (106096/105600) → "Black Sesame Seeds".** First live
+  use of the newly-generalized combined-field parser -- correctly split "540 days / Store cool
+  and dry place" into Shelf Life "540 days, minimum on delivery 3 months" (folding in the
+  separate minimum-on-delivery row) and Storage Conditions "Store cool and dry place". No
+  distinct Pack Format field in this template variant (verified, left unextracted). Name
+  mismatch ("Black Sesame Seeds" vs. the live record's fuller "RM Sesame Seeds Black Roasted
+  Yutaka") confirmed same product. Applied and post-upload-verified.
+- **RM Oil Sesame (106101/105044) → "Sesame Oil".** Clean extraction, code/name matched
+  directly. Salt blank but Sodium reads a genuine 0mg -- derived Salt = 0 via the standard
+  conversion (still a real derived value from a real stated Sodium figure, not a guess). Storage
+  ("ambient temperature") and Shelf Life ("24 months (Minimum shelf life on delivery : 20
+  months)") confirmed. Applied and post-upload-verified, no name mismatch.
+- **RM Seaweed Wakame (106135) → "Dry Wakame".** Blank code (literal `0`) overridden via
+  filename + name match. kcal (206) failed the macro sanity check (~135 expected, ~35% off) --
+  confirmed acceptable given very high Fibre (36.1g) and Salt (21.1g) content typical of dried
+  seaweed. Name mismatch confirmed same product. Applied and post-upload-verified.
+- **RM Pride White Vinegar Westmill Ingredient 5L (106503/105054) → "Pride White Vinegar".**
+  Saturate Fat genuinely blank (verified). kcal (16) failed the sanity check against a near-zero
+  macro estimate (~3.6) -- confirmed acceptable, same class of explanation as alcohol/acetic
+  acid contributing calories the standard fat/carb/protein formula doesn't count. Applied and
+  post-upload-verified, no name mismatch.
+- **RM Mushroom Powder (106956) → "Mushroom powder MUSPO/001".** Sat Fat and Sugar both
+  literally "n/a" in the spec (verified) -- left blank. Salt blank but Sodium = 170mg present --
+  derived to 0.425g. Pack Format ("hand tied blue PE liner") flagged by the plausibility check
+  as unusual wording but verified as the literal, correct cell value. Storage and Shelf Life
+  confirmed. Applied and post-upload-verified, no name mismatch.
+- **RM Chumaki Nori PACK-4200 Sheets (107091) → "Dried Seaweed for Chumaki Nori".** Clean
+  extraction, same manufacturer template as the other nori/seaweed specs this session (matching
+  "driect sunlight" typo kept verbatim). Name mismatch confirmed same product. Applied and
+  post-upload-verified.
+- **RM Diced Tuna (107199) → "RF JOII SF MSC YF DICED TUNA 800G".** Blank code (literal `0`)
+  overridden via filename + name match. Real degree symbol confirmed present and un-corrupted
+  ("0 - <5°C"). Applied and post-upload-verified, no name mismatch.
+- **RM Tuna Bar SF YF (1 x 1.2kg-1.6kg pack) (107200) → "RF JOII SF MSC YF TUNA BARS C/W KG".**
+  **A genuine wrong-code-in-the-filename case, distinct from every prior blank/typo'd-cell
+  case**: the spec's own Product Code cell was blank (as usual, the falsy-zero pattern), but the
+  *filename itself* stated a code ("107120") that doesn't correspond to ANY live ingredient at
+  all -- checked and confirmed. The product name and nutrition data are near-identical to the
+  just-processed Diced Tuna (107199, same manufacturer/fish, same nutrition profile) but this
+  one is clearly the "Tuna Bars" pack format, matching the one remaining unspecced Tuna Bar
+  ingredient, 107200. Overridden to 107200 per explicit user instruction, **logged here per
+  their direct request that the wrong code on the source filename be recorded**: the filename
+  says 107120, the correct code is 107200 -- this is the source document's own labeling error,
+  not an extraction bug. Applied and post-upload-verified.
+- **RM Kale Curly Prep (106139) → "Curly Kale Sliced".** Storage Conditions read "Chilled (0 -
+  5 C)" with no degree symbol -- re-verified against the raw rich-text cell (plain string, no
+  superscript trick) before confirming, same discipline as the earlier Julienne Carrot spec
+  (same phrasing pattern, likely same document author). No Ingredients List (empty row, normal
+  for single-ingredient produce). Name mismatch confirmed same product. Applied and
+  post-upload-verified.

@@ -1,0 +1,27 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/107091 Dried Seaweed for Chumaki Nori -RM Spec V1.3(Sep 25,2024).xlsx",
+  "appliedAt": "2026-09-30T09:12:13.029Z",
+  "name": "RM Chumaki Nori PACK-4200 Sheets",
+  "code": "107091",
+  "altCode": null,
+  "nutrition": {
+    "kj": 1431.89,
+    "kcal": 342.23,
+    "fat": 4.04,
+    "sat": 1.1,
+    "carb": 37.79,
+    "sugar": 0,
+    "protein": 43.71,
+    "fibre": 17.29,
+    "salt": 0.93
+  },
+  "allergens": [],
+  "packSize": "100sheets/bag, 160g * 42 Cases",
+  "packFormat": "100sheets/bag, 160gx 42cases",
+  "storageConditions": "Keep it dry at room temperature away from driect sunlight",
+  "shelfLife": "24months. Min on delivery is 22 months",
+  "ingredientsList": "Dried Seawwd for Chumaki  Nori (100%)",
+  "errors": [],
+  "warnings": []
+}

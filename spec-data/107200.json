@@ -1,0 +1,29 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/107120 Tuna Bars RM Spec V4 (10.08.2026).xlsx",
+  "appliedAt": "2026-09-30T09:17:05.058Z",
+  "name": "RM Tuna Bar SF YF (1 x 1.2kg-1.6kg pack)",
+  "code": "107200",
+  "altCode": null,
+  "nutrition": {
+    "kj": 444,
+    "kcal": 104,
+    "fat": 0.2,
+    "sat": 0.06,
+    "carb": 0.8,
+    "sugar": 0.11,
+    "protein": 25.03,
+    "fibre": 0.5,
+    "salt": 0.12
+  },
+  "allergens": [
+    "Fish"
+  ],
+  "packSize": "1.2kg - 1.5kg",
+  "packFormat": "Small peach pad, Shallow proman, Top Film, Joii sticker",
+  "storageConditions": "0 - <5°C",
+  "shelfLife": "P+4 (maximum storage temperature is <5°C), Minimum shelf life on delivery: P+3",
+  "ingredientsList": "Yellowfin tuna (Thunnus albacares) (Fish) 100%",
+  "errors": [],
+  "warnings": []
+}

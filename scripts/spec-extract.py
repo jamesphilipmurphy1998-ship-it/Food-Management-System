@@ -249,6 +249,18 @@ def find_row_starting_with(ws, prefix, max_col=1):
             return cell.row
     return None
 
+def find_row_containing(ws, text_lower, max_col=1):
+    """Case-insensitive substring search on column A -- used for the 'Branches' template variant
+    (confirmed 2026-09-30, Shichimi Pepper + Black Sesame Seeds) whose row numbering/wording
+    doesn't follow the "5-a)"/"5-f)" prefix convention at all (its Durability sheet uses "8-a)",
+    "8-b)", etc, and combines Storage Conditions + Shelf Life into a single row). Substring, not
+    prefix, since this template's row text varies in what comes before the phrase."""
+    for row in ws.iter_rows(min_row=1, max_row=ws.max_row, max_col=max_col):
+        cell = row[0]
+        if cell.value and text_lower in str(cell.value).strip().lower():
+            return cell.row
+    return None
+
 def find_col_in_row(ws, row_num, text_contains, max_col=20):
     for col in range(1, max_col + 1):
         v = ws.cell(row=row_num, column=col).value
@@ -580,6 +592,8 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
 
     pack_format = None
     storage_conditions = None
+    shelf_life = None
+    combined_row = None
     # "Packaging" alone, not "Packaging Detail" -- same newer template variant names this sheet
     # "Packaging & Label Information", which doesn't contain "Packaging Detail" verbatim.
     packaging_sheet_name = next((n for n in sheet_names if "Packaging" in n), None)
@@ -608,7 +622,50 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
         ds = wb[durability_sheet_name]
         row = find_row_starting_with(ds, "5-f)")
         if row is None:
-            warnings.append("Could not find the '5-f) Storage conditions' row in '%s' -- Storage Conditions not extracted" % durability_sheet_name)
+            # Fallback: the "Branches" template variant (confirmed 2026-09-30, Shichimi Pepper +
+            # Black Sesame Seeds) doesn't have a separate "5-f)" row at all -- it combines
+            # Storage Conditions and Shelf Life into one row instead (its own numbering, e.g.
+            # "8-b) Shelf life & Storage conditions: *"), split by "/" ("540 days / Store cool
+            # and dry place"). Only engaged when the normal row is genuinely absent, so this
+            # never overrides or competes with the standard template's own "5-f)"/"5-a)" rows.
+            combined_row = find_row_containing(ds, "shelf life & storage conditions")
+            if combined_row is not None:
+                combined_val = None
+                for col in range(2, 15):
+                    v = cell_text(ds.cell(row=combined_row, column=col), warnings, "Shelf Life & Storage Conditions")
+                    if v is not None and v.strip():
+                        combined_val = v.strip()
+                        break
+                if combined_val:
+                    if "/" in combined_val:
+                        shelf_part, storage_part = combined_val.split("/", 1)
+                        shelf_part, storage_part = shelf_part.strip(), storage_part.strip()
+                    else:
+                        # No "/" separator present -- can't safely split into two fields, so the
+                        # whole value goes to Shelf Life (the more specific of the two labels in
+                        # the combined row name) and Storage Conditions stays unextracted, same
+                        # as any other "couldn't find this field" case.
+                        shelf_part, storage_part = combined_val, None
+                    min_row = find_row_containing(ds, "minimum shelf life on deli")  # covers both "delivery" and the "deliery" typo seen in real specs (stops short of the "v" so either spelling matches)
+                    min_val = None
+                    if min_row is not None:
+                        for col in range(2, 15):
+                            v = cell_text(ds.cell(row=min_row, column=col), warnings, "Minimum Shelf Life on Delivery")
+                            if v is not None and str(v).strip() and str(v).strip().upper() != "N/A":
+                                min_val = str(v).strip()
+                                break
+                    shelf_life = ("%s, minimum on delivery %s" % (shelf_part, min_val)) if min_val else shelf_part
+                    storage_conditions = storage_part
+                    warnings.append(
+                        "This spec's template combines Shelf Life and Storage Conditions into one cell "
+                        "(%r) instead of the usual separate '5-a)'/'5-f)' rows -- split on the '/' "
+                        "separator into Shelf Life %r and Storage Conditions %r (plus the separate "
+                        "minimum-on-delivery row, if present). This split itself, not just the final "
+                        "values, always requires explicit human confirmation." % (combined_val, shelf_life, storage_part))
+                else:
+                    warnings.append("Row matching 'Shelf life & Storage conditions' in '%s' has no value in any column -- Storage Conditions/Shelf Life not extracted" % durability_sheet_name)
+            else:
+                warnings.append("Could not find the '5-f) Storage conditions' row in '%s' -- Storage Conditions not extracted" % durability_sheet_name)
         else:
             for col in range(2, 15):
                 v = cell_text(ds.cell(row=row, column=col), warnings, "Storage Conditions")
@@ -617,40 +674,47 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
                     break
             if storage_conditions is None:
                 warnings.append("Row '5-f)' in '%s' has no value in any column -- Storage Conditions not extracted" % durability_sheet_name)
-            else:
-                implausible = check_storage_conditions_plausible(storage_conditions)
-                if implausible:
-                    warnings.append(implausible)
-                # Always human-confirmed, even when it passes every automated check -- per
-                # explicit user instruction 2026-09-29, prompted by the degree-symbol rich-text
-                # case above: a wrong storage temperature is a real food-safety risk, and with
-                # uploads expected to be infrequent going forward (roughly weekly), the extra
-                # confirmation step costs nothing. This is deliberately unconditional -- it fires
-                # on every extraction with a Storage Conditions value, not just implausible ones.
-                warnings.append("Storage Conditions extracted as %r -- always requires explicit human confirmation before writing (temperature-relevant, safety-critical), regardless of whether it looks plausible. Confirm this matches what the source spec actually states, then re-run with --confirm-warnings." % storage_conditions)
+        if storage_conditions is not None:
+            implausible = check_storage_conditions_plausible(storage_conditions)
+            if implausible:
+                warnings.append(implausible)
+            # Always human-confirmed, even when it passes every automated check -- per
+            # explicit user instruction 2026-09-29, prompted by the degree-symbol rich-text
+            # case above: a wrong storage temperature is a real food-safety risk, and with
+            # uploads expected to be infrequent going forward (roughly weekly), the extra
+            # confirmation step costs nothing. This is deliberately unconditional -- it fires
+            # on every extraction with a Storage Conditions value, not just implausible ones.
+            warnings.append("Storage Conditions extracted as %r -- always requires explicit human confirmation before writing (temperature-relevant, safety-critical), regardless of whether it looks plausible. Confirm this matches what the source spec actually states, then re-run with --confirm-warnings." % storage_conditions)
         # --- Shelf Life ("5-a)" on the same Durability sheet) -- the label text varies between
         # spec revisions ("5-a) Shelf Life from manufacturer : *" vs "...& Minimum shelf life on
         # delivery : *"), so this matches on the "5-a)" prefix only, same approach as everything
         # else in this file that's found by item-number prefix rather than the full question text.
-        shelf_life = None
-        sl_row = find_row_starting_with(ds, "5-a)")
-        if sl_row is None:
-            warnings.append("Could not find the '5-a) Shelf Life' row in '%s' -- Shelf Life not extracted" % durability_sheet_name)
-        else:
-            for col in range(2, 15):
-                v = cell_text(ds.cell(row=sl_row, column=col), warnings, "Shelf Life")
-                if v is not None and v.strip():
-                    shelf_life = v.strip()
-                    break
-            if shelf_life is None:
-                warnings.append("Row '5-a)' in '%s' has no value in any column -- Shelf Life not extracted" % durability_sheet_name)
+        # (shelf_life may already be set by the combined-row fallback above -- only search the
+        # standard "5-a)" row when it isn't.)
+        if shelf_life is None:
+            sl_row = find_row_starting_with(ds, "5-a)")
+            if sl_row is None:
+                if combined_row is None:
+                    # Only warn about the missing standard row when the combined-row fallback
+                    # didn't already explain the absence (its own "no value" warning above covers
+                    # that case; this avoids reporting the same gap twice under two different
+                    # messages).
+                    warnings.append("Could not find the '5-a) Shelf Life' row in '%s' -- Shelf Life not extracted" % durability_sheet_name)
             else:
-                implausible = check_shelf_life_plausible(shelf_life)
-                if implausible:
-                    warnings.append(implausible)
-                # Always human-confirmed -- same reasoning and same date as the Storage
-                # Conditions rule just above.
-                warnings.append("Shelf Life extracted as %r -- always requires explicit human confirmation before writing (safety-relevant), regardless of whether it looks plausible. Confirm this matches what the source spec actually states, then re-run with --confirm-warnings." % shelf_life)
+                for col in range(2, 15):
+                    v = cell_text(ds.cell(row=sl_row, column=col), warnings, "Shelf Life")
+                    if v is not None and v.strip():
+                        shelf_life = v.strip()
+                        break
+                if shelf_life is None:
+                    warnings.append("Row '5-a)' in '%s' has no value in any column -- Shelf Life not extracted" % durability_sheet_name)
+        if shelf_life is not None:
+            implausible = check_shelf_life_plausible(shelf_life)
+            if implausible:
+                warnings.append(implausible)
+            # Always human-confirmed -- same reasoning and same date as the Storage
+            # Conditions rule just above.
+            warnings.append("Shelf Life extracted as %r -- always requires explicit human confirmation before writing (safety-relevant), regardless of whether it looks plausible. Confirm this matches what the source spec actually states, then re-run with --confirm-warnings." % shelf_life)
     else:
         warnings.append("No sheet matching 'Durability' found -- Storage Conditions/Shelf Life not extracted")
 

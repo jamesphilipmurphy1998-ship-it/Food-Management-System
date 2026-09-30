@@ -1,0 +1,27 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106135 (105813) Wakame Wasabi RM Spec-V2 (26.09.2024).xlsx",
+  "appliedAt": "2026-09-30T09:09:02.701Z",
+  "name": "RM Seaweed Wakame",
+  "code": "106135",
+  "altCode": null,
+  "nutrition": {
+    "kj": 860,
+    "kcal": 206,
+    "fat": 1.6,
+    "sat": 0.36,
+    "carb": 10.5,
+    "sugar": 4.9,
+    "protein": 19.6,
+    "fibre": 36.1,
+    "salt": 21.1
+  },
+  "allergens": [],
+  "packSize": "20/500g",
+  "packFormat": "plastic bag",
+  "storageConditions": "Store in a cool and dry place away from direct sunlight",
+  "shelfLife": "24 months，Min shelf life on delivery: 3months",
+  "ingredientsList": "Ingredients: Wakame seaweed",
+  "errors": [],
+  "warnings": []
+}
