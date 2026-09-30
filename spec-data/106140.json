@@ -1,0 +1,29 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106140 (105605) Edamame In Pods (YK70651B) - RM Spec V3 (21.01.2025).xlsx",
+  "appliedAt": "2026-09-30T15:26:10.725Z",
+  "name": "RM Edamame Beans Ready Salted Pods Yutaka",
+  "code": "106140",
+  "altCode": "105605",
+  "nutrition": {
+    "kj": 544,
+    "kcal": 131,
+    "fat": 6.1,
+    "sat": 0.8,
+    "carb": 3.88,
+    "sugar": 3,
+    "protein": 12.1,
+    "fibre": 6.1,
+    "salt": 0.73
+  },
+  "allergens": [
+    "Soya"
+  ],
+  "packSize": "400g",
+  "packFormat": null,
+  "storageConditions": "Frozen -18℃",
+  "shelfLife": "730 days, minimum on delivery 3 months",
+  "ingredientsList": "Soybean 99.5%, Salt 0.5%",
+  "errors": [],
+  "warnings": []
+}

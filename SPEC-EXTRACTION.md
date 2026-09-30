@@ -2109,3 +2109,16 @@ typos included, unless told otherwise) still applies by default.
   names the brand/manufacturer as Lamb Weston, a different name than the live supplier field.
   User asked to log and move on rather than investigate immediately. Logged in
   [SPEC-ISSUES-TO-REVIEW.md](SPEC-ISSUES-TO-REVIEW.md); 107496 remains unspecced.
+
+### 2026-09-30 (later still) — two more specs found via folder re-check
+
+- **106140 Salted Edamame Soybeans In Pods - Zhejiang (altCode 105605).** Template variant with
+  Packaging/Durability sections renumbered (Section 7/8 instead of the usual 4/5) and no Pack
+  Format field at all -- verified against the raw sheet, genuinely absent (only dimensions and
+  recyclability are asked for). Combined Shelf Life/Storage cell ("730 days / Frozen -18°C")
+  split as usual, plus the separate "Minimum Shelf life on deliery" row appended. Applied with
+  Pack Format left blank, post-upload-verified.
+- **106162 Diced Red Pepper 25x25mm (altCode 105026).** Same missing-Fibre-row template pattern
+  as White Pepper/Wheat Flour -- verified row-by-row, no Fibre row in this Nutrition sheet.
+  Source cited: McCance & Widdowson 6th ed / USDA. Applied with Fibre left unset,
+  post-upload-verified.
