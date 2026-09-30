@@ -1667,3 +1667,49 @@ skip being asked.
   disguised range. No Ingredients List (row after the Legal Ingredient Declaration label was
   empty -- normal for a single-ingredient fresh produce item). Applied and post-upload-verified,
   no name mismatch.
+
+### 2026-09-30 (later) — two more specs; --correct-unit-mismatch added; a second sheet-naming template variant found and fixed
+
+- **RM Carrot Baton 10x10x60mm (105971/105577) → "Carrot Batons 10x10x60mm".** No Fibre row
+  (same template gap as several prior specs) -- confirmed via `--allow-blank-nutrition fibre`.
+  **New case: Salt (g) cell literally read `"62.5mg"`** -- a milligram value entered into the
+  gram column without converting. Confirmed internally consistent: it exactly equals the
+  standard Sodium→Salt conversion from the same sheet's Sodium row (25mg × 2.5 ÷ 1000 =
+  0.0625g = 62.5mg), so this isn't a random typo, just a wrong-unit entry of the correct
+  underlying number. Added a new, narrow **`--correct-unit-mismatch FIELD[,FIELD2,...]`** flag
+  to `spec-extract.py` for exactly this class of problem: a KNOWN, purely-arithmetic unit
+  conversion (mg↔g, kg↔g, ml↔l -- see `UNIT_CONVERSION_FACTORS`), never a different-quantity
+  relationship like Sodium→Salt (that stays behind its own separate
+  `--derive-salt-from-sodium` flag, unaffected by this addition). kcal (30) also failed the
+  macro sanity check (~23% under the computed ~38.9) -- confirmed acceptable per the standing
+  literal-value-first rule, consistent with prior fresh-produce cases (Cucumber, etc.). Name
+  mismatch ("Carrot Batons" plural vs. "RM Carrot Baton" singular) confirmed same product.
+  Storage ("Chilled ( 1 - 5 C)") and Shelf Life ("DOP (Date of Production) + 02 days")
+  confirmed. Applied and post-upload-verified.
+- **RM Shichimi Chilli Powder Tazaki (105982/105623) → "Yutaka Chili Pepper - Shichimi 300g".**
+  **Second real hit of a genuinely different template family** (first was the Cooked Breakfast
+  Sausage/Avocado cross-sheet-mismatch cases, but this is a different problem: sheet *names*
+  themselves differ) -- this spec's workbook uses `Nutritional Information` (not `Nutrition
+  Information`) and `Packaging & Label Information` (not `Packaging Detail`), which didn't
+  match the existing substring searches at all (`"al Information"` vs. `" Information"` breaks
+  an exact-phrase match). Broadened both patterns to the shorter, still-unambiguous keywords
+  `"Nutrition"` and `"Packaging"` -- confirmed no other sheet in any spec seen so far would
+  coincidentally contain either word. This same template variant also **combines Storage
+  Conditions and Shelf Life into one cell** ("12 months /Avoid direct sunlight, and stored in a
+  cool and dry place") plus a separate minimum-on-delivery row, and has **no distinct Pack
+  Format field** (only a packaging-dimensions description, "Primary: Plastic bag"). Since this
+  specific combined-field structure has only been seen once, per the "generalize only after 2-3
+  times" standing practice, this one extraction was built manually (JSON hand-assembled from
+  the human-reviewed raw cells) rather than extending the parser further right now -- logged in
+  full in the JSON's own warnings array so it's traceable. kcal (331) also failed the macro
+  sanity check (~29% over the computed ~257) -- confirmed acceptable given the unusually high
+  Fibre content (39g/100g, plausible for a dried spice/seed blend). **Name/brand mismatch
+  investigated, not rubber-stamped:** spec names the product "Yutaka" while the live record's
+  supplier is "Tazaki foods ltd" -- checked and confirmed these are consistent (Tazaki Foods
+  Ltd is a real UK importer/distributor of the Yutaka brand), not a red flag. Applied and
+  post-upload-verified.
+
+**Note on formatting extracted-data summaries for the user:** combining two distinct nutrition
+fields onto one line for brevity (e.g. "125 kJ / 30 kcal", "0.5g / 0.1g" for Fat/Saturates) reads
+as two competing values for the SAME field, not two different fields -- confusing. Present each
+field on its own line going forward when summarizing an extraction for confirmation.

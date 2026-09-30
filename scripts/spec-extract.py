@@ -31,6 +31,13 @@ is a real source notation, not a parsing bug (e.g. McCance & Widdowson's "N" for
 reliable quantified amount"). All three leave the field unset (never written as 0), and all
 three require a human to have actually looked at the specific cell first.
 
+--correct-unit-mismatch FIELD[,FIELD2,...] covers a nutrition value entered with the wrong unit
+suffix for its own column (e.g. "62.5mg" typed into a "Salt (g)" cell) -- only usable for a
+KNOWN, purely-arithmetic conversion (see UNIT_CONVERSION_FACTORS: mg<->g, kg<->g, ml<->l), never
+for a different-quantity relationship like Sodium->Salt (that stays behind its own
+--derive-salt-from-sodium flag). A human must have looked at the specific cell and confirmed it's
+genuinely a wrong-unit entry, not some other kind of problem, before this is used.
+
 --confirm-cross-sheet-mismatch is separate and much narrower: it does NOT change which code is
 used (that's still whatever's on the recipe sheet, or --override-code if also given). It only
 permits proceeding when exactly one or a few sheets disagree with the rest, after a human has
@@ -147,13 +154,34 @@ NUTRITION_FIELDS = [
 
 import re as _re
 
-def parse_nutrition_value(val, expected_unit):
+# Deterministic unit-conversion factors -- e.g. a value found in mg written into a column
+# labeled (g). Only unambiguous, purely-mathematical conversions belong here (never anything
+# resembling the Sodium->Salt formula, which is a nutritional/legal relationship between two
+# DIFFERENT quantities, not a unit conversion of the same quantity -- that stays behind its own
+# separate --derive-salt-from-sodium flag). Key is (found_unit, expected_unit), both lowercase.
+UNIT_CONVERSION_FACTORS = {
+    ("mg", "g"): 0.001,
+    ("g", "mg"): 1000.0,
+    ("kg", "g"): 1000.0,
+    ("g", "kg"): 0.001,
+    ("ml", "l"): 0.001,
+    ("l", "ml"): 1000.0,
+}
+
+def parse_nutrition_value(val, expected_unit, correct_unit=False):
     """Accept a bare number, OR a number immediately followed by its own column's stated unit
     (e.g. "1.24g" in a "Fat (g)" column) -- some suppliers write the unit inline rather than
     leaving a pure number. Deliberately narrow: the suffix must match THIS field's own unit
     (case-insensitively), never any arbitrary trailing text -- "1.24ml" in a "Fat (g)" column
     would still be refused, since that's a real discrepancy worth a human's attention, not a
-    formatting quirk to silently paper over."""
+    formatting quirk to silently paper over.
+
+    If correct_unit=True (only ever set when a human has confirmed, for this specific cell, that
+    the suffix is a genuine wrong-unit entry rather than something else going on) and the suffix
+    is a known convertible unit from UNIT_CONVERSION_FACTORS, the value is converted and returned
+    with problem="unit_corrected:<original text>" so the caller can still surface exactly what
+    was found and what it was converted to -- never silently indistinguishable from a value the
+    spec stated correctly in the first place."""
     if isinstance(val, (int, float)):
         return val, None
     if val is None:
@@ -200,6 +228,14 @@ def parse_nutrition_value(val, expected_unit):
     if suffix.endswith("s") and suffix[:-1] == expected_unit.lower():
         suffix = suffix[:-1]
     if suffix and suffix != expected_unit.lower():
+        if correct_unit:
+            factor = UNIT_CONVERSION_FACTORS.get((suffix, expected_unit.lower()))
+            if factor is not None:
+                try:
+                    converted = float(number_part) * factor
+                    return converted, "unit_corrected:%s%s" % (number_part, suffix)
+                except ValueError:
+                    pass
         return None, "unit mismatch (found %r, expected %r)" % (suffix, expected_unit)
     try:
         return float(number_part), None
@@ -221,7 +257,7 @@ def find_col_in_row(ws, row_num, text_contains, max_col=20):
     return None
 
 def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank_nutrition=(),
-            confirm_cross_sheet_mismatch=False):
+            confirm_cross_sheet_mismatch=False, correct_unit_mismatch=()):
     errors = []
     warnings = []
 
@@ -239,7 +275,11 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
 
     # --- Locate the three sheets this extraction depends on, by name pattern, not fixed index ---
     recipe_sheet_name = next((n for n in sheet_names if "Ingredient & Recipe" in n), None)
-    nut_sheet_name = next((n for n in sheet_names if "Nutrition Information" in n), None)
+    # "Nutrition" alone, not "Nutrition Information" -- confirmed 2026-09-30 (Shichimi Pepper)
+    # that a newer template variant names this sheet "Nutritional Information", which does NOT
+    # contain the exact substring "Nutrition Information" (the "al" breaks it). "Nutrition" alone
+    # is still an unambiguous match -- no other sheet in any spec seen so far contains that word.
+    nut_sheet_name = next((n for n in sheet_names if "Nutrition" in n), None)
     allergen_sheet_name = next((n for n in sheet_names if "Intolerance" in n), None)
     if not recipe_sheet_name:
         errors.append("No sheet matching 'Ingredient & Recipe' found -- cannot determine product code. Sheet names present: %s" % sheet_names)
@@ -375,8 +415,21 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
                         errors.append("Nutrition row for %r not found in '%s' -- template may have changed" % (label, nut_sheet_name))
                     continue
                 raw_val = ns.cell(row=found_row, column=per100_col).value
-                parsed, problem = parse_nutrition_value(raw_val, unit)
-                if parsed is not None:
+                parsed, problem = parse_nutrition_value(raw_val, unit, correct_unit=(field in correct_unit_mismatch))
+                if parsed is not None and problem and problem.startswith("unit_corrected:"):
+                    # A human has explicitly named this field via --correct-unit-mismatch,
+                    # confirming (after being shown the actual cell) that the value is genuinely
+                    # in the wrong unit rather than something else going on -- e.g. a Salt (g)
+                    # cell that literally reads "62.5mg". The conversion factor itself is pure
+                    # arithmetic (mg->g etc, see UNIT_CONVERSION_FACTORS), never a guess, but the
+                    # decision to apply it is still opt-in and logged every time.
+                    original_text = problem.split(":", 1)[1]
+                    nutrition[field] = parsed
+                    warnings.append(
+                        "Nutrition value for %r read %r -- a unit mismatch (expected %r), converted "
+                        "to %.4g%s per --correct-unit-mismatch (human-confirmed genuine wrong-unit "
+                        "entry, not a different problem)." % (label, original_text, unit, parsed, unit))
+                elif parsed is not None:
                     nutrition[field] = parsed
                 elif problem == "blank":
                     blank_fields[field] = label
@@ -527,7 +580,9 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
 
     pack_format = None
     storage_conditions = None
-    packaging_sheet_name = next((n for n in sheet_names if "Packaging Detail" in n), None)
+    # "Packaging" alone, not "Packaging Detail" -- same newer template variant names this sheet
+    # "Packaging & Label Information", which doesn't contain "Packaging Detail" verbatim.
+    packaging_sheet_name = next((n for n in sheet_names if "Packaging" in n), None)
     if packaging_sheet_name:
         ps = wb[packaging_sheet_name]
         row = find_row_starting_with(ps, "4-a)")
@@ -723,9 +778,15 @@ if __name__ == "__main__":
     confirm_cross_sheet_mismatch = "--confirm-cross-sheet-mismatch" in args
     if confirm_cross_sheet_mismatch:
         args.remove("--confirm-cross-sheet-mismatch")
+    correct_unit_mismatch = ()
+    if "--correct-unit-mismatch" in args:
+        idx = args.index("--correct-unit-mismatch")
+        correct_unit_mismatch = tuple(f.strip() for f in args[idx + 1].split(","))
+        del args[idx:idx + 2]
     result = extract(args[0], override_code=override_code,
                       derive_salt_from_sodium=derive_salt_from_sodium,
                       allow_blank_nutrition=allow_blank_nutrition,
-                      confirm_cross_sheet_mismatch=confirm_cross_sheet_mismatch)
+                      confirm_cross_sheet_mismatch=confirm_cross_sheet_mismatch,
+                      correct_unit_mismatch=correct_unit_mismatch)
     print(json.dumps(result, indent=2, ensure_ascii=False))
     sys.exit(0 if result["status"] == "ok" else 1)

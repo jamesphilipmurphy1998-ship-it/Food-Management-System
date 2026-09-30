@@ -1,0 +1,29 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/105982 (105623) Shichimi Pepper RM Spec (Branches) V3 (25.10.2024).xlsx",
+  "appliedAt": "2026-09-30T08:59:09.734Z",
+  "name": "RM Shichimi Chilli Powder Tazaki",
+  "code": "105982",
+  "altCode": "105623",
+  "nutrition": {
+    "kj": 1388,
+    "kcal": 331,
+    "fat": 13.9,
+    "sat": 3,
+    "carb": 19.2,
+    "sugar": 12,
+    "protein": 13.8,
+    "fibre": 39,
+    "salt": 0
+  },
+  "allergens": [
+    "Sesame"
+  ],
+  "packSize": "300g",
+  "packFormat": "Plastic bag",
+  "storageConditions": "Avoid direct sunlight, and stored in a cool and dry place",
+  "shelfLife": "12 months, minimum on delivery 3 months",
+  "ingredientsList": "Chilli Powder (50%), Roasted Orange Peel, Black Sesame, White Sesame, Seaweed, White Pepper, Ginger, Bay Leaf",
+  "errors": [],
+  "warnings": []
+}
