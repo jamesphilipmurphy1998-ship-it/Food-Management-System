@@ -1658,3 +1658,12 @@ skip being asked.
 - **RM KTC Toasted Sesame Oil (105940/105058) → "KTC Toasted Sesame Oil 1 x 20L".** Clean
   extraction, code/name matched directly with no overrides or mismatches. Storage and the
   two-part 24-month/18-month Shelf Life both confirmed. Applied and post-upload-verified.
+- **RM Carrot Julienne 3mm Bag 10KG (105970) → "Carrot Julienne 3mm".** Storage Conditions read
+  "Chilled (0 - 5 C)" with no degree symbol -- given the prior rich-text degree-symbol
+  corruption incident (Beef Mince, 107322), this was explicitly re-verified against the raw
+  cell with `rich_text=True` before confirming: no superscript run present (plain string), and
+  the same document uses a real "°" character in a nearby row ("0°C and 8°C" under transport
+  temperature), confirming the author simply omitted the symbol here rather than it being a
+  disguised range. No Ingredients List (row after the Legal Ingredient Declaration label was
+  empty -- normal for a single-ingredient fresh produce item). Applied and post-upload-verified,
+  no name mismatch.

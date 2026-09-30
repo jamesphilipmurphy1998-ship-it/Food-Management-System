@@ -1,0 +1,27 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/105970 RM Spec-Julienne Carrot 3mm V5 01.06.2026.xlsx",
+  "appliedAt": "2026-09-30T08:44:28.896Z",
+  "name": "RM Carrot Julienne 3mm Bag 10KG",
+  "code": "105970",
+  "altCode": null,
+  "nutrition": {
+    "kj": 146,
+    "kcal": 34,
+    "fat": 0.4,
+    "sat": 0.1,
+    "carb": 7.7,
+    "sugar": 7.2,
+    "protein": 0.5,
+    "fibre": 3.9,
+    "salt": 0.0675
+  },
+  "allergens": [],
+  "packSize": "10kg",
+  "packFormat": "Blue Food Grade Bag",
+  "storageConditions": "Chilled (0 - 5 C)",
+  "shelfLife": "Date of Production + 4 days, Delivery + 3 days",
+  "ingredientsList": null,
+  "errors": [],
+  "warnings": []
+}
