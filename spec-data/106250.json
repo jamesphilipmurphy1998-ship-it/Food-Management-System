@@ -1,0 +1,29 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106250 Tuna Chunks RM Spec V1 (23.12.2025).xlsx",
+  "appliedAt": "2026-09-30T10:32:45.576Z",
+  "name": "RM Tuna Chunks In Brine",
+  "code": "106250",
+  "altCode": null,
+  "nutrition": {
+    "kj": 503,
+    "kcal": 102,
+    "fat": 0.5,
+    "sat": 0,
+    "carb": 0,
+    "sugar": 0,
+    "protein": 29,
+    "fibre": 0,
+    "salt": 1.2
+  },
+  "allergens": [
+    "Fish"
+  ],
+  "packSize": "1020g",
+  "packFormat": "Retort-able flexible pouch",
+  "storageConditions": "Ambient",
+  "shelfLife": "4 years, minimum shelf life on delivery 365 days",
+  "ingredientsList": "Tuna (FISH), Salt, Water",
+  "errors": [],
+  "warnings": []
+}

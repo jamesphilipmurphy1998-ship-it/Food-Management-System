@@ -109,3 +109,32 @@ re-extraction).
 **Status:** paused, awaiting review. `RM Oil Rapeseed CPU use only` has no `shelfLife` value.
 Once a person confirms what this sheet's Product Code cell should actually say (or confirms the
 real shelf life from elsewhere in the document/supplier), re-run extraction and apply normally.
+
+---
+
+## 107246 — RM Coffee Beans - Ueshima Kobe BLEND
+
+**File:** `107246 CBEUES0015 UESHIMA KOBE BLEND RFA BEANS 10x500g v2.xlsx`
+
+**Two separate issues, both paused pending user review:**
+
+1. **Nutrition data describes brewed coffee, not the dry beans.** The spec's own source note on
+   the nutrition sheet reads: *"Coffee is exempted from Nutritional labelling and declaration.
+   Source is theoretical - FDA FoodData Central Beverages, coffee brewed, prepared with tap
+   water."* The "Per 100g" values (kj: 3, kcal: 1, fat: 0.02g, protein: 0.12g, etc.) are
+   consistent with a diluted cup of brewed black coffee, not 100g of dry roasted beans/grounds
+   (which would be far higher-calorie). Our live ingredient, `RM Coffee Beans - Ueshima Kobe
+   BLEND`, is the dry product. Writing these values as-is would misrepresent the ingredient's
+   actual nutrition per 100g of the product as stored/used. User asked to pause and think about
+   this rather than deciding immediately.
+2. **Product Name and Product Code cells are swapped in the source document.** `C3` (labeled
+   "Product Name") holds `"CBEUES0015"` (a SKU-shaped string), while `C4` (labeled "Product
+   Code") holds `"UESHIMA KOBE BLEND RFA BEANS 10 x 500g"` (a plain-English product
+   description) -- the two fields' contents are the wrong way round versus every other spec
+   seen this session. Neither cell contains anything resembling our own code (107246). Filename
+   and product description both point to `RM Coffee Beans - Ueshima Kobe BLEND` being the
+   correct live match, but this hasn't been applied.
+
+**Status:** paused, awaiting user review on the brewed-vs-dry-beans nutrition question before
+any code override or write is attempted. `RM Coffee Beans - Ueshima Kobe BLEND` remains
+unspecced.

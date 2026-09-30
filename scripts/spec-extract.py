@@ -328,14 +328,24 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
         or str(labeled_cell(wb[sn], "Product Code")).strip() == raw_code_from_doc
         for sn in sheet_names if sn != recipe_sheet_name
     )
+    # --override-code normally requires the document to be self-consistent -- but a human can
+    # ALSO have separately reviewed a genuine cross-sheet disagreement and confirmed it's a
+    # stray typo/leftover (via --confirm-cross-sheet-mismatch, resolved further down), not
+    # evidence of a copy-pasted-from-a-different-product file. When that confirmation has
+    # already been given, --override-code is also allowed to apply on top of it -- e.g. a spec
+    # where 10/11 sheets agree on the MANUFACTURER's own code (not ours) and one sheet has a
+    # stray different value: the cross-sheet confirmation establishes which manufacturer code is
+    # real, and the override then still substitutes our own code, since neither manufacturer
+    # code was ever going to be one we recognise. Confirmed 2026-09-30 (Chicken Thigh/Morliny).
+    override_allowed = doc_self_consistent or confirm_cross_sheet_mismatch
     raw_code = raw_code_from_doc
-    if override_code and doc_self_consistent and not raw_code_from_doc:
+    if override_code and override_allowed and not raw_code_from_doc:
         raw_code = override_code
         warnings.append(
             "Product Code cell was blank on every sheet of the document itself -- code %r was "
             "supplied via --override-code (human-confirmed, not read from the spec document). "
             "Flagging so this is never mistaken for a code the document actually stated." % override_code)
-    elif override_code and doc_self_consistent and raw_code_from_doc and raw_code_from_doc != override_code:
+    elif override_code and override_allowed and raw_code_from_doc and raw_code_from_doc != override_code:
         # The document DOES consistently state a code -- just not ours (e.g. the manufacturer's
         # own product code). Overriding a populated field is a stronger action than filling a
         # blank one, so this branch is distinguished in the warning text on purpose.
@@ -355,8 +365,10 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
 
     # Every sheet must agree on the same product code -- a mismatch means either a corrupted
     # file or (more dangerously) sheets copy-pasted from a different product's spec. Skipped
-    # when the code came from --override-code, since doc_self_consistent (checked above, against
-    # the ORIGINAL document value) already proved every sheet agreed before the override applied.
+    # when the code came from --override-code AND the document was already self-consistent
+    # (checked above, against the ORIGINAL document value) before the override applied. If the
+    # document was NOT self-consistent (only override_allowed via --confirm-cross-sheet-mismatch),
+    # this check still needs to run below so each differing sheet gets its own confirmed warning.
     if not (override_code and doc_self_consistent and raw_code != raw_code_from_doc):
         for sn in sheet_names:
             if sn == recipe_sheet_name:

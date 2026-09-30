@@ -1,0 +1,29 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/107489 Poached Egg RM Spec V1 (24.12.2025).xlsx",
+  "appliedAt": "2026-09-30T10:48:47.179Z",
+  "name": "RM Poached Egg (Free range)",
+  "code": "107489",
+  "altCode": null,
+  "nutrition": {
+    "kj": 535,
+    "kcal": 128,
+    "fat": 7.1,
+    "sat": 2.2,
+    "carb": 3,
+    "sugar": 0.3,
+    "protein": 12.8,
+    "fibre": 0.5,
+    "salt": 0.37
+  },
+  "allergens": [
+    "Eggs"
+  ],
+  "packSize": "Target weight 47g at point of pack. Weight spread is 43g-51g with possibility of outliers due to the natural variance of the product. Case net weight (1.29kg - 1.53kg).",
+  "packFormat": "Food grade polyethylene pouch closed with a heat-seal.",
+  "storageConditions": "Chilled 1-5°C",
+  "shelfLife": "14 days shelf life from production D+3 into Wasabi",
+  "ingredientsList": "Graded Class A Medium Free Range Egg (100%), Sunflower Oil (Release Agent).",
+  "errors": [],
+  "warnings": []
+}

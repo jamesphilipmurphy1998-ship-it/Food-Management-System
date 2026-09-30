@@ -621,6 +621,12 @@ Per the earlier discussion on reliability: **propose, don't auto-write.** Two sc
        agree with each other, and judged the one differing sheet's value a stray typo/leftover
        rather than evidence the sheet was copy-pasted from an unrelated product's spec. The
        differing sheet and its exact value are always named in the resulting warning.
+       **Combinable with `--override-code` since 2026-09-30** (Chicken Thigh/Morliny spec): when
+       a genuine cross-sheet disagreement exists AND neither manufacturer code found is ours,
+       `--confirm-cross-sheet-mismatch` also unlocks `--override-code` (which otherwise requires
+       the document to already be self-consistent) — both confirmations are independent and
+       both must have actually been asked about, but the code no longer silently ignores the
+       override in this specific combined scenario.
    - **Every one of the above — including these four flags — must be preceded by asking the
      person in chat and getting an actual answer, every single time, never assumed from a prior
      ingredient's answer.** This is a standing instruction, not a one-off: even though
@@ -1866,3 +1872,46 @@ Salmon's "mimimum"→"minimum", Leek's "24 monhs  18 months"→"24 months, minim
 delivery"): both were explicit, one-off human instructions to correct or restructure the text
 for clarity, not a change to the general rule. The general rule (keep the spec's literal wording,
 typos included, unless told otherwise) still applies by default.
+
+### 2026-09-30 (later still) — six more specs applied, one paused; --override-code and --confirm-cross-sheet-mismatch made combinable
+
+- **RM Chicken Thigh Skineless Boneless (106188) → "Morliny Chicken Thigh Skinless Boneless
+  Halal Uncalibrated 2 x 5Kg Vacuum".** **New combined case**: 10 of 11 sheets agreed on
+  manufacturer code "4031366" (confirmed elsewhere in the doc as an explicit "SAP 4031366"
+  label), only the Ingredient & Recipe sheet said "4021000" -- but NEITHER code is ours, so this
+  needed both `--confirm-cross-sheet-mismatch` (to resolve the stray sheet) AND
+  `--override-code` (to substitute our real 106188) at once. The two flags previously couldn't
+  be combined -- `--override-code` required `doc_self_consistent` (true only when every sheet
+  agrees), which a genuine cross-sheet disagreement always fails, so the override silently
+  never applied and the wrong manufacturer code came through instead. **Fixed**: introduced
+  `override_allowed = doc_self_consistent or confirm_cross_sheet_mismatch`, so a human's
+  separate confirmation of the cross-sheet split also unlocks the code override. Verified this
+  doesn't regress the plain override-only case (blank-code, self-consistent documents still
+  behave identically -- confirmed against the already-applied Diced Tuna spec). Per user
+  instruction, did a full-document search confirming code 106188 appears nowhere in the source
+  file at all, and that "4031366" is explicitly labeled a SAP (manufacturer ERP) code elsewhere
+  in the doc -- neither manufacturer code was ever going to match ours. Name mismatch confirmed
+  same product. Applied and post-upload-verified.
+- **RM Tuna Chunks In Brine (106250) → "MSC Tuna Chunks in Brine".** Blank code (literal `0`)
+  overridden via filename + exact name match. kcal (102) failed the sanity check by ~15%,
+  plausible rounding for lean fish -- confirmed. Applied and post-upload-verified, no name
+  mismatch.
+- **RM Paprika Extract (107203) → "Paprika Oleoresin 40000cu".** Blank code overridden via
+  filename + recognizing "Oleoresin" as the chemical/industry term for an extract. Name
+  mismatch confirmed same product. Applied and post-upload-verified.
+- **RM Coffee Beans - Ueshima Kobe BLEND (107246) → PAUSED, not applied.** Two separate issues
+  found and both flagged to the user rather than guessed through: (1) the nutrition sheet's own
+  source note states the "Per 100g" values are theoretical brewed-coffee figures (FDA FoodData
+  Central, "coffee brewed, prepared with tap water"), since coffee itself is exempt from
+  nutrition labelling -- these numbers describe a diluted cup, not 100g of the dry beans this
+  ingredient actually is; user asked to pause and think about this rather than decide
+  immediately. (2) Product Name and Product Code cells are swapped in the source document (Name
+  cell holds a SKU string, Code cell holds the plain-English product description) -- neither
+  cell contains anything resembling our own code. **Logged in full in SPEC-ISSUES-TO-REVIEW.md**
+  per user request; nothing written to the live ingredient.
+- **RM Rice Vinegar (107278) → "Yutaka Rice Vinegar 1L".** Clean extraction, code/name matched
+  directly. kcal (24) failed the sanity check by ~19%, same class of vinegar/acid explanation as
+  prior specs -- confirmed. Applied and post-upload-verified, no name mismatch.
+- **RM Poached Egg (Free range) (107489) → "Great British Egg Company 30 x Individual
+  Pre-Poached Free Range Eggs".** Clean extraction, code matched directly. Name mismatch
+  (supplier's fuller product name) confirmed same product. Applied and post-upload-verified.

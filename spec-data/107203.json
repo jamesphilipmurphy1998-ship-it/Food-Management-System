@@ -1,0 +1,27 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/107203 Paprika Extract RM Spec V2 07.08.2026.xlsx",
+  "appliedAt": "2026-09-30T10:45:18.869Z",
+  "name": "RM Paprika Extract",
+  "code": "107203",
+  "altCode": null,
+  "nutrition": {
+    "kj": 3012.48,
+    "kcal": 720,
+    "fat": 80,
+    "sat": 30,
+    "carb": 0,
+    "sugar": 0,
+    "protein": 0,
+    "fibre": 0,
+    "salt": 0
+  },
+  "allergens": [],
+  "packSize": "25 kg",
+  "packFormat": "HDPE Food Grade Drums",
+  "storageConditions": "Store in cool dry conditions away from direct sunlight and free from infestation and moisture sources according to GMP.",
+  "shelfLife": "12 months from date of manufacture, 3 months minimum from date of receipt",
+  "ingredientsList": "Colour [E160(c)] (Paprika Extract).",
+  "errors": [],
+  "warnings": []
+}

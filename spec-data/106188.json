@@ -1,0 +1,27 @@
+{
+  "status": "ok",
+  "sourceFile": "C:\\Users\\JamesMurphy\\AppData\\Local\\Temp\\chickenthigh_copy.xlsx",
+  "appliedAt": "2026-09-30T10:31:21.135Z",
+  "name": "RM Chicken Thigh Skineless Boneless",
+  "code": "106188",
+  "altCode": null,
+  "nutrition": {
+    "kj": 637,
+    "kcal": 152,
+    "fat": 8.8,
+    "sat": 2.8,
+    "carb": 0.2,
+    "sugar": 0.2,
+    "protein": 18.3,
+    "fibre": 0,
+    "salt": 0.16
+  },
+  "allergens": [],
+  "packSize": "5 kg",
+  "packFormat": "Vacuum",
+  "storageConditions": "Chilled, Use within 24h of opening or until ,,Use By''date whichever is sooner. Keep at temperature from 0°C to +4°C.",
+  "shelfLife": "Kill + 12 Days. Minimum life on delivery 6 days",
+  "ingredientsList": "100% Chicken Thigh",
+  "errors": [],
+  "warnings": []
+}
