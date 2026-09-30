@@ -1,0 +1,27 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106194 (105038) MSG RM Spec V2 07.08.2026.xlsx",
+  "appliedAt": "2026-09-30T15:07:19.390Z",
+  "name": "RM Ajinomoto Msg Bag",
+  "code": "106194",
+  "altCode": null,
+  "nutrition": {
+    "kj": 1238,
+    "kcal": 291,
+    "fat": 0,
+    "sat": 0,
+    "carb": 26,
+    "sugar": 0,
+    "protein": 46.8,
+    "fibre": 0,
+    "salt": 30.8
+  },
+  "allergens": [],
+  "packSize": "25 kg",
+  "packFormat": "Brown,lined food grade paper sack",
+  "storageConditions": "Store in cool dry conditions away from direct sunlight and free from infestation and noisture sources according to GMP.",
+  "shelfLife": "5 years from date of manufacture, 3 months minimum from date of receipt",
+  "ingredientsList": "Flavour Enhancer, Monosodium Glutamate E621",
+  "errors": [],
+  "warnings": []
+}

@@ -1,0 +1,30 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106103 (105056)- Red pepper paste - Wasabi RM   Spec-V9 (20.10.2025).xlsx",
+  "appliedAt": "2026-09-30T15:01:36.318Z",
+  "name": "RM Red Pepper Paste",
+  "code": "106103",
+  "altCode": null,
+  "nutrition": {
+    "kj": 952,
+    "kcal": 226,
+    "fat": 1.58,
+    "sat": 0.28,
+    "carb": 38.22,
+    "sugar": 19.03,
+    "protein": 7.13,
+    "fibre": 4.35,
+    "salt": 6.668625
+  },
+  "allergens": [
+    "Cereals containing gluten",
+    "Soya"
+  ],
+  "packSize": "14kg",
+  "packFormat": "Metal can container",
+  "storageConditions": "Room temperature(1~35°C). Keep in a cool dry place, away from direct sunlight.",
+  "shelfLife": "18 Months after production date / Min. shelf life : 13 Months",
+  "ingredientsList": "Water, Corn Syrup, Wheat Flour, Wheat, Salt, Red Pepper Powder(red pepper powder, water,salt, onion, garlic), Soybean, Alcohol, Garlic, Onion, Flavour Enhancer (E621).",
+  "errors": [],
+  "warnings": []
+}

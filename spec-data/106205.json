@@ -1,0 +1,26 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106205 (105578) Sliced Blade DG x3 Cut (Euro Farm Foods) RM Spec V6 (01.09.2026).xlsx",
+  "appliedAt": "2026-09-30T15:12:17.844Z",
+  "name": "RM New Beef Slice",
+  "code": "106205",
+  "altCode": "105578",
+  "nutrition": {
+    "kj": 520,
+    "kcal": 123,
+    "fat": 3.7,
+    "sat": 1.49,
+    "carb": 0.4,
+    "sugar": 0.2,
+    "protein": 22.1,
+    "salt": 0.19
+  },
+  "allergens": [],
+  "packSize": "15kg",
+  "packFormat": "Plastic",
+  "storageConditions": "<6°C",
+  "shelfLife": "production +4 days, D +3",
+  "ingredientsList": "Beef blade",
+  "errors": [],
+  "warnings": []
+}

@@ -1,0 +1,27 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106197 (105072) Parboiled easy cook rice RM spec V3 (24.10.2025).xlsx",
+  "appliedAt": "2026-09-30T15:08:04.457Z",
+  "name": "RM Rice Long Grain (Grocery)",
+  "code": "106197",
+  "altCode": null,
+  "nutrition": {
+    "kj": 1436,
+    "kcal": 339,
+    "fat": 0.8,
+    "sat": 0.18,
+    "carb": 78,
+    "sugar": 0.4,
+    "protein": 7.19,
+    "fibre": 5,
+    "salt": 0
+  },
+  "allergens": [],
+  "packSize": "20 KG",
+  "packFormat": "PP BAGS",
+  "storageConditions": "To be stored in a cool, dry place, Away from Sunlight",
+  "shelfLife": "Shelf Life from Manufacturer-24 Months and Shelf Life on Delivery 21 Months",
+  "ingredientsList": "Parboiled Easy cook Long Grain Rice",
+  "errors": [],
+  "warnings": []
+}

@@ -2038,3 +2038,37 @@ typos included, unless told otherwise) still applies by default.
   spec's "Katsu Predust" matches the live ingredient's name directly, and both share the same
   supplier (Newly Weds Foods). Storage Conditions "Ambient" and Shelf Life confirmed. Applied
   and post-upload-verified.
+
+### 2026-09-30 (later still) — five more specs found via folder re-check
+
+- **106103 Jin Gold Gochujang → "Red Pepper Paste" (106103/105056, override).** Product Code
+  blank/"0" on every sheet (falsy-zero pattern recurring again). Product name is the
+  manufacturer's own Korean branding ("Jin Gold Gochujang") -- confirmed as the same product
+  since gochujang IS Korean red pepper paste, matching the filename. Applied and
+  post-upload-verified.
+- **106154 Ground White Pepper (altCode 105004).** Two genuine nutrition gaps: the Fibre row
+  doesn't exist anywhere in this spec's Nutrition Information template (not just blank --
+  verified row-by-row, no such row at all), and Sugar is explicitly "N/A". A sanity-check flag
+  (stated kcal doesn't closely match 4P+4C+9F) was reviewed and accepted -- source is cited
+  throughout as "USDA National Nutrient Database, Release 24", a real reference, not a
+  fabricated one. Applied with Fibre and Sugar left unset, post-upload-verified.
+- **106194 MSG → "RM Ajinomoto Msg Bag" (106194/105038, override).** Same falsy-zero blank-code
+  pattern as 106103 above. Salt value (30.8g/100g) is very high but expected for pure MSG (high
+  sodium content by weight) -- reviewed and accepted, not a data error. Applied and
+  post-upload-verified.
+- **106197 Parboiled Easy Cook Rice → "RM Rice Long Grain (Grocery)".** Clean extraction, no
+  warnings beyond the standard mandatory Storage/Shelf-Life confirmations. Name mismatch (generic
+  product description vs. grocery-specific live name) confirmed same product. Applied and
+  post-upload-verified.
+- **106205 Sliced Blade DG x3 cut → "RM New Beef Slice" (altCode 105578).** Storage Conditions
+  "<6°C" used the superscript-zero rich-text trick -- verified via `rich_text=True`, cell runs
+  showed literal `' <6'` + a run of `'0'` with `vertAlign='superscript'` + `'C'`, confirming a
+  genuine (if unusually written) degree symbol, not corruption. Fibre genuinely blank on the
+  Nutrition sheet. **Supplier-name discrepancy investigated and resolved**: the spec names the
+  manufacturer as "Cooksgrove Ltd T/as Euro Farm Foods" (Ireland), while the live ingredient's
+  `supplier` field says "P J Martinelli Limited" -- reasoned as a distributor/importer vs.
+  processing-plant distinction (common in meat supply chains), not evidence of a wrong code
+  match, since the Product Code (106205/105578) and product identity (beef blade slice) agreed
+  consistently across every sheet of the spec with no cross-sheet conflict. User explicitly
+  confirmed the code match was the determining factor before applying. Applied and
+  post-upload-verified.

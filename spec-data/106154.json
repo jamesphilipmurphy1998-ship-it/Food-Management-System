@@ -1,0 +1,25 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106154 (105004) White Pepper - RM Spec V10 (21.1.2025).xlsx",
+  "appliedAt": "2026-09-30T15:05:31.410Z",
+  "name": "RM White Pepper",
+  "code": "106154",
+  "altCode": "105004",
+  "nutrition": {
+    "kj": 1238,
+    "kcal": 296,
+    "fat": 2.12,
+    "sat": 0.626,
+    "carb": 42.4,
+    "protein": 10.4,
+    "salt": 0.0125
+  },
+  "allergens": [],
+  "packSize": "25kg",
+  "packFormat": "Plastic Sack/Liner",
+  "storageConditions": "Ambient.",
+  "shelfLife": "24 months (AVT), 36 months (Nedspice)-MLOR: 6 months",
+  "ingredientsList": "Ground White Pepper (100%)",
+  "errors": [],
+  "warnings": []
+}
