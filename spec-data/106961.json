@@ -20,9 +20,9 @@
     "Cereals containing gluten",
     "Soya"
   ],
-  "packSize": "30g Pot",
+  "packSize": "30g",
   "packFormat": "30g Pot and Lid",
-  "storageConditions": "Chilled 0-5°C",
+  "storageConditions": "Chilled 0-5\u00b0C",
   "shelfLife": "Total Life: 130 days\nMLOD: 97 days",
   "ingredientsList": "Water, Light Soy Sauce (Soy Sauce [Water, Soya Beans, Wheat, Salt, Alcohol (Ethanol)], Water, Sugar, Salt), Rice Vinegar, Sugar, Cornflour, Salt.",
   "errors": [],

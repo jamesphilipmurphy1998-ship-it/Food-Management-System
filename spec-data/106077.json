@@ -1,0 +1,29 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106077 (106148) Sweet and Savoury Shiitake Sauce- RM Spec- V3 (20.09.2024).xlsx",
+  "appliedAt": "2026-09-30T15:48:14.587Z",
+  "name": "RM Sweet & Savoury Shitake Sauce Shoda Sauces",
+  "code": "106077",
+  "altCode": "106148",
+  "nutrition": {
+    "kj": 185,
+    "kcal": 44,
+    "fat": 0.1,
+    "sat": 0,
+    "carb": 7.1,
+    "sugar": 1.9,
+    "protein": 2.2,
+    "salt": 6.66
+  },
+  "allergens": [
+    "Cereals containing gluten",
+    "Soya"
+  ],
+  "packSize": "5.3Kg",
+  "packFormat": "5.3Kg Jerrican",
+  "storageConditions": "Store unopened in a cool dry place away from direct sunlight.",
+  "shelfLife": "12 Months / Minimum shelf life on delivery 9 months",
+  "ingredientsList": "Water, rice vinegar, soy sauce (water, soya beans, wheat, salt, alcohol (ethanol)), salt, tomato puree, shiitake mushrooms, sugar, wakame sea vegetable",
+  "errors": [],
+  "warnings": []
+}

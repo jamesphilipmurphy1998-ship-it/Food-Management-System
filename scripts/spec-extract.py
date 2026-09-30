@@ -38,6 +38,14 @@ for a different-quantity relationship like Sodium->Salt (that stays behind its o
 --derive-salt-from-sodium flag). A human must have looked at the specific cell and confirmed it's
 genuinely a wrong-unit entry, not some other kind of problem, before this is used.
 
+Pack Size is always reduced to a single "<number><unit>" measure (e.g. "10ml", "1kg") when
+exactly one such token can be found in the source cell -- container/count wording ("sachet",
+"x 4", "per carton") is dropped from Pack Size and belongs in Pack Format instead. This isn't
+cosmetic: the app parses Pack Size as a number to work out what "1 EACH" of the ingredient
+weighs/measures for recipe costing and nutrition math, and text like "10ml sachet" can't be
+parsed that way at all. If zero or more than one measure-shaped token is found, the value is
+left as extracted and flagged for manual review rather than guessing which one is correct.
+
 --confirm-cross-sheet-mismatch is separate and much narrower: it does NOT change which code is
 used (that's still whatever's on the recipe sheet, or --override-code if also given). It only
 permits proceeding when exactly one or a few sheets disagree with the rest, after a human has
@@ -573,6 +581,41 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
                 "'5 kg' or '480g') -- flagging for manual review rather than assuming it's "
                 "correct." % value)
 
+    # Pack Size must be a pure measure (e.g. "10ml", "480g") -- container-type words like
+    # "sachet"/"bag"/"tub" belong in Pack Format instead. This matters beyond tidiness: the app
+    # uses Pack Size to work out what "1 EACH" of this ingredient weighs/measures for recipe
+    # costing and nutrition math, and a value like "10ml sachet" can't be parsed as a number at
+    # all, so it silently breaks that calculation. Find every "<number><unit>" token in the raw
+    # cell text; if exactly one is found, use that as the clean measure and treat the rest of the
+    # text as descriptive (container/count wording that Pack Format already covers separately,
+    # so it's dropped here rather than guessed into any other field). If zero or more than one
+    # measure is found, leave the value as extracted and flag for manual review -- splitting it
+    # automatically in an ambiguous case would risk silently keeping the wrong number.
+    PACK_SIZE_UNIT_PATTERN = _re.compile(
+        r"(\d+(?:\.\d+)?)\s*(kgs?|g|ml|l|litres?|ltr)\b", _re.IGNORECASE
+    )
+
+    def clean_pack_size_measure(raw, warnings):
+        matches = list(PACK_SIZE_UNIT_PATTERN.finditer(raw))
+        if len(matches) != 1:
+            warnings.append(
+                "Pack Size cell read %r -- could not isolate a single clear measure (found %d "
+                "candidate number+unit token(s)), so left as-is rather than guessing which one "
+                "is the real pack size. A person should confirm/clean this up manually if it "
+                "contains container wording (e.g. 'sachet', 'bag') that shouldn't be there."
+                % (raw, len(matches))
+            )
+            return raw
+        m = matches[0]
+        measure = m.group(0).strip()
+        if measure != raw:
+            warnings.append(
+                "Pack Size cell read %r -- reduced to the measure %r, dropping the surrounding "
+                "container/count wording (that belongs in Pack Format, which is extracted "
+                "separately). This split always requires human confirmation." % (raw, measure)
+            )
+        return measure
+
     # --- Pack Size ("1&2 Manufacturer Detail", row "1-d) Weight or Volume") -- this sheet uses
     # a DIFFERENT label layout than every other section extracted so far: the item number
     # ("1-d)") is in column A, the question text is a SEPARATE cell in column B, and the actual
@@ -597,6 +640,8 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
                 implausible = check_pack_size_plausible(pack_size)
                 if implausible:
                     warnings.append(implausible)
+                else:
+                    pack_size = clean_pack_size_measure(pack_size, warnings)
             else:
                 warnings.append("Row '1-d)' in '%s', column C is empty -- Pack Size not extracted" % manufacturer_sheet_name)
     else:

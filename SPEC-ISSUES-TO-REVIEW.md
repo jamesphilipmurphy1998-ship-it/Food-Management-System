@@ -191,3 +191,15 @@ investigate further right now — whether `120087` should override to `107496`, 
 `107496`'s supplier is actually a distributor for Lamb Weston (same pattern as the 106205 Beef
 Slice supplier-name case), still needs a decision. `RM Potato Puffs - Pre-fried – frozen`
 (107496) remains unspecced in the meantime.
+
+---
+
+## 106192 — RM Baking Powder
+
+**Issue:** no spec document exists for this ingredient anywhere in the Ingredient Specs folder —
+confirmed by searching the full current folder listing for the code (`106192`) and for "baking"
+in any filename; no match found. There is nothing to extract or apply.
+
+**Status:** blocked on the source document. Someone needs to obtain/upload a spec file for RM
+Baking Powder (106192) before this can be processed. Not a data-quality or extraction issue —
+purely a missing document.

@@ -1,0 +1,29 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106134 (105602) J1130 Satono Yuki Silken Tofu 300g.xlsx",
+  "appliedAt": "2026-09-30T15:58:04.010Z",
+  "name": "RM Satonoyuki Silken Tofu",
+  "code": "106134",
+  "altCode": null,
+  "nutrition": {
+    "kj": 276,
+    "kcal": 66,
+    "fat": 2.8,
+    "sat": 0.39,
+    "carb": 2.79,
+    "sugar": 1.79,
+    "protein": 7.4,
+    "fibre": 0.98,
+    "salt": 0.718
+  },
+  "allergens": [
+    "Soya"
+  ],
+  "packSize": "300g",
+  "packFormat": "Aseptic packaging",
+  "storageConditions": "Ambient",
+  "shelfLife": "365 days, 6 months",
+  "ingredientsList": "Water, Soybean, Powdered Soy Protein, Firming Agent: Magnesium Chloride.",
+  "errors": [],
+  "warnings": []
+}

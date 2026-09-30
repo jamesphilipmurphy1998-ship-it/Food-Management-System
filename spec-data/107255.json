@@ -19,9 +19,9 @@
   "allergens": [
     "Cereals containing gluten"
   ],
-  "packSize": "6 x 1ltr",
-  "packFormat": "Tetra Pak (TBA Edge) 1L carton",
-  "storageConditions": "Ambient (<25˚c) or Chilled (<8˚c)",
+  "packSize": "1ltr",
+  "packFormat": "Tetra Pak (TBA Edge) 1L carton (6 x 1ltr)",
+  "storageConditions": "Ambient (<25\u02dac) or Chilled (<8\u02dac)",
   "shelfLife": "3 days into wasabi 365 Days from Manufacturer",
   "ingredientsList": "Water, OATS 10%, rapeseed oil, acidity regulator (dipotassium phosphate), minerals (calcium carbonate, potassium iodide), salt, vitamins (D2, riboflavin, B12).",
   "errors": [],

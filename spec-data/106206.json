@@ -17,8 +17,8 @@
     "salt": 0.0175
   },
   "allergens": [],
-  "packSize": "1125kg/pallet",
-  "packFormat": "N/A RM Loose",
+  "packSize": "1125kg",
+  "packFormat": "N/A RM Loose (1125kg/pallet)",
   "storageConditions": "Chilled (0 - 5 C)",
   "ingredientsList": null,
   "errors": [],
