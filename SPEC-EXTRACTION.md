@@ -1932,3 +1932,35 @@ typos included, unless told otherwise) still applies by default.
   (same template gap as several prior sauce specs, verified by reading the full sheet). Storage
   and 12-month/9-month Shelf Life confirmed. Name mismatch ("SS/1" = "SS1", Shoda's own product
   code) confirmed same product. Applied and post-upload-verified.
+
+### 2026-09-30 (later still) — four more specs found via folder re-check
+
+- **RM Functional Plain Brine Newlyweds Sack (106005/106010) → "FUNCTIONAL PLAIN BRINE V1".**
+  Code cell consistently stated a manufacturer code ("B48691-2500-A") across every sheet --
+  overridden via filename + name match. Storage ("Dry, cool") and Shelf Life ("12 months / Min
+  is 75% of total (9 months)") confirmed. Name mismatch (spec drops the supplier name Newlyweds
+  Foods, adds its own "V1") confirmed same product. Applied and post-upload-verified.
+- **RM Fried Chicken Marinade Newlyweds Sack (106028/106038) → "FRIED CHICKEN MARINADE
+  (B48699)".** Blank code (literal `0`) overridden via filename + exact name match. Shelf Life
+  ("12 months , 9 months") verified directly against the row label ("Shelf Life from
+  manufacturer & Minimum shelf life on delivery") before confirming -- same two-number pattern
+  as the Brine Powder spec just above, same supplier (Newlyweds Foods). Name mismatch confirmed
+  same product. Applied and post-upload-verified.
+- **RM Pumpkin Croquette (106099/105037) → "Frozen Vegan Pumpkin Croquette 60gx100pcs".** Clean
+  extraction, code/name matched directly. **Allergen investigated, not assumed correct**: Soya
+  appears in the allergens list despite not being obviously visible in the shortened ingredients
+  text -- checked the raw allergen sheet directly and confirmed "Soya/soya derivatives: Y" is
+  explicitly declared there, a genuine declaration per the standing allergens-come-from-the-
+  sheet-not-the-ingredient-text rule, not a false positive. Storage and Shelf Life confirmed.
+  Applied and post-upload-verified, no name mismatch.
+- **RM Sauce Soy Wasabi (106100/105040) → "Jin Soy Sauce".** No Fibre row (genuine template
+  gap, verified). **Pack Format investigated and ultimately left blank per human decision**: the
+  only text in the document ("Tubs containing") is itself cut off mid-sentence in the source
+  spec, with no fuller description found anywhere else in the file (checked the full Packaging
+  Detail and Manufacturer Detail sheets) -- offered a reconstructed version from the separate
+  Inner Packaging Material field ("Body: PE / Cap: PP"), but the person chose to leave the field
+  blank rather than write anything synthesized. Name mismatch investigated properly: "Jin Soy
+  Sauce" (manufacturer's own brand, made by Tobagi Sunchang Food, South Korea) vs. live "RM
+  Sauce Soy Wasabi" -- confirmed "Wasabi" refers to Wasabi Co Ltd's own private-label branding
+  on this product, not a wasabi-flavoured sauce, before confirming. Applied and
+  post-upload-verified.

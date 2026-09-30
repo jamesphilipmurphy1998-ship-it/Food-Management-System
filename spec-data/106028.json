@@ -1,0 +1,29 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106028 (106038)- Red Marinade Powder-RM Spec- V5 22.10.2025.xlsx",
+  "appliedAt": "2026-09-30T13:50:34.162Z",
+  "name": "RM Fried Chicken Marinade Newlyweds Sack",
+  "code": "106028",
+  "altCode": null,
+  "nutrition": {
+    "kj": 1181,
+    "kcal": 280,
+    "fat": 3.7,
+    "sat": 0.6,
+    "carb": 45,
+    "sugar": 2.8,
+    "protein": 12,
+    "fibre": 9.5,
+    "salt": 15.63
+  },
+  "allergens": [
+    "Cereals containing gluten"
+  ],
+  "packSize": "25.00 KG",
+  "packFormat": "Ripp n Flow blue bag",
+  "storageConditions": "Ambient",
+  "shelfLife": "12 months , 9 months",
+  "ingredientsList": "WHEAT FLOUR (CALCIUM CARBONATE, IRON, NIACIN, Folic Acid, THIAMIN), SPICES (PAPRIKA, WHITE PEPPER), SALT, DRIED YEAST, STABILISER E500(II)",
+  "errors": [],
+  "warnings": []
+}

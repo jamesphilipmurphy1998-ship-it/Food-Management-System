@@ -1,0 +1,29 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106005 (106010) Brine Powder - RM Spec V5 (09.03.2026).xlsx",
+  "appliedAt": "2026-09-30T13:48:50.425Z",
+  "name": "RM Functional Plain Brine Newlyweds Sack",
+  "code": "106005",
+  "altCode": null,
+  "nutrition": {
+    "kj": 1043,
+    "kcal": 246,
+    "fat": 0.02,
+    "sat": 0,
+    "carb": 61.13,
+    "sugar": 1.4,
+    "protein": 0.2,
+    "fibre": 1.17,
+    "salt": 15.43
+  },
+  "allergens": [
+    "Cereals containing gluten"
+  ],
+  "packSize": "25.00kg bags",
+  "packFormat": "SACK BLUE RIP TOP 560 X 780MM 110UM",
+  "storageConditions": "Dry, cool",
+  "shelfLife": "12 months\nMin is 75% of total (9 months)",
+  "ingredientsList": "MAIZE STARCH, SALT, ACIDITY REGULATOR (E500(I)), SPIRIT VINEGAR POWDER, TAPIOCA STARCH, DRIED GLUCOSE SYRUP",
+  "errors": [],
+  "warnings": []
+}

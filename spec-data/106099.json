@@ -1,0 +1,30 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106099 (105037) Pumpkin croquette  RM Spec V6 (06.11.2024).xlsx",
+  "appliedAt": "2026-09-30T13:52:20.707Z",
+  "name": "RM Pumpkin Croquette",
+  "code": "106099",
+  "altCode": "105037",
+  "nutrition": {
+    "kj": 570,
+    "kcal": 136,
+    "fat": 0.4,
+    "sat": 0.063,
+    "carb": 27.5,
+    "sugar": 6.6,
+    "protein": 3.9,
+    "fibre": 2.7,
+    "salt": 0.88
+  },
+  "allergens": [
+    "Cereals containing gluten",
+    "Soya"
+  ],
+  "packSize": "60gx100pcs",
+  "packFormat": "Blue plastic bag",
+  "storageConditions": "Keep frozen below -18°C",
+  "shelfLife": "18 months / minimum shelf life on delivery: 90 days",
+  "ingredientsList": "Pumpkin (flesh and skin) (53%), Breadcrumbs (Wheat Flour, Yeast, Salt, Glucose, Colour (Paprika Extract), Water), Water, Potato Powder, Wheat Flour, Cane Sugar, Salt, Wheat Starch, Thickening Agent (Xanthan Gum)",
+  "errors": [],
+  "warnings": []
+}

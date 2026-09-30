@@ -1,0 +1,29 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106100 (105040)- Jin Soy Sauce - RM Spec -V6.xlsx",
+  "appliedAt": "2026-09-30T13:55:15.658Z",
+  "name": "RM Sauce Soy Wasabi",
+  "code": "106100",
+  "altCode": "105040",
+  "nutrition": {
+    "kj": 137,
+    "kcal": 33,
+    "fat": 0,
+    "sat": 0,
+    "carb": 2.5,
+    "sugar": 0,
+    "protein": 5,
+    "salt": 14.2
+  },
+  "allergens": [
+    "Cereals containing gluten",
+    "Soya"
+  ],
+  "packSize": "13L",
+  "packFormat": null,
+  "storageConditions": "Keep in cool dry place",
+  "shelfLife": "18 Month",
+  "ingredientsList": "Water, Acid Hydrolyzed Soy Sauce(Defatted Soybean, Water), Salt, Brewed Soy sauce(Defatted Soybean, Wheat Flour, Water,Salt, Koji), Corn Syrup, Colour (E150c), Sweetener (E960), Flavor Enhancer (E621), Preservative (E214).",
+  "errors": [],
+  "warnings": []
+}
