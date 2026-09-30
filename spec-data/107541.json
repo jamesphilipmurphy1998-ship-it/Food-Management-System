@@ -1,0 +1,28 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/WBF-2201 - Velvet Chicken v1 (17.12.2025) - Wasabi signed spec.xlsx",
+  "appliedAt": "2026-09-30T09:54:11.522Z",
+  "name": "RM Velvet Chicken - fully cooked",
+  "code": "107541",
+  "altCode": null,
+  "nutrition": {
+    "kj": 1247,
+    "kcal": 298,
+    "fat": 15.9,
+    "sat": 6.09,
+    "carb": 13.5,
+    "protein": 24.05,
+    "fibre": 1.03,
+    "salt": 0.78
+  },
+  "allergens": [
+    "Cereals containing gluten"
+  ],
+  "packSize": "44 x 10 kg",
+  "packFormat": "Blue plastic bag, 44 bags per outer",
+  "storageConditions": "Frozen - 18°C or below",
+  "shelfLife": "18 months, minimum 9 months on delivery",
+  "ingredientsList": "Chicken,RSPO Palm Oil, Native Corn Starch, Wheat Flour, Native Potato Starch, Salt, Raising Agents (Disodium Diphosphate, Sodium Bicarbonate).",
+  "errors": [],
+  "warnings": []
+}

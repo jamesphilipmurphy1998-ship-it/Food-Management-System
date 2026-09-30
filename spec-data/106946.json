@@ -1,0 +1,31 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106946 (106983) RM Spec - Duck Gyoza V2 (05.02.2025) (1).xlsx",
+  "appliedAt": "2026-09-30T09:27:57.832Z",
+  "name": "RM Duck Gyoza Frozen 1KG",
+  "code": "106946",
+  "altCode": "106983",
+  "nutrition": {
+    "kj": 937,
+    "kcal": 224,
+    "fat": 6,
+    "sat": 1.2,
+    "carb": 36,
+    "sugar": 11,
+    "protein": 6.3,
+    "fibre": 1.6,
+    "salt": 0.98
+  },
+  "allergens": [
+    "Cereals containing gluten",
+    "Sesame",
+    "Soya"
+  ],
+  "packSize": "20g/Piece and 1 kg/Bag",
+  "packFormat": "20g./pcs (acceptable tolerance 20±2 g.), 1 kg/bag ,10 bag/Carton",
+  "storageConditions": "Frozen condition below - 18°C",
+  "shelfLife": "Shelf life: 24 months /  Min Shelf life: 14 months",
+  "ingredientsList": "Wheat flour 21%, Duck meat 17%, Water, Hoisin sauce (Sugar, Water, Soy Sauce (Water, Soybean, Salt, Wheat flour, Sugar), Distilled vinegar, Modified starch, Salt, Spices, Sesame oil, Colour (E150a), Thickener (E415)), Textured vegetable soy protein, Sugar, Yam bean, Wheat starch, Modified starch, Cabbage, Spring onion, Onion, Fully refined soybean oil, Vermicelli (Mung bean starch, Potato starch), Salt, Pepper, Rice flour, Five spice, Ginger, Light soy sauce (Water, Soybean, Fructose syrup, Salt, Wheat), Fermented rice vinegar (Water, Rice flour, Sugar), Garlic, Sesame oil, Corn starch, D-Xylose.",
+  "errors": [],
+  "warnings": []
+}

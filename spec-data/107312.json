@@ -1,0 +1,26 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/107312 Black Pepper RM Spec V5 (22.04.2025).xlsx",
+  "appliedAt": "2026-09-30T09:45:41.122Z",
+  "name": "RM Cracked Black Pepper",
+  "code": "107312",
+  "altCode": null,
+  "nutrition": {
+    "kj": 1210,
+    "kcal": 289,
+    "fat": 13,
+    "sat": 2.1,
+    "carb": 55.7,
+    "sugar": 10.3,
+    "protein": 14.8,
+    "fibre": 37.4
+  },
+  "allergens": [],
+  "packSize": "25 kg",
+  "packFormat": "blue PE bag",
+  "storageConditions": "cool dry warehouse",
+  "shelfLife": "24 months, min 6 months upon delivery",
+  "ingredientsList": "black pepper 18# SS",
+  "errors": [],
+  "warnings": []
+}

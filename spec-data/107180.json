@@ -1,0 +1,29 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/107180 (P00020)  Red Miso RM Spec V1 (28.02.2025).xlsx",
+  "appliedAt": "2026-09-30T09:29:21.555Z",
+  "name": "RM Red Miso Paste",
+  "code": "107180",
+  "altCode": null,
+  "nutrition": {
+    "kj": 828,
+    "kcal": 198,
+    "fat": 6.3,
+    "sat": 0.7,
+    "carb": 24.1,
+    "sugar": 8.3,
+    "protein": 11.3,
+    "fibre": 0,
+    "salt": 12.2
+  },
+  "allergens": [
+    "Soya"
+  ],
+  "packSize": "20Kg BIB",
+  "packFormat": "20Kg BIB",
+  "storageConditions": "Keep refrigerated",
+  "shelfLife": "Shelf life from date of manufacture - 365 days / Minimum shelf life on delivery 90 days",
+  "ingredientsList": "Water, soya beans, rice, salt, alcohol",
+  "errors": [],
+  "warnings": []
+}

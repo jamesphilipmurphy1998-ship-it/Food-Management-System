@@ -1788,3 +1788,81 @@ Nine new spec files found in one folder re-check:
   (same phrasing pattern, likely same document author). No Ingredients List (empty row, normal
   for single-ingredient produce). Name mismatch confirmed same product. Applied and
   post-upload-verified.
+
+**Glossary note, added per user 2026-09-30:** **IQF = Individually Quick Frozen** -- a freezing
+technology where individual pieces of food (fruit, vegetables, seafood, ready-to-eat meals) are
+frozen separately rather than as a solid block. Useful context for judging name-mismatch
+questions on any ingredient using this abbreviation (e.g. "IQF Leeks" vs. a spec calling the
+same product "10mm Diced Leeks" with Storage Conditions of "Frozen" -- consistent, not a red
+flag).
+
+### 2026-09-30 (later still) — ten more specs found via folder re-check
+
+- **RM Garlic Whole Peel (106211/105939) → "Whole Peeled Garlic Fresh".** Clean extraction, name
+  mismatch (word order) confirmed same product. Storage and Shelf Life confirmed. Applied and
+  post-upload-verified.
+- **RM Salmon 5-6 HOG Fresh chilled (106215/105063) → "Atlantic Salmon head on gutted".**
+  Genuinely blank Fibre (verified -- fish has none). Storage spelled out "degree celcius" in
+  words (no rich-text corruption risk since there's no "C" shorthand to disguise). **Shelf Life
+  spelling corrected per explicit user instruction** ("mimimum" → "minimum") -- a deliberate,
+  one-off exception to the usual keep-typos-verbatim practice, logged here since it departs from
+  that standing rule. Name mismatch ("HOG" = Head On Gutted, spelled out in the spec) confirmed
+  same product. **Fixes several salmon-based recipes** (Salmon Nigiri, FG Wasabi Salmon Pieces,
+  Salmon Tails) flagged in the earlier missing-nutrition recipe scan. Applied and
+  post-upload-verified.
+- **RM Pickled Asian Slaw 1kg (106833) → "New Pickled Asian Slaw 2kg".** Clean nutrition.
+  **Genuine pack-size discrepancy investigated, not just a wording difference**: live record
+  says "1kg", spec says "2kg" with Pack Size "4 x 2kg" -- user confirmed this is an intentional
+  pack-size change ("we changed this, the new data import will have 2kg as this is correct").
+  Storage and Shelf Life confirmed. Applied and post-upload-verified.
+- **RM Duck Gyoza Frozen 1KG (106946/106983) → "Frozen Duck Gyoza".** Clean extraction, name
+  mismatch (word order) confirmed same product. Applied and post-upload-verified.
+- **RM Red Miso Paste (107180) → "Red Miso".** Pack Format "20Kg BIB" flagged by the plausibility
+  check but confirmed legitimate (BIB = Bag-in-Box, same abbreviation seen on Kikkoman Teriyaki
+  Sauce earlier). Clean otherwise, no name mismatch. Applied and post-upload-verified.
+- **RM Oatley oat milk (107255) → "Oatly Barista".** **Second real hit of the "wrong code in a
+  cell explicitly labeled as ours" pattern** (first was the Tuna Bars filename case): the cell
+  literally labeled "Wasabi Product Code" read "464381" -- a plain integer, verified not a
+  rich-text trick, but no live ingredient has that code at all. Confirmed via filename + product
+  name match to the only unspecced Oat Milk ingredient (107255). **Investigated Pack Format
+  properly instead of accepting a flagged-as-unusual value at face value**: raw cell read "TBA
+  Edge 1000mL", cross-checked against the separate Inner Packaging Material field ("Composite
+  Paperboard/Aluminium/LDPE/DHPE" -- the standard Tetra Pak laminate) and confirmed "TBA Edge" =
+  "Tetra Brik Aseptic Edge", a real Tetra Pak carton format -- written as the clearer "Tetra Pak
+  (TBA Edge) 1L carton" per human confirmation. Name mismatch (live record spells it "Oatley",
+  the real brand is "Oatly") confirmed same product. **Fixes the OAT Americano coffee recipes**
+  flagged in the earlier missing-nutrition scan. Applied and post-upload-verified.
+- **RM Cracked Black Pepper (107312) → "black pepper 18# SS".** Blank code (literal `0`)
+  overridden via filename + name match. Salt cell literally read "not provided" -- left blank.
+  kcal (289) failed the sanity check (~28% under the ~399 computed) -- confirmed acceptable
+  given very high Fibre (37.4g), same class of dried-spice explanation as Shichimi Pepper and
+  Wakame earlier. Name mismatch ("18# SS" = manufacturer's mesh/grade notation) confirmed same
+  product. Applied and post-upload-verified.
+- **RM Hoisin Sauce (Bulk) (107501/P00063) → "Hoisin Sauce".** Hit the documented transient
+  OneDrive permission-lock issue on first attempt (`PermissionError: [Errno 13]`) -- resolved
+  per the existing documented workaround (copy to a local temp path, re-extract from the copy).
+  **No allergens detected, investigated rather than assumed correct**: ingredient list (sugar,
+  water, rice vinegar, mirin, glucose syrup, cornflour, salt, garlic puree, spice blend, black
+  carrot, colour) genuinely has no wheat/soy, unlike a typical hoisin recipe with soy sauce --
+  confirmed as a real recipe variant, not a missed allergen. Applied and post-upload-verified,
+  no name mismatch.
+- **RM IQF Leeks (107317) → "10mm Diced Leeks".** Blank code (literal `0`, filename itself has
+  no code number at all) overridden via product name + being the only unspecced Leek ingredient
+  live. **Shelf Life rewritten per explicit human instruction**: source cell read "24 monhs  18
+  months" (typo, no separator between the two numbers) -- rewritten as "24 months, minimum 18
+  months on delivery" based on the row's own label ("Shelf Life from manufacturer & Minimum
+  shelf life on delivery"), both numbers kept exactly as stated. Name mismatch ("IQF" =
+  Individually Quick Frozen, consistent with the "Frozen" storage condition -- see glossary note
+  above) confirmed same product. Applied and post-upload-verified.
+- **RM Velvet Chicken - fully cooked (107541) → "Velvet Chicken".** Blank code (literal `0`)
+  overridden via filename + exact name match. Sugar cell literally read "N/A" -- left blank.
+  **Shelf Life rewritten per human confirmation**: source cell held two newline-separated
+  numbers ("18 months" / "9 Months") under a row explicitly labeled "Shelf Life from
+  manufacturer & Minimum shelf life on delivery" -- rewritten as "18 months, minimum 9 months on
+  delivery" matching that label. Applied and post-upload-verified, no name mismatch.
+
+**Two deliberate exceptions to the keep-typos-verbatim standing practice this batch** (HOG
+Salmon's "mimimum"→"minimum", Leek's "24 monhs  18 months"→"24 months, minimum 18 months on
+delivery"): both were explicit, one-off human instructions to correct or restructure the text
+for clarity, not a change to the general rule. The general rule (keep the spec's literal wording,
+typos included, unless told otherwise) still applies by default.

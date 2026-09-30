@@ -1,0 +1,27 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106833  New Pickled Asian Slaw RM Spec (v1 07.07.26)- 2kg.xlsx",
+  "appliedAt": "2026-09-30T09:27:00.951Z",
+  "name": "RM Pickled Asian Slaw 1kg",
+  "code": "106833",
+  "altCode": null,
+  "nutrition": {
+    "kj": 189,
+    "kcal": 45,
+    "fat": 0.185,
+    "sat": 0.067,
+    "carb": 10.349,
+    "sugar": 7.728,
+    "protein": 0.973,
+    "fibre": 2.148,
+    "salt": 0.0525
+  },
+  "allergens": [],
+  "packSize": "4 x 2kg",
+  "packFormat": "Heat sealed bag (Primary pack method)",
+  "storageConditions": "Store chilled",
+  "shelfLife": "P+7 days, D+5 days",
+  "ingredientsList": "Red Cabbage, Carrot, White Wine Vinegar, Butternut Squash, White Sugar",
+  "errors": [],
+  "warnings": []
+}

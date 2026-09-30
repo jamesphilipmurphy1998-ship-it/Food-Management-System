@@ -1,0 +1,27 @@
+{
+  "status": "ok",
+  "sourceFile": "C:\\Users\\JamesMurphy\\AppData\\Local\\Temp\\hoisin_spec_copy.xlsx",
+  "appliedAt": "2026-09-30T09:48:26.771Z",
+  "name": "RM Hoisin Sauce (Bulk)",
+  "code": "107501",
+  "altCode": "P00063",
+  "nutrition": {
+    "kj": 825,
+    "kcal": 194,
+    "fat": 0.1,
+    "sat": 0,
+    "carb": 47.4,
+    "sugar": 39.3,
+    "protein": 0.4,
+    "fibre": 0.4,
+    "salt": 2.14
+  },
+  "allergens": [],
+  "packSize": "15Kg Buckets",
+  "packFormat": "15Kg Buckets",
+  "storageConditions": "Store unopened in a cool dry place away from direct sunlight.",
+  "shelfLife": "12 Months / Minimum shelf life on delivery 9 months",
+  "ingredientsList": "Sugar, water, rice vinegar, mirin, glucose syrup, cornflour, salt, garlic puree, spice blend, black carrot, colour: E150a",
+  "errors": [],
+  "warnings": []
+}

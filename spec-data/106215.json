@@ -1,0 +1,28 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106215_6 (105063) HOG Salmon Spec V7 (18.08.2026).xlsx",
+  "appliedAt": "2026-09-30T09:25:30.548Z",
+  "name": "RM Salmon 5-6 HOG Fresh chilled",
+  "code": "106215",
+  "altCode": "105063",
+  "nutrition": {
+    "kj": 927,
+    "kcal": 223,
+    "fat": 15.9,
+    "sat": 2.3,
+    "carb": 0,
+    "sugar": 0,
+    "protein": 19.9,
+    "salt": 0.1
+  },
+  "allergens": [
+    "Fish"
+  ],
+  "packSize": "4-5 KG, 5-6 KG",
+  "packFormat": "EPS box",
+  "storageConditions": "0-5 degree celcius",
+  "shelfLife": "Harvest + 16 days, delivery day + 11, minimum H+5 on delivery",
+  "ingredientsList": "Salmon (fish) 100 %",
+  "errors": [],
+  "warnings": []
+}

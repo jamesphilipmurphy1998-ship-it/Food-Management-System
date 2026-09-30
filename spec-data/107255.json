@@ -1,0 +1,29 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/107255 Oat Milk RM Spec V1 (14.08.2025).xlsx",
+  "appliedAt": "2026-09-30T09:43:26.955Z",
+  "name": "RM Oatley oat milk",
+  "code": "107255",
+  "altCode": null,
+  "nutrition": {
+    "kj": 257,
+    "kcal": 61,
+    "fat": 3,
+    "sat": 0.3,
+    "carb": 7.1,
+    "sugar": 3.4,
+    "protein": 1.1,
+    "fibre": 0.8,
+    "salt": 0.1
+  },
+  "allergens": [
+    "Cereals containing gluten"
+  ],
+  "packSize": "6 x 1ltr",
+  "packFormat": "Tetra Pak (TBA Edge) 1L carton",
+  "storageConditions": "Ambient (<25˚c) or Chilled (<8˚c)",
+  "shelfLife": "3 days into wasabi 365 Days from Manufacturer",
+  "ingredientsList": "Water, OATS 10%, rapeseed oil, acidity regulator (dipotassium phosphate), minerals (calcium carbonate, potassium iodide), salt, vitamins (D2, riboflavin, B12).",
+  "errors": [],
+  "warnings": []
+}
