@@ -1,0 +1,29 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/105981 (106023)- Japanese Soy Sauce- RM Spec- V3-19.10.2023.xlsx",
+  "appliedAt": "2026-09-30T13:46:07.389Z",
+  "name": "RM SS1 Soy Sauce Shoda",
+  "code": "105981",
+  "altCode": "106023",
+  "nutrition": {
+    "kj": 263,
+    "kcal": 62,
+    "fat": 0,
+    "sat": 0,
+    "carb": 6,
+    "sugar": 1.1,
+    "protein": 9.2,
+    "salt": 13.9
+  },
+  "allergens": [
+    "Cereals containing gluten",
+    "Soya"
+  ],
+  "packSize": "15kg",
+  "packFormat": "15kg jerrican",
+  "storageConditions": "Store unopened in a cool dry place away from direct sunlight.",
+  "shelfLife": "12 months.  9 months minimum shelf life on delivery.",
+  "ingredientsList": "WATER, SOYBEANS, WHEAT, SALT, ALCOHOL (ETHANOL)",
+  "errors": [],
+  "warnings": []
+}

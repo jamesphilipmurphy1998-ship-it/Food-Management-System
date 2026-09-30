@@ -1925,3 +1925,10 @@ typos included, unless told otherwise) still applies by default.
   ("Chilled ( 2 - 5C)", no degree symbol, same phrasing family as the earlier Carrot/Kale specs
   from what looks like the same document author) and Shelf Life confirmed. Name mismatch
   confirmed same product. Applied and post-upload-verified.
+
+### 2026-09-30 (later still) — one more spec found via folder re-check
+
+- **RM SS1 Soy Sauce Shoda (105981/106023) → "Soy sauce SS/1 in 15kg Jerricans".** No Fibre row
+  (same template gap as several prior sauce specs, verified by reading the full sheet). Storage
+  and 12-month/9-month Shelf Life confirmed. Name mismatch ("SS/1" = "SS1", Shoda's own product
+  code) confirmed same product. Applied and post-upload-verified.
