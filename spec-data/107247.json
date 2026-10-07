@@ -1,0 +1,30 @@
+{
+  "status": "ok",
+  "sourceFile": "C:\\Users\\JamesMurphy\\OneDrive - Wasabi\\WASUK - Food Team - NPD\\New Wasabi System Development\\FMS System\\3. Supporting Docs\\Ingredient Specs\\107247  Smoked Back Bacon Whole Rashers RM Spec V1 (17.07.2025).xlsx",
+  "appliedAt": "2026-10-07T15:25:15.104Z",
+  "name": "RM Cooked Back Bacon",
+  "code": "107247",
+  "altCode": null,
+  "nutrition": {
+    "kj": 1337,
+    "kcal": 321,
+    "fat": 21.2,
+    "sat": 8.05,
+    "carb": 0.4,
+    "sugar": 0.3,
+    "protein": 32.1,
+    "fibre": 0.5,
+    "salt": 2.12
+  },
+  "allergens": [],
+  "packSize": "1.5 kg",
+  "packSizeValue": 1.5,
+  "packSizeUnit": "kg",
+  "packFormat": "APET (Thermoformed Tray) and PET (Blue Top Film)",
+  "storageConditions": "Frozen <-18°C",
+  "shelfLife": "Frozen shelflife is 90 Days; 60 Days Minimum Shelf life on delivery",
+  "ingredientsList": "Pork Back, Salt, Antioxidant: Sodium Ascorbate (E301), Preservative: Sodium Nitrite (E250)",
+  "unitWeightG": null,
+  "errors": [],
+  "warnings": []
+}

@@ -286,7 +286,7 @@ def find_col_in_row(ws, row_num, text_contains, max_col=20):
     return None
 
 def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank_nutrition=(),
-            confirm_cross_sheet_mismatch=False, correct_unit_mismatch=()):
+            confirm_cross_sheet_mismatch=False, correct_unit_mismatch=(), accept_handled_on_site=False):
     errors = []
     warnings = []
 
@@ -965,6 +965,12 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
                                         "Sulphites row answer %r states a max of %.1f mg/kg/L, which is AT OR ABOVE "
                                         "the 10mg/kg legal declaration threshold -- refusing to trust a stated %r "
                                         "answer that contradicts the threshold; needs human review" % (val, max_val, stated_answer))
+                        if accept_handled_on_site and _re.match(r"^N[ ]*[-:,][ ]*but handled on site[ .]*$", str(val).strip(), _re.IGNORECASE):
+                            # --accept-handled-on-site (user decision 2026-10-07, bacon 107247): a supplier answer of
+                            # "N- But handled on site" is recorded as N (not contained), with a mandatory warning so the
+                            # person confirms it. Matches ONLY that exact wording; any other free text still refuses.
+                            val_norm = "N"
+                            warnings.append("Allergen row %r answered %r -- treated as N (not an ingredient) per --accept-handled-on-site; the supplier says it is handled on site, so confirm this is acceptable." % (label_lower, str(val).strip()))
                         if val_norm not in ("Y", "N"):
                             errors.append("Allergen row %r has an unrecognised contains-value %r (expected Y or N) -- refusing to assume either way" % (label_lower, val))
                         elif val_norm == "Y":
@@ -1036,6 +1042,9 @@ if __name__ == "__main__":
     confirm_cross_sheet_mismatch = "--confirm-cross-sheet-mismatch" in args
     if confirm_cross_sheet_mismatch:
         args.remove("--confirm-cross-sheet-mismatch")
+    accept_handled_on_site = "--accept-handled-on-site" in args
+    if accept_handled_on_site:
+        args.remove("--accept-handled-on-site")
     correct_unit_mismatch = ()
     if "--correct-unit-mismatch" in args:
         idx = args.index("--correct-unit-mismatch")
@@ -1045,6 +1054,7 @@ if __name__ == "__main__":
                       derive_salt_from_sodium=derive_salt_from_sodium,
                       allow_blank_nutrition=allow_blank_nutrition,
                       confirm_cross_sheet_mismatch=confirm_cross_sheet_mismatch,
-                      correct_unit_mismatch=correct_unit_mismatch)
+                      correct_unit_mismatch=correct_unit_mismatch,
+                      accept_handled_on_site=accept_handled_on_site)
     print(json.dumps(result, indent=2, ensure_ascii=False))
     sys.exit(0 if result["status"] == "ok" else 1)

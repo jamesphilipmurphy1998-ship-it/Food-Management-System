@@ -2890,3 +2890,13 @@ already had it), and `spec-reapply-all.js` now restores `unitWeightG` when the a
 Tested by a dry run (0 differences against live) and by temporarily changing one archive to 99 (dry run reported 20 -> 99; archive restored).
 STILL NOT in archives: weights a person types by hand in the app (including packaging item weights), and any edit made outside spec uploads.
 `field-fix-apply.js` does not update archives; a corrected value needs the matching archive edited too.
+
+
+### 2026-10-07 — 107247 Smoked Back Bacon uploaded (allergen cells "N- But handled on site")
+The extractor refused this spec at first: four allergen rows (wheat, gluten level, soya, sulphites) read "N- But handled on site", not Y/N. The user decided to upload
+treating that wording as No. New opt-in flag `spec-extract.py --accept-handled-on-site`: ONLY that exact wording ("N" + "-"/":"/"," + "but handled on site") is
+recorded as N, and a mandatory warning is added per row so a person confirms; any other free text still refuses. Allergens result: none contained (ingredients pork, salt,
+sodium ascorbate, sodium nitrite). Every field confirmed by click: nutrition 1337 kJ / 321 kcal, fat 21.2, sat 8.05, carb 0.4, sugars 0.3, fibre 0.5, protein 32.1, salt 2.12;
+Pack Size 1.5 + kg (cell "1.5 Kg / Pack"); Pack Format "APET (Thermoformed Tray) and PET (Blue Top Film)"; Storage "Frozen <-18°C"; Shelf Life "Frozen shelflife is 90 Days;
+60 Days Minimum Shelf life on delivery"; ingredients from the declaration box; name (spec "Light Cooked Beechwood Smoked Back Bacon Whole Rashers" vs live "RM Cooked Back Bacon")
+confirmed same product. Used in 6 recipes. NOTE: the system records only "contains", so "handled on site" is not captured as a may-contain anywhere.
