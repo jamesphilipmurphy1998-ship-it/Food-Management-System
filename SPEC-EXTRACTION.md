@@ -2600,3 +2600,25 @@ dry run or a list shown first is not approval, and a broad earlier "go ahead" do
 separate change. In this session the 131-value Pack Size number/unit backfill, the 114-value Pack Size
 format correction, and the archive and extractor edits went ahead under broader approvals without a
 per-change click; all were verified and logged, and the rule is now explicit.
+
+### 2026-10-07 — blank ingredient lists: all areas reviewed, 7 filled
+
+Applying the new Ingredients rule (declaration box first, ingredient table only if the box is empty) to the
+22 uploaded specs whose Ingredients List was blank, every area of each spec was read: the declaration box, the
+ingredient table with percentages and suppliers, the manufacturer sheet's legal description (descriptive text
+only, not used), and any other cell mentioning ingredients or composition. Result: 9 specs have the list in the
+declaration box and 13 have an empty box, so the table supplies it. The text for each was built by script from
+the spec, shown to the user, and approved item by item (clickable prompts).
+
+**Written (7, approved by the user):** 106041 "Honey", 106127 "Kale 100%", 106163 "Pepper Green 100%", 106169
+"Coconut Kernel Extract, Water", 106251 "XANTHAN GUM (E415)", 106438 "Pepper Red 100%" (all from the declaration
+box, word for word), and 106208 "Potato 100%" (the box wording; the user chose it over adding the table's trace
+sodium metabisulphite, and the Sulphur dioxide allergen stays declared separately). Written with
+`scripts/field-fix-apply.js` (checks the live value was still blank, attaches an explanatory version-history
+comment, verifies by re-fetch): all 7 correct, **0 other ingredients changed (404/404)**; `spec-data` archives
+updated so a re-apply does not blank them. Plan kept in `.scan/fix_ingredients_7.json`.
+
+**Not written:** 103895 (user asked to come back to it; see SPEC-ISSUES-TO-REVIEW.md), 106167 (paused, with its
+own open issue), and 13 table-sourced single-ingredient lists awaiting the user's approval after asking to see
+the ingredient names next to the codes: 105970, 106139, 106160, 106206, 106218, 106219, 106220, 106222, 106223,
+106226, 106228, 106317, 107427.

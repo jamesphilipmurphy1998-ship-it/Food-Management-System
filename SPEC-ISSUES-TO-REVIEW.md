@@ -272,3 +272,14 @@ in carbohydrate, and so on).
 
 **One pairing worth a glance:** 106202 live "RM Frying powder" vs spec name "Chicken Breading WSB MK2"
 (matched on code; the least obvious name pair of all 150).
+
+---
+
+## 103895 -- RM Noodle Industrial: ingredient list to come back to (user note, 2026-10-07)
+
+The spec's Legal Ingredient Declaration box reads "Wheat flour  (Wheat flour, Calcium, Iron, Niacin, Thiamin),
+Salt, Paprika, Turmeric, Firming Agents: Potassium Carbonate, Sodium Carbonate, Acidity regulator: Citric
+Acid." (with a double space after "Wheat flour"). The ingredient table on the same sheet also lists Water
+(22-24%) and Sodium hexacyanoferrate (II) E535 (<0.001%), which the box does not. The live ingredient declares
+Cereals containing gluten but has NO ingredient text. The user asked to come back to this one rather than
+write it now; nothing has been written.
