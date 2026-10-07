@@ -305,3 +305,10 @@ code; 105005 is the recipe "CPU RM Chicken Breast for Dicing", whose cost (5.385
 Extracted (not applied): 464 kJ / 110 kcal, fat 1.8, sat 0.5, carb 0, sugars 0, fibre 0, protein 23.3, salt 0.132; no allergens; Pack Size 5 kg (cell "2x5kg"); Pack Format
 "Plastic tray sealed with plastic film"; Storage "0-4°C" (superscript-styled text, needs a visual check); Shelf Life "13 days from production, delivery + 4 days"; ingredients "100% Chicken Breast".
 User chose to hold. To resume: confirm the file is for 106187 and that 200-240g vs 210-250g is the same product, then extract with `--override-code 106187` and confirm every field by click.
+
+
+## 2026-10-07 — 106955 RM Onion Powder: Sulphur dioxide ticked on a spec answer that is neither Yes nor No (LEFT AS IS by the user, to review later)
+The spec's sulphites row reads "product may contain naturally ocurring SO2 (not tested to verify levels)". At the original upload the user chose the precautionary reading and Sulphur dioxide was ticked (a one-off manual setting).
+A fresh extraction ticks nothing for it, so a re-run shows a difference from live. The user's latest rule (cross-contamination / used on site / below ppm = No + a note, never a tick) does not cleanly cover this case:
+it is the product itself that may naturally contain SO2 and no level is stated, so it cannot be shown to be under the 10ppm threshold.
+Decision 2026-10-07: leave the tick as it is and list it here. To resolve later: ask the supplier for a tested SO2 level, or decide whether to untick it and keep the wording in Allergen notes (the box is not deployed yet).
