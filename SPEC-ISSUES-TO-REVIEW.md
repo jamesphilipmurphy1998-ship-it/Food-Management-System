@@ -283,3 +283,17 @@ Acid." (with a double space after "Wheat flour"). The ingredient table on the sa
 (22-24%) and Sodium hexacyanoferrate (II) E535 (<0.001%), which the box does not. The live ingredient declares
 Cereals containing gluten but has NO ingredient text. The user asked to come back to this one rather than
 write it now; nothing has been written.
+
+
+## 2026-10-07 — 107605 Japanese Style Mayonnaise: spec file named 107605 but its own Product Code cell says 107606 (HELD by the user, nothing written)
+`107605 Japanese Style Mayo RM Spec V2 (03.06.2026).xlsx` (found in folder check 33) and the earlier `(107606) Japanese Style Mayo RM Spec V1 (05.02.2026).xlsx`
+(folder check 32) both carry code 107606 inside. Live 107606 is RM Sesame Dressing (already uploaded from its own spec), so applying as-is would overwrite it with
+mayo data. Live 107605 = RM Japanese Style Mayonnaise (KG, 5.50), no spec. Extracted (not applied): 2882 kJ / 701 kcal, fat 76, sat 5.5, carb 2, sugars 1.8, fibre 0.1,
+protein 1.6, salt 1.8; allergens Eggs, Mustard; Pack Size 1 kg (cell "6 x 1kg"); storage Chilled 2-5; shelf life "90 days & 68 days" (odd); ingredients from the declaration box.
+User chose to hold. To resume: confirm the spec's Product Code is a typo for 107605 (or have the supplier file corrected), then extract with `--override-code 107605`
+and confirm every field by click.
+
+## 2026-10-07 — two more refused specs from folder check 32 (nothing written)
+- `107049 Miso Caramel Sauce RM Spec- V2 (11.12.2024).xlsx`: refused, the nutrition sheet's Product Code is "SAU7046 Miso Caramel" but the ingredient sheet says 107049.
+- `107247 Smoked Back Bacon Whole Rashers RM Spec V1 (17.07.2025).xlsx`: refused, four allergen rows (wheat, gluten level, soya, sulphites) read "N- But handled on site", not Y/N.
+(The user dismissed the question about recording these, so this entry is a note only; they remain unprocessed.)
