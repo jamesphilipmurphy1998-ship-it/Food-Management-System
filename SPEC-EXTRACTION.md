@@ -2877,3 +2877,7 @@ Every item confirmed by click: nutrition as the spec states (325 kJ / 77 kcal, c
 (the spec's combined cell split, user chose the split); ingredients 'Water, Soybeans, Wheat, Salt.' (declaration box); name 'Soy Sauce Sachet 10ml' vs live
 'Soy Sauce Sachet' confirmed same product; EACH weight question answered yes -> Weight per each 0 -> 10 g. Verified live; archived `spec-data/105978.json`.
 Used in 40 recipes. The extractor still cannot split a combined Shelf Life/Storage cell cleanly (the split was applied by editing the extraction JSON with the confirmed text).
+
+
+### 2026-10-07 — 103004 Water needs no spec
+User: Water is complete, blank nutrition is correct by default. Exclude 103004 when regenerating the "RM without a spec" list (69 -> 68). No data changed.
