@@ -1,0 +1,27 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/107391 Rice Mighty RM Spec V1 (05.09.2025).xlsx",
+  "appliedAt": "2026-10-07T10:42:42.836Z",
+  "name": "RM Rice Mighty ME",
+  "code": "107391",
+  "altCode": null,
+  "nutrition": {
+    "kj": 673,
+    "kcal": 161,
+    "fat": 0,
+    "sat": 0,
+    "carb": 22,
+    "sugar": 15,
+    "protein": 0.5,
+    "fibre": 0.5,
+    "salt": 6.95
+  },
+  "allergens": [],
+  "packSize": "5L",
+  "packFormat": "Jerry Can / Cap / Label",
+  "storageConditions": "Store in a cool dry place, away from direct sunlight.",
+  "shelfLife": "12 months / Min, Shelf life: 90 days.",
+  "ingredientsList": "Water, Glucose Syrup, Spirit Vinegar, Salt, Rice Vinegar.",
+  "errors": [],
+  "warnings": []
+}

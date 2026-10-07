@@ -1,0 +1,30 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106253 (105041) Teriyaki Sauce (DS1401A STER8) RM Spec V8 (08.10.2025).xlsx",
+  "appliedAt": "2026-10-07T10:42:39.874Z",
+  "name": "RM Teriyaki Sauce / CPU Only",
+  "code": "106253",
+  "altCode": "105041",
+  "nutrition": {
+    "kj": 919,
+    "kcal": 216,
+    "fat": 0,
+    "sat": 0,
+    "carb": 51.1,
+    "sugar": 46.4,
+    "protein": 3.3,
+    "fibre": 0,
+    "salt": 5.25
+  },
+  "allergens": [
+    "Cereals containing gluten",
+    "Soya"
+  ],
+  "packSize": "15Kg",
+  "packFormat": "15Kg Jerrican",
+  "storageConditions": "Store unopened in a cool dry place away from direct sunlight.",
+  "shelfLife": "12 Months / Minimum shelf life on delivery 9 months",
+  "ingredientsList": "Sugar, soy sauce (water, soya beans, wheat, salt, alcohol (ethanol)), water, sake, modified starch, colour: E150c",
+  "errors": [],
+  "warnings": []
+}

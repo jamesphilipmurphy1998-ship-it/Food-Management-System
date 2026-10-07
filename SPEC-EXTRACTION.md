@@ -2368,3 +2368,41 @@ from the declaration first, table as a confirmed fallback; number + unit reporti
    prompts were dismissed) when the next spec is uploaded.
 8. Deploy the Pack Size edit form once the user has agreed. `app.js` / `index.html` also still
    contain the earlier performance fixes that are already live on the Pi but were never committed.
+
+### 2026-10-07 — four specs applied (first run of the new Pack Size / ingredients rules)
+
+Every field of every spec below, including Pack Size as number + unit and Pack Format, was
+confirmed by clickable prompt before writing, and every write was re-fetched and verified.
+
+- **106253 Teriyaki Sauce (altCode 105041) -> "RM Teriyaki Sauce / CPU Only".** Pack Size 15 + kg
+  (stored "15Kg"; source cell read "15Kg Jerrican", container word dropped), Pack Format "15Kg
+  Jerrican". Nutrition identical to the 106102 sachet spec (same sauce). Name mismatch (RM prefix,
+  "CPU Only" suffix) confirmed same product.
+- **107315 Turmeric (filename code P00049) -> "RM Turmeric".** Code blank or "0" on every sheet,
+  overridden to 107315. Salt blank but Sodium 27 mg: derived 0.0675 g with
+  `--derive-salt-from-sodium`, confirmed. Pack Size 25 + kg, Pack Format "blue PE bag". High fibre
+  (22.7) is normal for turmeric; calories reconcile.
+- **107391 Rice Mighty -> "RM Rice Mighty ME".** Two internal inconsistencies in the source, both
+  put to the user: stated energy 673 kJ / 161 kcal is consistent with the spec's own per-pack
+  figures but its macros only give about 90 kcal (used as stated, per the literal-value rule); the
+  Sodium cell says 0 mg while Salt says 6.95 g (used 6.95, sodium cell ignored). Protein and fibre
+  written "<0.5" recorded as 0.5 by the standing convention. Basis column reads "Per 100ml 100g"
+  and the numbers are "Calculated" by the manufacturer. Pack Size 5 + l, Pack Format "Jerry Can /
+  Cap / Label". Ingredient percentages are marked "Confidential" in the table.
+- **107561 Sweetcorn Salsa -> "RM Sweetcorn Salsa".** Pack Size cell read "8x1kg": Pack Size 1 + kg,
+  and the case count appended to Pack Format ("... (Primary pack method) (8x1kg)"), both
+  confirmed and recorded as warnings in the extraction JSON. The Legal Ingredient Declaration
+  repeated "Lime Juice, Olive Oil" (the table lists each once); the user chose to remove the repeat.
+  Worth raising with the supplier so the source is corrected.
+
+**Sign-in problem, and what was done.** The old session file (`/tmp/qa_cookies.txt`, from the
+disposable QA account) was gone and the live app returned 401. The QA account's login was also
+rejected (the server answers 401 for both "no such email" and "wrong password"); the account may
+have been deleted, as `ACCURACY-SCAN.md` recommends doing after use. Nothing in this session
+deleted the file. The assistant cannot sign in itself, so `scripts/qa-login.sh` was written for the
+user to run: it prompts for the password silently, forces Git's own `curl`/`rm` (launched from
+PowerShell, bash starts with a bare PATH and Windows' `curl.exe` reads `/tmp` as a different
+folder), prints what the login endpoint answered, and saves the session where the apply scripts
+read it. The user signed in with their own NutriCost account (`QA_EMAIL` setting), so these four
+writes are recorded under that account. Local sessions are persistent cookies
+(`IsPersistent = true`), so they outlast a day, but the exact lifetime was not established.

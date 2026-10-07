@@ -1,0 +1,27 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/107315 (P00049) Spec Turmeric grd HT TURGR001- 11.06.2025.xlsx",
+  "appliedAt": "2026-10-07T10:42:41.229Z",
+  "name": "RM Turmeric",
+  "code": "107315",
+  "altCode": null,
+  "nutrition": {
+    "kj": 1305,
+    "kcal": 312,
+    "fat": 3.1,
+    "sat": 1.8,
+    "carb": 67.1,
+    "sugar": 3.2,
+    "protein": 9.7,
+    "fibre": 22.7,
+    "salt": 0.0675
+  },
+  "allergens": [],
+  "packSize": "25 kg",
+  "packFormat": "blue PE bag",
+  "storageConditions": "cool dry warehouse",
+  "shelfLife": "24 months, min 6 months upon delivery",
+  "ingredientsList": "grd turmeric HT",
+  "errors": [],
+  "warnings": []
+}
