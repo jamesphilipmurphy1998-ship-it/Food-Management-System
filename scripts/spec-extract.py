@@ -38,6 +38,11 @@ for a different-quantity relationship like Sodium->Salt (that stays behind its o
 --derive-salt-from-sodium flag). A human must have looked at the specific cell and confirmed it's
 genuinely a wrong-unit entry, not some other kind of problem, before this is used.
 
+Ingredients List is read from the Legal Ingredient Declaration box first (first choice, label
+wording). Only if that is empty or missing is the Ingredients/Percentage table on the same
+sheet used instead; the list is then INFERRED from the table (e.g. "Carrot (100%)") and raises a
+mandatory confirmation warning so a person confirms it before --apply.
+
 Pack Size and Pack Format each ALWAYS raise their own mandatory confirmation warning whenever a
 value is extracted (like Storage Conditions and Shelf Life), so every spec stops for a human to
 confirm each field separately before --apply, even on an otherwise clean extraction.
@@ -596,7 +601,7 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
     # measure is found, leave the value as extracted and flag for manual review -- splitting it
     # automatically in an ambiguous case would risk silently keeping the wrong number.
     PACK_SIZE_UNIT_PATTERN = _re.compile(
-        r"(\d+(?:\.\d+)?)\s*(kgs?|g|ml|l|litres?|ltr)\b", _re.IGNORECASE
+        r"(\d+(?:\.\d+)?)\s*(kgs?|g|ml|l|litres?|ltr|k)(?:\b|(?=x\s*\d))", _re.IGNORECASE
     )
 
     def clean_pack_size_measure(raw, warnings):
@@ -612,6 +617,11 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
             return raw
         m = matches[0]
         measure = m.group(0).strip()
+        if m.group(2).lower() == "k":
+            measure = m.group(1) + "kg"
+            warnings.append(
+                "Pack Size cell read %r -- the bare unit 'k' was INFERRED to mean kg (%r). Confirm "
+                "this against the source spec." % (raw, measure))
         if measure != raw:
             warnings.append(
                 "Pack Size cell read %r -- reduced to the measure %r, dropping the surrounding "
@@ -620,34 +630,75 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
             )
         return measure
 
-    # --- Pack Size ("1&2 Manufacturer Detail", row "1-d) Weight or Volume") -- this sheet uses
-    # a DIFFERENT label layout than every other section extracted so far: the item number
-    # ("1-d)") is in column A, the question text is a SEPARATE cell in column B, and the actual
-    # answer is in column C. The generic "scan columns left-to-right for the first non-empty
-    # cell" approach used below for Pack Format/Storage Conditions would wrongly grab column B's
-    # label text here, since it's non-empty -- this section must read column C specifically, not
-    # scan for it. Verified against Black Bean Paste: A15="1-d)", B15="Weight or Volume : *",
-    # C15="5 kg" -- if B is ever empty for a future spec, this would misread that spec's actual
-    # value as coming from the wrong place, so this is intentionally narrower/more literal than
-    # the generic pattern rather than trying to generalise across two different label layouts.
+    # --- Pack Size ("1&2 Manufacturer Detail") -- found by READING THE QUESTION TEXT, not by item
+    # number. The row is the one whose label (columns A-C) contains "weight or volume"; the answer
+    # is the first non-empty cell to the RIGHT of that label cell (so the label itself is never
+    # mistaken for the answer, which is why this sheet can't use the generic left-to-right scan).
+    # In every known spec the layout is A="1-d)", B="Weight or Volume : *", C=<answer>, but the
+    # previous code trusted the "1-d)" prefix and fixed column C without ever checking the
+    # question, so a re-numbered template would have been read silently from the wrong row.
+    # Each extraction reports the layout it actually found (packSizeLayout); any layout not in
+    # KNOWN_PACK_SIZE_LAYOUTS raises a warning so it gets recorded in SPEC-EXTRACTION.md's layout
+    # registry instead of being assumed.
     pack_size = None
+    pack_size_raw = None
+    pack_size_layout = None
+    KNOWN_PACK_SIZE_LAYOUTS = {("1-d)", "weight or volume", "C")}
     manufacturer_sheet_name = next((n for n in sheet_names if "Manufacturer Detail" in n), None)
     if manufacturer_sheet_name:
         ms = wb[manufacturer_sheet_name]
-        row = find_row_starting_with(ms, "1-d)")
-        if row is None:
-            warnings.append("Could not find the '1-d) Weight or Volume' row in '%s' -- Pack Size not extracted" % manufacturer_sheet_name)
+        label_row = label_col = None
+        for r in range(1, min(ms.max_row, 80) + 1):
+            for c in range(1, 4):
+                lv = ms.cell(row=r, column=c).value
+                if lv is not None and "weight or volume" in str(lv).lower():
+                    label_row, label_col = r, c
+                    break
+            if label_row is not None:
+                break
+        if label_row is None:
+            prefix_row = find_row_starting_with(ms, "1-d)")
+            seen = None
+            if prefix_row is not None:
+                seen = " / ".join(str(ms.cell(row=prefix_row, column=c).value).strip() for c in (1, 2, 3) if ms.cell(row=prefix_row, column=c).value not in (None, ""))
+            warnings.append(
+                "No 'Weight or Volume' question found in '%s' -- Pack Size not extracted. "
+                "(Row '1-d)' there reads %r, which is NOT that question, so it was deliberately "
+                "not used.) A person must read this spec's Pack Size by hand and record this "
+                "layout in SPEC-EXTRACTION.md." % (manufacturer_sheet_name, seen))
         else:
-            v = cell_text(ms.cell(row=row, column=3), warnings, "Pack Size")  # column C
+            from openpyxl.utils import get_column_letter
+            value_col = None
+            v = None
+            for c in range(label_col + 1, 16):
+                tv = cell_text(ms.cell(row=label_row, column=c), warnings, "Pack Size")
+                if tv is not None and tv.strip():
+                    v, value_col = tv, c
+                    break
+            item_no = ms.cell(row=label_row, column=1).value
+            item_no = str(item_no).strip() if item_no is not None and _re.match(r"^\d+-[a-z]\)", str(item_no).strip(), _re.IGNORECASE) else None
+            label_norm = _re.sub(r"[\s:*]+$", "", str(ms.cell(row=label_row, column=label_col).value).strip().lower())
+            layout_key = (item_no, label_norm, get_column_letter(value_col) if value_col else None)
+            pack_size_layout = {
+                "sheet": manufacturer_sheet_name, "row": label_row, "itemNumber": item_no,
+                "label": label_norm, "answerColumn": layout_key[2],
+            }
+            if layout_key not in KNOWN_PACK_SIZE_LAYOUTS:
+                warnings.append(
+                    "Pack Size was found in a layout not seen before: item %r, question %r, answer in "
+                    "column %s (row %d of '%s'). Read the spec by hand to confirm this really is the "
+                    "per-unit pack size, then record the layout in SPEC-EXTRACTION.md."
+                    % (item_no, label_norm, layout_key[2], label_row, manufacturer_sheet_name))
             if v is not None and v.strip():
                 pack_size = v.strip()
+                pack_size_raw = pack_size
                 implausible = check_pack_size_plausible(pack_size)
                 if implausible:
                     warnings.append(implausible)
                 else:
                     pack_size = clean_pack_size_measure(pack_size, warnings)
             else:
-                warnings.append("Row '1-d)' in '%s', column C is empty -- Pack Size not extracted" % manufacturer_sheet_name)
+                warnings.append("The 'Weight or Volume' question in '%s' (row %d) has no answer to its right -- Pack Size not extracted" % (manufacturer_sheet_name, label_row))
     else:
         warnings.append("No sheet matching 'Manufacturer Detail' found -- Pack Size not extracted")
 
@@ -784,16 +835,66 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
     # (conform with Food Regulation Information 2014)"). The actual text is always in a merged
     # cell -- openpyxl gives the value on the merge's top-left anchor regardless, so reading
     # column A of the row right after the label works whether it's merged across 1 row or 10.
+    # Two places can hold the ingredients (user instruction 2026-10-07, after the Matcha spec
+    # showed an ingredient in the table above while the declaration box below was empty and the
+    # extractor reported "no ingredients"), checked in this order:
+    #   1. the Legal Ingredient Declaration box -- FIRST CHOICE, it is the label wording;
+    #   2. only if that is empty/missing, the Ingredients/Percentage table at the top of the
+    #      same sheet -- the list is then INFERRED from it and flagged for human confirmation.
+    # A declaration that is present is never second-guessed against the table (tried and
+    # dropped: it warned on ~17% of specs, mostly spelling differences like Wheatflour/Wheat Flour).
     ingredients_list = None
+    declaration_text = None
     declaration_row = find_row_starting_with(ws, "Legal Ingredient Declaration")
-    if declaration_row is None:
-        warnings.append("Could not find a 'Legal Ingredient Declaration' row on '%s' -- Ingredients List not extracted" % recipe_sheet_name)
-    else:
+    if declaration_row is not None:
         v = cell_text(ws.cell(row=declaration_row + 1, column=1), warnings, "Ingredients List")
         if v is not None and v.strip():
-            ingredients_list = v.strip()
-        else:
-            warnings.append("Row after 'Legal Ingredient Declaration' on '%s' is empty -- Ingredients List not extracted" % recipe_sheet_name)
+            declaration_text = v.strip()
+
+    table_items = []   # [(name, percent_as_text_or_None)]
+    header_row = None
+    for r in range(1, min(ws.max_row, 40) + 1):
+        a = ws.cell(row=r, column=1).value
+        if a is not None and str(a).strip().lower().startswith("ingredients") and find_col_in_row(ws, r, "percentage", max_col=15):
+            header_row = r
+            break
+    if header_row is not None:
+        pct_col = find_col_in_row(ws, header_row, "percentage", max_col=15)
+        stop_row = declaration_row if declaration_row else min(ws.max_row + 1, header_row + 60)
+        raw_rows = []
+        for r in range(header_row + 1, stop_row):
+            name_v = cell_text(ws.cell(row=r, column=1), warnings, "Ingredient table")
+            if name_v is not None and name_v.strip():
+                p = ws.cell(row=r, column=pct_col).value
+                raw_rows.append((name_v.strip(), p if isinstance(p, (int, float)) else None))
+        pcts = [p for _, p in raw_rows if p is not None]
+        scale = None
+        if pcts:
+            total = sum(pcts)
+            if abs(total - 1) < 0.02:
+                scale = 100
+            elif abs(total - 100) < 2:
+                scale = 1
+        for n, p in raw_rows:
+            if p is not None and scale is not None:
+                txt = ("%.1f" % (p * scale)).rstrip("0").rstrip(".")
+                table_items.append((n, txt + "%"))
+            else:
+                table_items.append((n, None))
+
+    table_text = ", ".join(("%s (%s)" % (n, p)) if p else n for n, p in table_items) if table_items else None
+
+    if declaration_text:
+        ingredients_list = declaration_text
+    elif table_text:
+        ingredients_list = table_text
+        warnings.append(
+            "The Legal Ingredient Declaration is %s, so the Ingredients List was INFERRED from "
+            "the ingredient table instead: %r. This is not label wording -- always requires "
+            "explicit human confirmation before writing; confirm it, then re-run with "
+            "--confirm-warnings." % ("missing" if declaration_row is None else "empty", table_text))
+    else:
+        warnings.append("No ingredients found: the Legal Ingredient Declaration on '%s' is %s and the ingredient table has no rows -- Ingredients List not extracted" % (recipe_sheet_name, "missing" if declaration_row is None else "empty"))
 
     # --- Allergens: locate header row + the actual "contains?" column dynamically, then
     # require EVERY expected category to be present as its own row before trusting any of it.
@@ -874,7 +975,7 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
     # purpose: fires on every extraction that has a value, even a clean single measure. Both are
     # emitted here, after both fields are final, so one point covers every extraction path.
     if pack_size is not None:
-        warnings.append("Pack Size extracted as %r -- always requires explicit human confirmation before writing, regardless of whether it looks plausible. It must be a single measure for ONE unit (e.g. '10ml', '1kg') with no container or count wording; confirm it against the source spec, then re-run with --confirm-warnings." % pack_size)
+        warnings.append("Pack Size inferred as %r (source cell read %r) -- always requires explicit human confirmation before writing, regardless of whether it looks plausible. It must be a single measure for ONE unit (e.g. '10ml', '1kg') with no container or count wording; confirm it against the source spec, then re-run with --confirm-warnings." % (pack_size, pack_size_raw))
     if pack_format is not None:
         warnings.append("Pack Format extracted as %r -- always requires explicit human confirmation before writing, regardless of whether it looks plausible. This is where container type and count/case wording belong; confirm it against the source spec, then re-run with --confirm-warnings." % pack_format)
 
@@ -888,6 +989,7 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
         "nutrition": nutrition,
         "allergens": allergens,
         "packSize": pack_size,
+        "packSizeLayout": pack_size_layout,
         "packFormat": pack_format,
         "storageConditions": storage_conditions,
         "shelfLife": shelf_life,

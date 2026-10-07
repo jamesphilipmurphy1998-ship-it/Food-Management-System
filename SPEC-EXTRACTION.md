@@ -2266,3 +2266,53 @@ typos included, unless told otherwise) still applies by default.
 - **Still to do (awaiting user decision):** label check on the "1-d)" row, the two pattern gaps,
   a hard refusal in `spec-apply.js` for a non-single-measure Pack Size, an automatic cross-check
   against numbers in the name/filename/legal name, and resolving the 24 flagged live values.
+
+### 2026-10-07 — Standing rules added: Ingredients source order, Pack Size layout registry
+
+**Rule: where Ingredients come from (user instruction, 2026-10-07).**
+1. **First choice: the Legal Ingredient Declaration box** (the row under that label on the
+   "3 Ingredient & Recipe" sheet). This is label wording and is always preferred. A declaration
+   that is present is never second-guessed against the table.
+2. **Only if that box is empty or missing: the Ingredients/Percentage table** at the top of the
+   same sheet. The list is built from it (e.g. `Carrot (100%)`), flagged as INFERRED, and
+   **always stopped for explicit human confirmation** (clickable prompt) before writing.
+3. If both are empty, Ingredients stay blank and nothing is guessed.
+Found when the Matcha spec (107427) showed "Organic Matcha green tea powder, 100%, Clearspring
+Ltd., Japan" in the table while the declaration box was empty, and the extractor wrongly
+reported no ingredients. A cross-check of table against declaration when both exist was tried
+and dropped: it warned on 20 of 116 specs, almost all spelling differences (e.g. Wheatflour vs
+Wheat Flour). Regression over the 116 source specs still on disk: the declaration path gave the
+same result as before on 113 (the other 3 differ from the archive for reasons unrelated to this
+change: 105952's archived text was hand-edited, 106041 and 106163 were archived before ingredients
+and Pack Size were extracted). The table fallback fires on exactly **11 specs whose live
+Ingredients are currently blank**: 105970, 106139, 106206, 106218, 106219, 106220, 106222,
+106223, 106226, 106228, 107427. Nothing has been written to them; back-filling each needs its own
+confirmation.
+
+**Pack Size layout registry.** Pack Size is found by reading the question text ("weight or
+volume"), not by item number, and the layout found is reported on every extraction
+(`packSizeLayout`: sheet, row, item number, question, answer column). Any layout not in the
+registry below raises a warning so it gets recorded here instead of being assumed.
+
+| Item number | Question text | Answer column | Seen in |
+|---|---|---|---|
+| `1-d)` | Weight or Volume : * | C | all 116 source specs still on disk |
+
+Regression over those 116 specs: 0 new layouts; Pack Size identical to the archives except
+105952 (archive had a hand-added "(4000ml)"), 106164 (archive holds the human-confirmed
+correction 2.5kg; the raw cell says 2.5g, which the confirmation prompt now shows next to the
+inferred value), and 106099 / 106163 (the extractor now reads "60gx100pcs" as 60g, and finds
+"10 kg" that the old run missed). A bare "k" unit is read as kg and flagged as inferred.
+Pack Size and Pack Format each always stop for confirmation, with the raw source text shown
+beside the inferred value.
+
+**Matcha (107427) test run, as a test of the new rules, nothing written:** code override
+(CS159 to 107427) and blank nutrition were confirmed by clickable prompt, as were Pack Size
+`40g` and Pack Format `Composite doy pouch with Al layer and ziplock`. The Storage, Shelf Life
+and Ingredients prompts were dismissed by the user before the run finished; the Ingredients list
+is now inferred from the table as above. The live ingredient was not touched (the login cookie has
+expired, so no apply was possible in any case).
+
+**Known issue, not fixed:** `--override-code CODE/ALTCODE` silently drops the alternate code
+(only the "(ALT)" form inside a cell is parsed as an alternate). It has not caused a wrong match,
+since matching uses the primary code, but the docstring promises more than the code does.
