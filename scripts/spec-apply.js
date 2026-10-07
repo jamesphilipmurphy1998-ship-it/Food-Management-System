@@ -210,7 +210,7 @@ let intendedUnitWeightG;
   const effV = intendedPackSizeUnit !== undefined ? intendedPackSizeValue : (matched.packSizeValue == null ? null : Number(matched.packSizeValue));
   const effU = intendedPackSizeUnit !== undefined ? intendedPackSizeUnit : (matched.packSizeUnit || "");
   const isEach = String(matched.costUom || "").toUpperCase() === "EACH";
-  const isPkg = String(matched.cat || "").toLowerCase() === "packaging" || /^\s*(\((delisted|on hold)\)\s*)?nf/i.test(matched.name || ""); // same idea as the app's isPackagingItem (category, "NF " names)
+  const isPkg = String(matched.cat || "").toLowerCase() === "packaging" || /^\s*(\((delisted|on hold)\)\s*)?nf\b/i.test(matched.name || ""); // same idea as the app's isPackagingItem (category, "NF " names)
   const noWeight = !(Number(matched.unitWeightG) > 0);
   const dens = Number(matched.density) > 0 ? Number(matched.density) : 1;
   const unitG = { g: 1, kg: 1000, ml: dens, L: 1000 * dens }[effU];
