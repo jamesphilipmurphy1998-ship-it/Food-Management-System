@@ -2629,3 +2629,74 @@ ingredient with (100%) taken from the spec's ingredient table because its declar
 the user beside the ingredient name before approval. Written with `field-fix-apply.js`: all 13 correct, **0 other
 ingredients changed (404/404)**; archives updated; plan in `.scan/fix_ingredients_13.json`. Of the 22 originally
 blank, 20 are now filled; still blank are 103895 (user: come back to it) and 106167 (paused, own open issue).
+
+### 2026-10-07 — Consolidated open items and standing procedures (read this first next session)
+
+**Standing procedures**
+- **Checking the folder for new specs = two checks, both every time.** (1) Diff the folder listing against the
+  previous snapshot (`ls` into `/tmp/spec_filesNN.txt`, keep the chain going). (2) Cross-check the WHOLE folder
+  against every RM ingredient that still has no spec (live API minus `spec-data/` codes minus anything with
+  nutrition), matching codes into filenames. The diff alone misses files that were already sitting there before
+  tracking started; that gap hid 12 specs once. The list of still-unspecced RM ingredients is regenerated from the
+  live API by script each time, never retyped.
+- **Signing in:** the assistant cannot sign in. The user runs `scripts/qa-login.sh` (PowerShell: `& "C:\Users\JamesMurphy\AppData\Local\Programs\Git\usr\bin\bash.exe" C:\Dev\NutriCost\scripts\qa-login.sh`;
+  set `$env:QA_EMAIL` to their own NutriCost email first). The session lasts longer than a day but not forever;
+  expect to refresh it. Pass `COOKIE_JAR` as a Windows path to node scripts.
+- **Changes:** every change to live data, deployed files, the database, archives or script behaviour is put to the
+  user as a specific clickable approval first (see the standing rule above); a corrected live value is made with
+  `scripts/field-fix-apply.js` from a plan file, then the matching `spec-data` archive is updated.
+- **Never run the backend locally without overriding `NUTRICOST_DB`** (local settings point at a Supabase database
+  and every start applies pending migrations). Database work is tested on a scratch copy on the Pi first.
+
+**Open items (nothing below is done)**
+1. *Data needing a decision:* 106250 Tuna (spec says 503 kJ but 102 kcal; 503 kJ is about 120 kcal and the macros
+   agree with that); 102584 Inari (sugars 14.1 g above carbohydrate 12.3 g); 106163 Pepper Green (spec states Pack
+   Size 10 kg, live is blank); the 17 Pack Sizes that are not a single number + unit (SPEC-ISSUES-TO-REVIEW.md),
+   including 106099 `60gx100pcs`.
+2. *Ingredient lists still blank:* 103895 Noodle Industrial (user: come back to it; declares gluten but has no
+   ingredient text) and 106167 Rapeseed Oil (paused with its own issue). The other 20 were filled on 2026-10-07.
+3. *Specs paused:* 106198 Chicken Wings (one sheet has a different code), 106199 Breadcrumbs, 106987 Shokupan,
+   107246 Coffee Beans (brewed-coffee nutrition and swapped name/code cells), 120087 Lamb Weston Potato Puffs
+   (code not in the system; 107496 is the likely match). 106192 Baking Powder has no spec file at all.
+4. *Extractor / apply script improvements not yet made:* add kJ-versus-kcal (about 4.184) and
+   sugars-versus-carbohydrate checks (both slipped through at upload); `--override-code CODE/ALTCODE` silently drops
+   the alternate code; make `spec-apply.js` refuse a Pack Size that is not a single measure unless explicitly
+   confirmed; cross-check Pack Size against numbers in the ingredient name and filename.
+5. *Housekeeping:* the 30 baseline archives still name "baseline snapshot" as their source file though the real files
+   were found by code during the review (could be corrected); the review scripts live only in a scratch folder
+   (could be saved under `scripts/`); 106202 "RM Frying powder" vs spec name "Chicken Breading WSB MK2" deserves a
+   glance; this backup (database dump and code zip) has not been copied to the OneDrive backup folder
+   (`scripts/backup-full.ps1 -ConfirmOneDrive`); the number in Pack Size is stored but not used for anything yet.
+
+### 2026-10-07 — Audit: anything in the specs that was never extracted (early uploads never fixed)
+
+Re-read all 150 source specs with today's extractor and compared every field it reads with the live record.
+
+**A. Fields the extractor reads today: nothing was silently missed.** The only places where a spec has a value
+and live is blank or different are ones already known and decided or paused: fibre 3.3 on 105241 (deliberately
+left unset: it contradicts a carbohydrate of <0.1 g); Pack Size on 106164 (spec cell says 2.5 g, live holds the
+confirmed correction 2.5 kg) and on 106163 (spec says 10 kg, live blank: open item); ingredient lists on 103895
+and 106167 (open items); Pack Format on 106100 ("Tubs containing"), 106170 ("4000 g") and 107497 ("Liner")
+(values deliberately dropped because they are not a container); shelf life on 106167 (paused). All other early
+gaps (ingredient lists, pack format, pack size) were found and fixed earlier today.
+
+**B. Information the specs contain that NutriCost has no field for at all** (never in scope, so not an early-upload
+miss). Counts are specs with a real answer, out of 150, by question text, so they are approximate across template
+versions:
+- Shelf life & storage ONCE OPENED: 144. Temperature at transport: 146. Ready to eat or ready to cook: 112.
+- Vegetarian suitability: 136. Vegan suitability: 123.
+- Microbiological standards (Salmonella 105, aerobic colony count 104, E. coli 102, yeast & mould 84, Listeria 71, and
+  others) with limits.
+- Date coding: best-before/use-by format 141 and location 146; manufacturing date format 109 and location 111.
+- Manufacturer details: address 148, telephone 148, emergency contact name 141 and number 140, site code 119, SEDEX
+  number 86, category/scope 99, certification 35 (the manufacturer name is not read either; the live supplier field
+  comes from the cost feed).
+- Packaging: inner material 141, inner dimensions 137, outer material 119, outer dimensions 111, pallet configuration
+  134, HS code 35.
+- Quality controls: weigh check 148, visual check 145, metal detection 135, pest control 140.
+- Pesticide use/level/testing (about 60), deforestation statement (15), palm oil section, gluten level 32, alcohol
+  ABV 24, additives checked 44.
+- The allergen sheet's "may contain" / cross-contamination column is not stored (the system records only what a
+  product contains). Example: 105950 states "may contain traces of milk".
+Adding any of these would be a new field end to end (backend column and migration, API, edit form, extractor,
+apply script), the same way Pack Size number and unit were added. None has been started.
