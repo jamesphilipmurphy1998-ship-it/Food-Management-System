@@ -2900,3 +2900,17 @@ sodium ascorbate, sodium nitrite). Every field confirmed by click: nutrition 133
 Pack Size 1.5 + kg (cell "1.5 Kg / Pack"); Pack Format "APET (Thermoformed Tray) and PET (Blue Top Film)"; Storage "Frozen <-18°C"; Shelf Life "Frozen shelflife is 90 Days;
 60 Days Minimum Shelf life on delivery"; ingredients from the declaration box; name (spec "Light Cooked Beechwood Smoked Back Bacon Whole Rashers" vs live "RM Cooked Back Bacon")
 confirmed same product. Used in 6 recipes. NOTE: the system records only "contains", so "handled on site" is not captured as a may-contain anywhere.
+
+
+### 2026-10-07 — STANDING RULE: check the WHOLE allergen row, and ASK when anything is not a plain No (user instruction, found on 106153)
+Specs have three answer columns per allergen row: "Product contains?", "Risk of cross contamination?" and "in which ingredient?" (a supplier comment). The extractor used to read only the first.
+106153 Savoury Seasoning showed why: wheat and barley = Yes (yeast extract from brewers wort) but the supplier comment says "<20ppm so no allergen declaration required" and the gluten-level row says No.
+User decision for 106153: record NO allergens, as the supplier said, and keep the supplier comment on the ingredient as a note. **Procedure from now on:** for every spec, read the whole row; if cross-contamination is
+anything other than a plain No, or a supplier comment claims an exemption or threshold, STOP and ask the user what to record. `spec-extract.py` now prints every comment and every non-No cross-contamination
+answer as a mandatory warning and returns `allergenSupplierComments` (checked: all 152 uploaded specs extract identically with the old and new script, 0 differences; it only adds warnings).
+**Recheck of all 152 uploaded specs** (script `.scan/tools/allergen_sweep.py`, 151 read; 103489 was locked in Excel and not read): see `ALLERGEN-REVIEW.md` (script-generated).
+It lists (A) 39 rows in 18 specs declared "not contained" but with a cross-contamination risk of Yes, (B) 7 odd answers, (C) 15 supplier exemption/threshold comments. Nothing there has been decided or changed;
+the system has no may-contain field, so these risks are not recorded anywhere yet. Each item needs the user's decision.
+**New field "Allergen notes" (free text under the Fruit/Veg/Nut tick box):** step 1 done and approved: nullable column `allergen_notes` (migration `AddIngredientAllergenNotes`), model, mapping and keep-existing rule
+on both PUT endpoints; tested 15/15 on a scratch copy on the Pi (production fingerprint identical before/after); deployed to the live Pi (rollback copy `/opt/nutricost/backend-previous-allergen-20261007`); verified:
+service active, column and migration present, 0 of 404 ingredient rows differ from the pre-change backup, recipes and versions identical. NOT built yet: the form box, the extractor/apply/archive carry-through, then the 106153 upload.

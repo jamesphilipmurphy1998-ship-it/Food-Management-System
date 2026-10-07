@@ -908,6 +908,7 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
     # --- Allergens: locate header row + the actual "contains?" column dynamically, then
     # require EVERY expected category to be present as its own row before trusting any of it.
     allergens = []
+    allergen_supplier_comments = []
     as_ = wb[allergen_sheet_name]
     allergen_header_row = find_row_starting_with(as_, "Potential Component")
     if allergen_header_row is None:
@@ -979,6 +980,26 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
                                 allergens.append(allergen)
                         break
 
+            # Whole-row check (user instruction 2026-10-07, 106153): besides "Product contains?", read the
+            # "Risk of cross contamination?" and "in which ingredient?" (supplier comment) columns on EVERY
+            # allergen row and surface anything other than a plain No / blank as a mandatory warning, so a
+            # person sees it. The comments are also returned as allergenSupplierComments.
+            cross_col = find_col_in_row(as_, allergen_header_row, "cross contamination")
+            comment_col = find_col_in_row(as_, allergen_header_row, "which ingredient")
+            for r_ in range(allergen_header_row + 1, last_row + 1):
+                lab_ = as_.cell(row=r_, column=1).value
+                if not lab_ or not str(lab_).strip():
+                    continue
+                lab_s = " ".join(str(lab_).split())
+                cont_ = " ".join(str(as_.cell(row=r_, column=contains_col).value or "").split())
+                cross_ = " ".join(str(as_.cell(row=r_, column=cross_col).value or "").split()) if cross_col else ""
+                comm_ = " ".join(str(as_.cell(row=r_, column=comment_col).value or "").split()) if comment_col else ""
+                if cross_ and cross_.upper() not in ("N", "NO"):
+                    warnings.append("Allergen row %r: 'Risk of cross contamination?' says %r (contains: %r) -- needs human review." % (lab_s, cross_, cont_))
+                if comm_:
+                    allergen_supplier_comments.append({"row": lab_s, "contains": cont_, "comment": comm_})
+                    warnings.append("Allergen row %r (contains: %r): supplier comment %r -- always requires human confirmation of what is recorded." % (lab_s, cont_, comm_))
+
             missing = sorted(set(EXPECTED_ALLERGEN_ROWS.keys()) - found_categories)
             if missing:
                 errors.append("Allergen categories expected by this template were NOT found in the sheet (could mean the format changed and a category was dropped): %s -- REFUSING to extract any allergens, since a missing category cannot be confirmed absent" % missing)
@@ -1012,6 +1033,7 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
         "altCode": alt_code,
         "nutrition": nutrition,
         "allergens": allergens,
+        "allergenSupplierComments": allergen_supplier_comments,
         "packSize": pack_size,
         "packSizeLayout": pack_size_layout,
         "packSizeNumber": pack_size_number,
