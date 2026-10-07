@@ -1,5 +1,52 @@
 # Ingredient specification extraction
 
+> ## CURRENT STATE and START HERE (rewritten 2026-10-07 -- the older "Status" paragraph below is history)
+>
+> **Where things stand.** About 150 supplier specs have been extracted and written to the live NutriCost
+> ingredients (404 ingredients, 1,098 recipes live; one archive per spec in `spec-data/`). Everything is logged
+> below in date order. **Read, in this order:** this box; the "Consolidated open items and standing procedures"
+> entry near the END of this file (search for it); `SPEC-ISSUES-TO-REVIEW.md` (specs not applied, and issues
+> found in applied ones); the memory notes in `C:\Users\JamesMurphy\.claude\projects\C--Dev-NutriCost\memory\`.
+>
+> **Scripts (`scripts/`).** `spec-extract.py` reads a spec (read-only) and prints JSON; `spec-apply.js` matches
+> by code, shows the diff, writes, then re-fetches to verify and archives to `spec-data/`; `spec-reapply-all.js`
+> restores from the archives; `field-fix-apply.js` applies a plan file of human-confirmed single-field corrections
+> (refuses if the live value is not the expected old value); `packsize-fix-apply.js` and
+> `packsize-parts-backfill.js` were one-off Pack Size corrections; `qa-login.sh` saves a signed-in session;
+> `backup-full.ps1` makes the code zip plus a database dump. Live app: http://192.168.0.50:5001 (Pi, folders under
+> `/opt/nutricost/`; rollback copies `backend-previous-20261007` and `frontend-previous-20261007` are on the Pi).
+>
+> **How a spec is processed.** (1) `python scripts/spec-extract.py "<file>" [flags] 2>/dev/null > file.json` --
+> the flags (`--override-code`, `--derive-salt-from-sodium`, `--allow-blank-nutrition`, `--confirm-cross-sheet-mismatch`,
+> `--correct-unit-mismatch`) are added only after the user has confirmed that specific situation for that spec;
+> `--confirm-warnings` only after every field is confirmed. (2) Show the user the FULL extracted table, then ask each
+> thing as a clickable prompt (AskUserQuestion): code override, blanks, derived salt, **Pack Size as number + unit**,
+> **Pack Format on its own line**, Storage, Shelf Life, Ingredients (and which place they came from), name match.
+> (3) `COOKIE_JAR="C:\Users\JAMESM~1\AppData\Local\Temp\qa_cookies.txt" node scripts/spec-apply.js file.json --apply
+> --confirm-warnings [--confirm-name-mismatch]`. (4) Log the spec here, update `spec-data`, commit and push.
+> Quirks on this machine: python needs Windows paths for files in `/tmp` (`C:\Users\JAMESM~1\AppData\Local\Temp\...`);
+> always redirect stderr (openpyxl prints warnings); a spec open in Excel is locked (ask the user to close it);
+> the in-app PowerShell terminal does not accept `&&`; the assistant cannot sign in (see the `qa-login.sh` entry).
+>
+> **Standing rules (all from the user).** Refuse, never guess; a wrong allergen is a safety incident. Data integrity
+> outranks everything, including speed. **Flag every change for explicit clickable approval, showing before/after,
+> every time; a dry run is not approval and an earlier "go ahead" does not cover later changes.** Never retype a list
+> of codes or values by hand: print it from a script. Default to the spec's own literal value over reference data.
+> Ingredients come from the declaration box first, the ingredient table only if the box is empty, then confirm.
+> Pack Size is written "<number> <unit>" (g, kg, ml, L) and what is shown at confirmation is exactly what is stored.
+> Checking the folder is two checks (new-file diff AND a whole-folder cross-check against every unspecced RM code).
+>
+> **Local-only material.** `.scan/` is excluded from git: review outputs, plan files, `.scan/backups/` (the
+> pre-change database dump, 2026-10-07) and `.scan/tools/` (copies of the review and test scripts used on
+> 2026-10-07: `review_stage1.py`, `review_stage2.py`, `review_missing.py`, `review_ingredients.py`,
+> `review_rte.py`, `review_rte_wide.py`, `audit_packsize.py`, `test_packsize_ui.js`, `pi_*.sh`, `pi_api_tests.py`)
+> exist only on this PC. They are not in the repository.
+>
+> **Waiting on the user right now:** approval to start stage 1 (the database change) of the "Ready to eat / Ready to
+> cook" box described in the 2026-10-07 DESIGN entry. Nothing for it has been built. Other open items are in the
+> consolidated entry (Tuna 106250, Inari 102584, Pack Size on 106163, the 17 messy Pack Sizes, 103895 ingredients, the
+> paused specs, extractor checks to add).
+
 Goal: drop a supplier's raw material specification into
 `OneDrive - Wasabi\...\FMS System\3. Supporting Docs\Ingredient Specs`, and have its nutrition
 and allergen data matched to the live NutriCost ingredient by **code** and written straight into
@@ -2737,3 +2784,59 @@ from the product type. Every spec still gets the user's click, per the standing 
 4. Backfill for the 150 specs already uploaded, by approval: the exact RTE / RTC answers shown as a list with ingredient
    names for one group approval; the 35 other wordings one by one; the 9 blanks and the 25 with no question confirmed
    as blank.
+
+
+### 2026-10-07 — RUNBOOK: changing the database or backend safely (what was done for Pack Size number/unit)
+
+Use this for any new field or schema change. Every step that changes something needs the user's approval first.
+1. **Backup:** `powershell -File scripts\backup-full.ps1` (stages a code zip and a pg_dump locally; add
+   `-ConfirmOneDrive` to copy to the OneDrive backup folder). Verify the dump (`gzip -t`, count the ingredient rows)
+   and keep a copy of the dump in `.scan/backups/`.
+2. **Code:** add the property to `backend/Models.cs`, `Persistence/Entities.cs`, `Persistence/AppDbContext.cs`
+   (column name) and both directions in `Persistence/MappingExtensions.cs`; add a keep-existing rule on BOTH update
+   endpoints in `Program.cs` (`PUT /api/ingredients/{id}` and the bulk `PUT /api/ingredients`: when the field is
+   null, copy the stored value across before `SetValues`) so a page opened before the upgrade cannot blank it.
+   Do NOT add the field to `IngredientSnapshot.Build` (that would create a fake new version for every ingredient).
+3. **Migration:** with `NUTRICOST_DB` pointed at a dead address (it overrides every config file; the app runs
+   `Database.Migrate()` at every start), `cd backend` then
+   `dotnet ef migrations add <Name> --project NutriCost.Api.csproj`. Read the generated file: it must contain only the
+   intended `AddColumn` calls, and the model snapshot diff must be only those columns.
+4. **Build for the Pi:** `dotnet publish NutriCost.Api.csproj -c Release -r linux-arm64 --self-contained true -o <scratch folder>`
+   (not the repo's `publish-pi`). Only `NutriCost.Api` and `NutriCost.Api.dll` differ from what is on the Pi.
+5. **Test on a scratch copy on the Pi** (SSH works with a key as `dizziness7883@192.168.0.50`): the app's database
+   login `nutricost_app` cannot create databases, so use
+   `sudo -n -u postgres psql -c "CREATE DATABASE nutricost_migtest OWNER nutricost_app"`, fill it with `pg_dump` of
+   production piped into `psql` (read-only on production), and compare row counts and a whole-table fingerprint. Copy
+   `/opt/nutricost/backend` to a scratch folder, replace the two files, and start it with
+   `ASPNETCORE_URLS=http://127.0.0.1:5099 NUTRICOST_AUTH_MODE=disabled ASPNETCORE_ENVIRONMENT=Production NUTRICOST_DB=<the same
+   connection with Database=nutricost_migtest>` (check the string names the copy, never production). Run the checks
+   (`.scan/tools/pi_api_tests.py`: migration applied to the copy and not production, existing columns identical, the new
+   field round-trips, an old-page save without the field keeps it, a deliberate clear works, no fake versions, every other
+   row unchanged). Then kill it, drop the scratch database, delete the scratch folder, and confirm production is unchanged.
+6. **Deploy:** on the Pi save the two current files to `/opt/nutricost/backend-previous-<date>/`, `sudo systemctl stop nutricost`,
+   copy the new two files into `/opt/nutricost/backend/`, `chmod +x NutriCost.Api`, `sudo systemctl start nutricost`; the start
+   applies the migration. Check the service is active, the columns exist and the migration is recorded.
+7. **Verify against the backup:** restore the pre-change dump into a scratch database and compare a per-row hash of every
+   existing column (`row_to_json(t)::jsonb - '<new cols>'`) between it and production; also compare recipes and
+   `ingredient_versions`. Expect 0 differences (other users' edits since the backup would show, so do it promptly). Drop the
+   scratch database.
+8. **Page files** (`index.html`, `app.js`, ...): try in a real browser first (the preview server on port 5005 serves the page
+   without data; use throwaway storage and clear it), save the current live copies to `/opt/nutricost/frontend-previous-<date>/`,
+   `scp` the changed files (no restart needed), check checksums and that the live page serves the new code.
+9. **Rollback:** backend: stop, copy the two previous files back, start (extra empty columns are harmless to the old program);
+   page files: copy back from the previous folder; data: the dump.
+
+### 2026-10-07 (end of day) — snapshot of facts to resume from
+- **Folder:** 158 files in `Ingredient Specs` at the last check (about 13:00). No unprocessed spec is sitting in it other than
+  the four already paused (106198, 106199, 106987, 107246). The whole-folder cross-check, not the snapshot diff, is the
+  reliable test.
+- **Still without a spec: 34 RM ingredients** (regenerate the list from the live API by script, never retype it): 4 are the
+  paused specs above and 30 have no spec file in the folder yet. 107496 "RM Potato Puffs" is the likely home of the paused
+  120087 Lamb Weston spec; 106192 "RM Baking Powder" has no spec file at all.
+- **Live data checked today:** 404 ingredients, 1,098 recipes, 150 uploaded specs; all 150 re-read against their source files
+  (allergens identical to the sources); 131 ingredients carry Pack Size as a separate number and unit; writes made today were
+  recorded under the user's own NutriCost account.
+- **Last unanswered question to the user:** whether to start stage 1 (backend database change) of the "Ready to eat / Ready to
+  cook" box. The design (free text; exact RTE / RTC / "ready to eat" / "ready to cook" proposed as read; anything else or blank
+  asked; specs with no such question shown as blank for approval) is in the DESIGN entry above and the user has agreed to it
+  in principle, but has not yet approved building any stage.
