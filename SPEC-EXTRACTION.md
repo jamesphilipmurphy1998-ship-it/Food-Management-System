@@ -2507,3 +2507,34 @@ separately and deploy it (to be tried in a real browser first); show them as sep
   the independent re-fetch: **131/131 correct, 0 text values changed, 0 other ingredients changed
   (404/404 present).** Each write carries the record's `updatedAt`, so a record someone edited in the
   meantime would be refused by the server rather than overwritten.
+
+### 2026-10-07 — Pack Size edit form deployed: number and unit saved as separate data
+
+**Live now.** The ingredient edit form shows Pack Size as a number box and a unit dropdown (g, kg, ml, L)
+beside Pack Format. It still keeps the one text value (`12.5 kg`, number + space + unit) AND sends the
+number (`packSizeValue`, a real number) and unit (`packSizeUnit`) as their own fields.
+
+**Tried in a real browser first** (local preview, no data server, throwaway storage cleared afterwards):
+typing 2.5 and choosing L stores the text `2.5 L`; a number with no unit is refused with a message and
+nothing is saved; a valid save stores text `2.5 L`, value `2.5` (a number) and unit `L`; opening a
+record with a clean value shows it in the two boxes; a messy legacy value (`1 kg / 3 kg`) opens as plain
+editable text, is saved EXACTLY as it was with the separate fields cleared, and clearing that text
+returns the form to the two boxes. Earlier: the real functions run against all 150 archived values
+altered 0 and would have blocked 0 saves.
+
+**Deployed:** `app.js` and `index.html` to `/opt/nutricost/` (cache tag `app.js?v=20261007-packsize-parts`);
+`hfss.js` and `recipes.js` were already identical to the live copies. Previous `app.js` and `index.html`
+are in `/opt/nutricost/frontend-previous-20261007/` on the Pi (rollback = copy them back; no restart is
+needed for page files). Checksums matched after upload and the live site serves the new code, version tag,
+number box and unit dropdown. This commit also saves, for the first time, the earlier speed fixes
+(`recipes.js`, `hfss.js`, parts of `app.js`) that went live on 2026-09-30 but had never been committed.
+
+**Rollback summary for the whole Pack Size parts feature:** page files: copy back from
+`frontend-previous-20261007`. Backend program: `/opt/nutricost/backend-previous-20261007` (stop service,
+copy the two files back, start). The two new database columns are additive and harmless to the old program.
+Full database dump from before any of this: `.scan/backups/nutricost-db-2026-10-07.sql.gz`.
+
+**Not done / still open:** the 17 live Pack Size values that are not a single number + unit (listed in
+SPEC-ISSUES-TO-REVIEW.md) have no number/unit yet; 11 specs' ingredient lists could be filled from their
+tables (Matcha's dry run shows it); the OneDrive copy of this backup was not made (`backup-full.ps1
+-ConfirmOneDrive` would do it); the number is not yet used for any calculation.

@@ -1226,7 +1226,21 @@
       <div class="form-group"><label class="form-label">Supplier</label><input class="form-input" type="text" id="new-ing-supplier" placeholder="e.g. Supplier name"></div>
     </div>
     <div class="form-row">
-      <div class="form-group" style="flex:0 0 110px"><label class="form-label">Pack Size</label><input class="form-input" type="text" id="new-ing-pack-size" placeholder="e.g. 5kg"></div>
+      <div class="form-group" style="flex:0 0 190px">
+        <label class="form-label">Pack Size</label>
+        <div id="new-ing-pack-size-split" style="display:flex;gap:6px">
+          <input class="form-input" type="text" inputmode="decimal" id="new-ing-pack-size-num" placeholder="e.g. 40" style="flex:1;min-width:0" oninput="syncPackSizeFromSplit()">
+          <select class="form-select" id="new-ing-pack-size-unit" style="width:64px;padding:6px 8px;font-size:13px" onchange="syncPackSizeFromSplit()">
+            <option value="">—</option>
+            <option value="g">g</option>
+            <option value="kg">kg</option>
+            <option value="ml">ml</option>
+            <option value="L">L</option>
+          </select>
+        </div>
+        <input class="form-input" type="text" id="new-ing-pack-size" placeholder="e.g. 5kg" style="display:none" oninput="onPackSizeRawEdited()">
+        <p id="new-ing-pack-size-legacy-hint" style="display:none;font-size:11px;color:var(--nc-gray-400);margin:2px 0 0">Saved as text that isn't a single number + unit, so it is shown exactly as stored. Clear it to use the number and unit boxes.</p>
+      </div>
       <div class="form-group"><label class="form-label">Pack Format</label><input class="form-input" type="text" id="new-ing-pack-format" placeholder="e.g. Bag, Box, Tub"></div>
       <div class="form-group"><label class="form-label">Storage Conditions</label><input class="form-input" type="text" id="new-ing-storage-conditions" placeholder="e.g. Ambient, Chilled, Frozen"></div>
     </div>
@@ -1908,11 +1922,11 @@
 <script src="data.js?v=20260929-no-fvn-guessing"></script>
 <script src="storage.js?v=20260929-real-delete-all"></script>
 <script src="ingredients.js?v=20260929-real-delete-all"></script>
-<script src="recipes.js?v=20260929-real-delete-all"></script>
-<script src="hfss.js?v=20260923-cache-buster"></script>
+<script src="recipes.js?v=20260930-perf-fixes"></script>
+<script src="hfss.js?v=20260930-perf-fixes"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="app.js?v=20260929-no-fvn-guessing"></script>
+<script src="app.js?v=20261007-packsize-parts"></script>
 <script src="excel-import.js?v=20260929-no-fvn-guessing"></script>
 <script src="reports.js?v=20260923-cache-buster"></script>
 </body>

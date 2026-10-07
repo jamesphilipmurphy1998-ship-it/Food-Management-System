@@ -6,7 +6,15 @@ window.NutriCalcHFSS = (function () {
   var Recipes = window.NutriCalcRecipes;
 
   function calcHFSS(recipe, ingredients) {
-    var n = Recipes.calcRecipeNutrition(recipe, ingredients);
+    // Built once per call and threaded through every lookup below instead of the previous
+    // recipes.find()/ingredients.find() linear scans repeated per line/sub-recipe -- a
+    // read-only performance change, never cached across calls, so no risk of showing (or
+    // saving) stale data.
+    var recipes = Recipes.getRecipes();
+    var maps = Recipes.buildLookupMaps ? Recipes.buildLookupMaps(ingredients, recipes) : null;
+    var ingById = maps ? maps.ingById : null;
+    var recById = maps ? maps.recById : null;
+    var n = Recipes.calcRecipeNutrition(recipe, ingredients, undefined, maps);
     var isFood = recipe.type === "food";
 
     var energyThresholds = [335, 670, 1005, 1340, 1675, 2010, 2345, 2680, 3015, 3350];
@@ -36,25 +44,24 @@ window.NutriCalcHFSS = (function () {
 
     var aPoints = energyPts + satPts + sugarPts + sodiumPts;
 
-    var recipes = Recipes.getRecipes();
     var totalWeight = (recipe.ingredients || []).reduce(function (s, ri) { return s + (Data.qtyToGrams ? Data.qtyToGrams(ri.qty, ri.uom) : ri.qty); }, 0);
     var fvnWeight = 0;
     (recipe.ingredients || []).forEach(function (ri) {
       var qtyG = Data.qtyToGrams ? Data.qtyToGrams(ri.qty, ri.uom) : ri.qty;
       if (ri.subRecipeId) {
-        var subRec = recipes.find(function (r) { return r.id === ri.subRecipeId; });
+        var subRec = recById ? recById.get(ri.subRecipeId) : recipes.find(function (r) { return r.id === ri.subRecipeId; });
         if (subRec) {
-          var subNut = Recipes.calcRecipeNutrition(subRec, ingredients);
+          var subNut = Recipes.calcRecipeNutrition(subRec, ingredients, undefined, maps);
           var subTotal = subNut.totalWeight || 1;
           var subFvn = 0;
           (subRec.ingredients || []).forEach(function (sri) {
-            var sing = ingredients.find(function (i) { return i.id === sri.ingredientId; });
+            var sing = ingById ? ingById.get(sri.ingredientId) : ingredients.find(function (i) { return i.id === sri.ingredientId; });
             if (sing && sing.fvn) subFvn += (Data.qtyToGrams ? Data.qtyToGrams(sri.qty, sri.uom) : sri.qty);
           });
           fvnWeight += (qtyG / subTotal) * subFvn;
         }
       } else {
-        var ing = ingredients.find(function (i) { return i.id === ri.ingredientId; });
+        var ing = ingById ? ingById.get(ri.ingredientId) : ingredients.find(function (i) { return i.id === ri.ingredientId; });
         if (ing && ing.fvn) fvnWeight += qtyG;
       }
     });

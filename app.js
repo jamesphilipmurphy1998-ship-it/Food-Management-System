@@ -2750,6 +2750,7 @@
       var el = document.getElementById(id);
       if (el) el.value = "";
     });
+    renderPackSizeFromRaw();
     var catEl = document.getElementById("new-ing-cat");
     if (catEl) catEl.selectedIndex = 0;
     var currencyEl = document.getElementById("new-ing-currency");
@@ -2830,6 +2831,7 @@
     if (supplierEl) supplierEl.value = data.supplier || "";
     var packSizeEl = document.getElementById("new-ing-pack-size");
     if (packSizeEl) packSizeEl.value = data.packSize || "";
+    renderPackSizeFromRaw();
     var packFormatEl = document.getElementById("new-ing-pack-format");
     if (packFormatEl) packFormatEl.value = data.packFormat || "";
     var storageConditionsEl = document.getElementById("new-ing-storage-conditions");
@@ -2971,10 +2973,92 @@
     }
   }
 
+  // Pack Size is still ONE stored string (e.g. "40g") -- the number and unit boxes are only a
+  // way of editing it. The hidden/legacy text input #new-ing-pack-size is what saveIngredient
+  // reads, and it is set from the stored value UNCHANGED on load; it is only rewritten when the
+  // person edits the number or unit box. A stored value that isn't a single number + unit
+  // (e.g. "1 kg / 3 kg") is shown as editable raw text instead, so opening and saving a record
+  // can never drop or alter it.
+  var PACK_SIZE_SPLIT_RE = /^\s*(\d+(?:\.\d+)?)\s*(kgs?|g|ml|l|litres?|ltr)\s*$/i;
+
+  function packSizeUnitKey(u) {
+    u = String(u).toLowerCase();
+    if (u.indexOf("kg") === 0) return "kg";
+    if (u === "g" || u === "ml") return u;
+    return "L";
+  }
+
+  function renderPackSizeFromRaw() {
+    var raw = document.getElementById("new-ing-pack-size");
+    var numEl = document.getElementById("new-ing-pack-size-num");
+    var unitEl = document.getElementById("new-ing-pack-size-unit");
+    var splitEl = document.getElementById("new-ing-pack-size-split");
+    var hintEl = document.getElementById("new-ing-pack-size-legacy-hint");
+    if (!raw || !numEl || !unitEl || !splitEl) return;
+    var m = PACK_SIZE_SPLIT_RE.exec(raw.value);
+    if (!raw.value.trim() || m) {
+      numEl.value = m ? m[1] : "";
+      unitEl.value = m ? packSizeUnitKey(m[2]) : "";
+      splitEl.style.display = "flex";
+      raw.style.display = "none";
+      if (hintEl) hintEl.style.display = "none";
+    } else {
+      numEl.value = "";
+      unitEl.value = "";
+      splitEl.style.display = "none";
+      raw.style.display = "";
+      if (hintEl) hintEl.style.display = "";
+    }
+  }
+
+  function syncPackSizeFromSplit() {
+    var raw = document.getElementById("new-ing-pack-size");
+    var numEl = document.getElementById("new-ing-pack-size-num");
+    var unitEl = document.getElementById("new-ing-pack-size-unit");
+    if (!raw || !numEl || !unitEl) return;
+    var num = numEl.value.trim();
+    raw.value = num ? (num + (unitEl.value ? " " + unitEl.value : "")) : "";
+  }
+
+  function onPackSizeRawEdited() {
+    var raw = document.getElementById("new-ing-pack-size");
+    if (raw && !raw.value.trim()) renderPackSizeFromRaw();
+  }
+
+  // Returns a message when the number/unit boxes hold something that can't be saved as a clean
+  // value, otherwise "". Skipped in legacy raw-text mode (that text is saved exactly as shown).
+  function packSizeSplitProblem() {
+    var numEl = document.getElementById("new-ing-pack-size-num");
+    var unitEl = document.getElementById("new-ing-pack-size-unit");
+    var splitEl = document.getElementById("new-ing-pack-size-split");
+    if (!numEl || !unitEl || !splitEl || splitEl.style.display === "none") return "";
+    var num = numEl.value.trim();
+    if (!num && !unitEl.value) return "";
+    if (!/^\d+(\.\d+)?$/.test(num)) return "Pack Size number must be digits, e.g. 40 or 2.5";
+    if (!unitEl.value) return "Pack Size needs a unit (g, kg, ml or L)";
+    return "";
+  }
+
+  // The number and unit that go to the server as their own fields. Only meaningful in split mode with
+  // a valid number + unit; in legacy raw-text mode, or when empty, they are explicitly cleared
+  // (null / "") so they can never describe a different value than the text packSize.
+  function packSizePartsForSave() {
+    var numEl = document.getElementById("new-ing-pack-size-num");
+    var unitEl = document.getElementById("new-ing-pack-size-unit");
+    var splitEl = document.getElementById("new-ing-pack-size-split");
+    if (numEl && unitEl && splitEl && splitEl.style.display !== "none") {
+      var num = numEl.value.trim();
+      if (/^\d+(\.\d+)?$/.test(num) && unitEl.value) return { value: Number(num), unit: unitEl.value };
+    }
+    return { value: null, unit: "" };
+  }
+
   function saveIngredient() {
     var nameEl = document.getElementById("new-ing-name");
     var name = nameEl && nameEl.value.trim();
     if (!name) { showToast("Please enter ingredient name"); return; }
+    var packSizeProblem = packSizeSplitProblem();
+    if (packSizeProblem) { showToast(packSizeProblem); return; }
     var allergenInputs = document.querySelectorAll("#new-ing-allergens input:checked");
     var allergens = [];
     allergenInputs.forEach(function (c) { allergens.push(c.value); });
@@ -3009,6 +3093,8 @@
       unitWeightG: (function () { var el = document.getElementById("new-ing-unit-weight"); var v = el ? parseFloat(el.value) : NaN; return (v != null && !isNaN(v) && v > 0) ? v : 0; })(),
       supplier: supplierEl ? supplierEl.value.trim() : "",
       packSize: (function () { var el = document.getElementById("new-ing-pack-size"); return el ? el.value.trim() : ""; })(),
+      packSizeValue: packSizePartsForSave().value,
+      packSizeUnit: packSizePartsForSave().unit,
       packFormat: (function () { var el = document.getElementById("new-ing-pack-format"); return el ? el.value.trim() : ""; })(),
       storageConditions: (function () { var el = document.getElementById("new-ing-storage-conditions"); return el ? el.value.trim() : ""; })(),
       shelfLife: (function () { var el = document.getElementById("new-ing-shelf-life"); return el ? el.value.trim() : ""; })(),
@@ -5441,7 +5527,12 @@
       var tagsR = searchWordsMatch((r.descriptionTags || []).join(" "), q);
       return [nameR, codeR, tagsR].reduce(function (a, b) { return a.score >= b.score ? a : b; }, { match: false, score: 0 });
     }
-    var matches = filtered.filter(function (r) { return recipeScore(r).match; }).sort(function (a, b) { return recipeScore(b).score - recipeScore(a).score; }).slice(0, 10);
+    // Score each recipe once (not once per filter check AND again per sort comparison, which
+    // re-ran recipeScore() roughly n*log(n) extra times for every keystroke against up to ~1,100
+    // recipes) -- cache {recipe, score} pairs, then filter/sort against the cached score.
+    var scored = filtered.map(function (r) { return { r: r, s: recipeScore(r) }; }).filter(function (x) { return x.s.match; });
+    scored.sort(function (a, b) { return b.s.score - a.s.score; });
+    var matches = scored.slice(0, 10).map(function (x) { return x.r; });
     if (matches.length === 0) {
       dd.innerHTML = "<div style=\"padding:10px;color:var(--nc-gray-400);font-size:13px\">No matches</div>";
       dd.classList.add("open");
@@ -8101,6 +8192,9 @@ desc: "Imported from " + (fname || "spreadsheet"),
   window.closeModal = closeModal;
   window.saveIngredient = saveIngredient;
   window.syncIngredientDensityField = syncIngredientDensityField;
+  window.syncPackSizeFromSplit = syncPackSizeFromSplit;
+  window.renderPackSizeFromRaw = renderPackSizeFromRaw;
+  window.onPackSizeRawEdited = onPackSizeRawEdited;
   window.editIngredient = editIngredient;
   window.onIngredientVersionSelectChange = onIngredientVersionSelectChange;
   window.toggleIngredientSort = toggleIngredientSort;
@@ -8111,7 +8205,22 @@ desc: "Imported from " + (fname || "spreadsheet"),
   window.openSingleIngredientRecipeView = openSingleIngredientRecipeView;
   window.deleteIngredient = deleteIngredient;
   window.filterIngredients = filterIngredients;
-  window.searchIngredientLibrary = searchIngredientLibrary;
+  // Debounced on the window-exposed entry point only (the HTML oninput/onfocus handlers) --
+  // internal calls to the real searchIngredientLibrary/searchRecipeLibrary functions elsewhere
+  // in this file are untouched and still run immediately. Without this, every single keystroke
+  // in the library search box re-scanned the full ~400 ingredients / ~1,100 recipes; a person
+  // typing a few characters barely notices the 150ms wait, but does notice per-keystroke lag
+  // against that many records. Purely a UI-responsiveness change -- searchIngredientLibrary
+  // only reads and renders a dropdown, it never writes/saves anything.
+  function debounce(fn, waitMs) {
+    var t = null;
+    return function () {
+      var args = arguments;
+      clearTimeout(t);
+      t = setTimeout(function () { fn.apply(null, args); }, waitMs);
+    };
+  }
+  window.searchIngredientLibrary = debounce(searchIngredientLibrary, 150);
   window.loadSampleIngredients = loadSampleIngredients;
   window.loadSampleRecipes = loadSampleRecipes;
   window.loadSampleData = loadSampleData;
@@ -8121,7 +8230,7 @@ desc: "Imported from " + (fname || "spreadsheet"),
   window.clearAllRecipesFromModal = clearAllRecipesFromModal;
   window.wipeEverythingFromModal = wipeEverythingFromModal;
   window.removeDuplicates = removeDuplicates;
-  window.searchRecipeLibrary = searchRecipeLibrary;
+  window.searchRecipeLibrary = debounce(searchRecipeLibrary, 150);
   window.applyRecipeSearch = applyRecipeSearch;
   window.setRecipeFilter = setRecipeFilter;
   window.handleIngredientRowClick = handleIngredientRowClick;
@@ -8409,6 +8518,31 @@ desc: "Imported from " + (fname || "spreadsheet"),
   window.confirmDuplicateRecipe = confirmDuplicateRecipe;
   window.filterRecipes = filterRecipes;
   window.renderRecipesList = renderRecipesList;
+  // ingredients.js/recipes.js/excel-import.js each listen for "nutricalc-storage-updated" and
+  // call window.renderAll() so a background refreshFromApi() (or an import) re-renders the
+  // screen the moment fresh data lands, without the user having to navigate anywhere first.
+  // That guard was previously always false -- renderAll was never actually exposed on window --
+  // so the initial render (from whatever was in localStorage/empty on page load) silently never
+  // got replaced until something else incidentally re-rendered later. This is the fix for the
+  // "shows 0 ingredients/recipes for a few seconds" symptom: read-only, calls only existing
+  // render functions, never touches the save/persist path.
+  //
+  // refreshFromApi() resolves ingredients and recipes together and fires BOTH "ingredients" and
+  // "recipes" storage-updated events back to back -- each one's listener would otherwise call
+  // this and run the full (expensive, ~1,100-recipe) render pass twice for what's really one
+  // logical update. Coalesced here with a single microtask: any renderAll() calls in the same
+  // tick collapse into one real render, still on the very next microtask so nothing waits
+  // longer than before -- purely a render-scheduling change, no effect on what gets computed,
+  // displayed, or saved.
+  var renderAllQueued = false;
+  window.renderAll = function () {
+    if (renderAllQueued) return;
+    renderAllQueued = true;
+    Promise.resolve().then(function () {
+      renderAllQueued = false;
+      renderAll();
+    });
+  };
   window.renderProjectRecipesList = renderProjectRecipesList;
   window.openProjectRecipes = openProjectRecipes;
   window.openNewRecipeModalForProject = openNewRecipeModalForProject;

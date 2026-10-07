@@ -87,19 +87,34 @@ window.NutriCalcRecipes = (function () {
     return !!(rec && rec.ingredients && rec.ingredients.length === 1 && rec.ingredients[0].ingredientId);
   }
 
+  /** Builds id->record Maps once per top-level nutrition calculation, threaded through every
+   * recursive call instead of each line re-running ingredients.find()/recipes.find() (an O(n)
+   * linear scan against up to ~400 ingredients / ~1100 recipes, repeated for every line of every
+   * recipe and every level of sub-recipe nesting). Built fresh on every call — this is a
+   * read-only performance change local to this single calculation, never cached across calls or
+   * stored anywhere, so it carries no risk of ever showing (or saving) stale data. */
+  function buildLookupMaps(ingredients, recipes) {
+    var ingById = new Map();
+    (ingredients || []).forEach(function (i) { if (i && i.id) ingById.set(i.id, i); });
+    var recById = new Map();
+    (recipes || []).forEach(function (r) { if (r && r.id) recById.set(r.id, r); });
+    return { ingById: ingById, recById: recById };
+  }
+
   /** Weight (g) of 1 unit of this recipe's own UOM, for nutrition purposes — mirrors
    * getRecipeUnitWeightG in app.js so an EACH-based line here uses the recipe's real per-unit
    * weight instead of guessing. Manual override (rec.unitWeightG) wins; otherwise derived
    * recursively from the recipe's own lines. */
-  function recipeUnitWeightGForNutrition(rec, ingredients, visited) {
+  function recipeUnitWeightGForNutrition(rec, ingredients, visited, maps) {
     visited = visited || {};
     if (!rec) return 0;
     if (rec.id && visited[rec.id]) return 0;
     if (rec.id) visited[rec.id] = true;
     if (rec.unitWeightG && rec.unitWeightG > 0) return rec.unitWeightG;
     var recipes = getRecipes();
+    maps = maps || buildLookupMaps(ingredients, recipes);
     var total = 0;
-    (rec.ingredients || []).forEach(function (ri) { total += lineWeightGForNutrition(ri, ingredients, recipes, visited); });
+    (rec.ingredients || []).forEach(function (ri) { total += lineWeightGForNutrition(ri, ingredients, recipes, visited, maps); });
     return total;
   }
 
@@ -109,11 +124,12 @@ window.NutriCalcRecipes = (function () {
    * unitWeightG (or a sub-recipe's own derived unit weight) when known; otherwise excluded
    * rather than guessed — the previous flat "1 EACH = 100g" assumption silently distorted
    * per-100g nutrition for any EACH-counted line whose real weight differs from 100g. */
-  function lineWeightGForNutrition(ri, ingredients, recipes, visited) {
+  function lineWeightGForNutrition(ri, ingredients, recipes, visited, maps) {
     if (!ri) return 0;
+    maps = maps || buildLookupMaps(ingredients, recipes);
     var uom = (ri.uom || "G").toString().toUpperCase();
     if (ri.ingredientId) {
-      var ing = ingredients.find(function (i) { return i.id === ri.ingredientId; });
+      var ing = maps.ingById.get(ri.ingredientId);
       if (isPackagingItem(ing)) return 0;
       if (uom === "EACH") {
         var unitG = ing ? Number(ing.unitWeightG || 0) : 0;
@@ -122,15 +138,15 @@ window.NutriCalcRecipes = (function () {
       return Data.qtyToGrams ? Data.qtyToGrams(ri.qty, ri.uom) : ri.qty;
     }
     if (ri.subRecipeId) {
-      var subRec = recipes.find(function (r) { return r.id === ri.subRecipeId; });
+      var subRec = maps.recById.get(ri.subRecipeId);
       if (!subRec) return 0;
       if (isSingleIngredientRecipeLocal(subRec)) {
         var baseLine = (subRec.ingredients || [])[0];
-        var baseIng = baseLine && baseLine.ingredientId ? ingredients.find(function (i) { return i.id === baseLine.ingredientId; }) : null;
+        var baseIng = baseLine && baseLine.ingredientId ? maps.ingById.get(baseLine.ingredientId) : null;
         if (isPackagingItem(baseIng)) return 0;
       }
       if (uom === "EACH") {
-        var subUnitG = recipeUnitWeightGForNutrition(subRec, ingredients, Object.assign({}, visited || {}));
+        var subUnitG = recipeUnitWeightGForNutrition(subRec, ingredients, Object.assign({}, visited || {}), maps);
         return subUnitG > 0 ? ri.qty * subUnitG : 0;
       }
       return Data.qtyToGrams ? Data.qtyToGrams(ri.qty, ri.uom) : ri.qty;
@@ -138,24 +154,25 @@ window.NutriCalcRecipes = (function () {
     return 0;
   }
 
-  function calcRecipeNutrition(recipe, ingredients, visited) {
+  function calcRecipeNutrition(recipe, ingredients, visited, maps) {
     visited = visited || {};
     if (recipe.id && visited[recipe.id]) return { kj: 0, kcal: 0, fat: 0, sat: 0, carb: 0, sugar: 0, fibre: 0, protein: 0, salt: 0, totalWeight: 0 };
     if (recipe.id) visited[recipe.id] = true;
     var recipes = getRecipes();
+    maps = maps || buildLookupMaps(ingredients, recipes);
     var totalWeight = (recipe.ingredients || []).reduce(function (s, ri) {
-      return s + lineWeightGForNutrition(ri, ingredients, recipes, visited);
+      return s + lineWeightGForNutrition(ri, ingredients, recipes, visited, maps);
     }, 0);
     if (totalWeight === 0) return { kj: 0, kcal: 0, fat: 0, sat: 0, carb: 0, sugar: 0, fibre: 0, protein: 0, salt: 0, totalWeight: 0 };
     var kj = 0, kcal = 0, fat = 0, sat = 0, carb = 0, sugar = 0, fibre = 0, protein = 0, salt = 0;
     (recipe.ingredients || []).forEach(function (ri) {
-      var qtyG = lineWeightGForNutrition(ri, ingredients, recipes, visited);
+      var qtyG = lineWeightGForNutrition(ri, ingredients, recipes, visited, maps);
       if (qtyG <= 0) return;
       var f = qtyG / 100;
       if (ri.subRecipeId) {
-        var subRec = recipes.find(function (r) { return r.id === ri.subRecipeId; });
+        var subRec = maps.recById.get(ri.subRecipeId);
         if (subRec && !visited[ri.subRecipeId]) {
-          var subNut = calcRecipeNutrition(subRec, ingredients, visited);
+          var subNut = calcRecipeNutrition(subRec, ingredients, visited, maps);
           kj += subNut.kj * f;
           kcal += subNut.kcal * f;
           fat += subNut.fat * f;
@@ -167,7 +184,7 @@ window.NutriCalcRecipes = (function () {
           salt += subNut.salt * f;
         }
       } else {
-        var ing = ingredients.find(function (i) { return i.id === ri.ingredientId; });
+        var ing = maps.ingById.get(ri.ingredientId);
         if (!ing) return;
         kj += ing.kj * f;
         kcal += ing.kcal * f;
@@ -233,6 +250,7 @@ window.NutriCalcRecipes = (function () {
     deleteRecipe: deleteRecipe,
     deleteAllRecipes: deleteAllRecipes,
     calcRecipeNutrition: calcRecipeNutrition,
+    buildLookupMaps: buildLookupMaps,
     updateRecipeYieldPct: updateRecipeYieldPct,
     updateRecipeOwnCost: updateRecipeOwnCost,
     setHoldSave: setHoldSave,
