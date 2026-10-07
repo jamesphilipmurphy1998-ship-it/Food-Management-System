@@ -1,0 +1,33 @@
+{
+  "status": "ok",
+  "sourceFile": "C:\\Users\\JamesMurphy\\OneDrive - Wasabi\\WASUK - Food Team - NPD\\New Wasabi System Development\\FMS System\\3. Supporting Docs\\Ingredient Specs\\105978 (105596) Soy Sauce Sachet - RM Spec V3 (2.1.25).xlsx",
+  "appliedAt": "2026-10-07T14:53:40.538Z",
+  "name": "Soy Sauce Sachet",
+  "code": "105978",
+  "altCode": "105596",
+  "nutrition": {
+    "kj": 325,
+    "kcal": 77,
+    "fat": 0,
+    "sat": 0,
+    "carb": 3.2,
+    "sugar": 0.6,
+    "protein": 10,
+    "fibre": 1.5,
+    "salt": 16.9
+  },
+  "allergens": [
+    "Cereals containing gluten",
+    "Soya"
+  ],
+  "packSize": "10 ml",
+  "packSizeValue": 10,
+  "packSizeUnit": "ml",
+  "packFormat": "10ml x 400",
+  "storageConditions": "Store in a cool, dry place away from direct sunlight.",
+  "shelfLife": "12 months, minimum on delivery 90 days",
+  "ingredientsList": "Water, Soybeans, Wheat, Salt.",
+  "unitWeightG": 10,
+  "errors": [],
+  "warnings": []
+}

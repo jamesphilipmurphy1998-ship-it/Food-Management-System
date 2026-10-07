@@ -2866,3 +2866,14 @@ ACCIDENT: a "must refuse" test of `--apply` on spec-data/103489.json (an archive
 User confirmed one EACH is 8 g. Pack Size parts restored to 8 / g (undoing the accidental clear) and Weight per each set 0 -> 8 g, both
 by `field-fix-apply.js`, each approved by click, verified, 0 other ingredients changed. 105048 (CPU Gyoza Dipping Sauce Sachet) is a KG recipe
 of 66.67 sachets (1000.1 g) as set up in the system; user chose to leave it; nothing uses it.
+
+
+### 2026-10-07 — 105978 Soy Sauce Sachet spec uploaded (new file found in the folder)
+Folder check: snapshot diff (spec_files30 -> 31, 158 -> 159 files) found one new file, `105978 (105596) Soy Sauce Sachet - RM Spec V3 (2.1.25).xlsx`;
+whole-folder cross-check of the 70 unspecced RM ingredients matched only that plus the four already paused (106198, 106199, 106987, 107246).
+Every item confirmed by click: nutrition as the spec states (325 kJ / 77 kcal, carb 3.2, sugars 0.6, fibre 1.5, protein 10, salt 16.9; kcal does not match the
+4/4/9 macro sum, 77 vs 52.8, but matches the kJ -- spec's own figures); allergens gluten, soya; Pack Size 10 + ml (cell '10ml x 400'); Pack Format '10ml x 400'
+(user's wording: the 10 ml x how-many-per-pack); Shelf Life '12 months, minimum on delivery 90 days' and Storage 'Store in a cool, dry place away from direct sunlight.'
+(the spec's combined cell split, user chose the split); ingredients 'Water, Soybeans, Wheat, Salt.' (declaration box); name 'Soy Sauce Sachet 10ml' vs live
+'Soy Sauce Sachet' confirmed same product; EACH weight question answered yes -> Weight per each 0 -> 10 g. Verified live; archived `spec-data/105978.json`.
+Used in 40 recipes. The extractor still cannot split a combined Shelf Life/Storage cell cleanly (the split was applied by editing the extraction JSON with the confirmed text).
