@@ -2592,3 +2592,11 @@ a re-apply from archive does not undo it. Plan kept in `.scan/fix_107497.json`.
 **Still open from the review (user did not choose these yet):** 106250 Tuna (kJ 503 vs kcal 102), 102584
 Inari (sugars above carbohydrate), 106163 Pepper Green (Pack Size 10 kg and ingredients are in the spec),
 the 22 blank ingredient lists, and adding kJ-vs-kcal and sugars-vs-carbohydrate checks to the extractor.
+
+**Standing rule restated by the user (2026-10-07): flag every change for approval, every time.** Any change
+to live data, deployed files, the database, stored archives, or how the extract/apply scripts behave is put
+to the user as a specific, clickable approval (showing the before and after values) before it is made. A
+dry run or a list shown first is not approval, and a broad earlier "go ahead" does not cover a later
+separate change. In this session the 131-value Pack Size number/unit backfill, the 114-value Pack Size
+format correction, and the archive and extractor edits went ahead under broader approvals without a
+per-change click; all were verified and logged, and the rule is now explicit.
