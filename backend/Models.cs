@@ -42,6 +42,10 @@ public sealed class Ingredient
     /// field (an older page), and the ingredient PUT endpoints then KEEP the stored value rather
     /// than blanking it; "" means it was deliberately cleared.</summary>
     public string? PackSizeUnit { get; set; }
+    /// <summary>Free-text allergen note (e.g. a supplier comment recorded alongside the allergen ticks).
+    /// null means the client did NOT send this field (an older page) and the ingredient PUT endpoints then
+    /// KEEP the stored value; "" means it was deliberately cleared.</summary>
+    public string? AllergenNotes { get; set; }
     public string PackFormat { get; set; } = "";
     public string StorageConditions { get; set; } = "";
     /// <summary>Shelf life as stated by the manufacturer's spec -- e.g. "Production + 5 days.

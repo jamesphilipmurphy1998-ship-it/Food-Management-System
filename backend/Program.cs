@@ -881,6 +881,8 @@ app.MapPut("/api/ingredients/{id}", async (AppDbContext db, HttpContext ctx, str
         ingredient.PackSizeValue = entity.PackSizeValue;
         ingredient.PackSizeUnit = entity.PackSizeUnit;
     }
+    // Same keep-existing rule for the allergen note: null = not sent by an older page -> keep the stored note.
+    if (ingredient.AllergenNotes == null) ingredient.AllergenNotes = entity.AllergenNotes;
     db.Entry(entity).CurrentValues.SetValues(ingredient.ToEntity());
     entity.UpdatedAt = now;
     await db.SaveChangesAsync();
@@ -960,6 +962,7 @@ app.MapPut("/api/ingredients", async (AppDbContext db, HttpContext ctx, List<Ing
                 ing.PackSizeValue = entity.PackSizeValue;
                 ing.PackSizeUnit = entity.PackSizeUnit;
             }
+            if (ing.AllergenNotes == null) ing.AllergenNotes = entity.AllergenNotes;
             db.Entry(entity).CurrentValues.SetValues(ing.ToEntity());
         }
         else

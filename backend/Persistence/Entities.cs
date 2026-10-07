@@ -26,6 +26,7 @@ public sealed class IngredientEntity
     public string PackSize { get; set; } = "";
     public decimal? PackSizeValue { get; set; }
     public string? PackSizeUnit { get; set; }
+    public string? AllergenNotes { get; set; }
     public string PackFormat { get; set; } = "";
     public string StorageConditions { get; set; } = "";
     public string ShelfLife { get; set; } = "";
