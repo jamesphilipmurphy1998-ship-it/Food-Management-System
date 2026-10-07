@@ -974,8 +974,17 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
     # a source typo (2.5g for 2.5kg) that no automated check can reliably catch. Unconditional on
     # purpose: fires on every extraction that has a value, even a clean single measure. Both are
     # emitted here, after both fields are final, so one point covers every extraction path.
+    pack_size_number = pack_size_unit = None
     if pack_size is not None:
-        warnings.append("Pack Size inferred as %r (source cell read %r) -- always requires explicit human confirmation before writing, regardless of whether it looks plausible. It must be a single measure for ONE unit (e.g. '10ml', '1kg') with no container or count wording; confirm it against the source spec, then re-run with --confirm-warnings." % (pack_size, pack_size_raw))
+        sm = _re.match(r"^\s*(\d+(?:\.\d+)?)\s*(kgs?|g|ml|l|litres?|ltr)\s*$", pack_size, _re.IGNORECASE)
+        if sm:
+            pack_size_number = sm.group(1)
+            u = sm.group(2).lower()
+            pack_size_unit = "kg" if u.startswith("kg") else (u if u in ("g", "ml") else "l")
+            split_text = "read as number %s + unit %s" % (pack_size_number, pack_size_unit)
+        else:
+            split_text = "NOT a single number + unit, so it cannot be split into the number and unit boxes"
+        warnings.append("Pack Size inferred as %r, %s (source cell read %r) -- always requires explicit human confirmation before writing, regardless of whether it looks plausible. Ask the person to confirm or deny that the NUMBER and the UNIT are each right. It must be a single measure for ONE unit (e.g. '10ml', '1kg') with no container or count wording; then re-run with --confirm-warnings." % (pack_size, split_text, pack_size_raw))
     if pack_format is not None:
         warnings.append("Pack Format extracted as %r -- always requires explicit human confirmation before writing, regardless of whether it looks plausible. This is where container type and count/case wording belong; confirm it against the source spec, then re-run with --confirm-warnings." % pack_format)
 
@@ -990,6 +999,8 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
         "allergens": allergens,
         "packSize": pack_size,
         "packSizeLayout": pack_size_layout,
+        "packSizeNumber": pack_size_number,
+        "packSizeUnit": pack_size_unit,
         "packFormat": pack_format,
         "storageConditions": storage_conditions,
         "shelfLife": shelf_life,

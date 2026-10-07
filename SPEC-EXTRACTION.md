@@ -329,6 +329,13 @@ scan across both layouts — see the code comment above `pack_size = None` in
 `spec-extract.py` for the full reasoning. **If a future field needs to be pulled from this same
 sheet, check which layout applies before assuming the generic scan works.**
 
+> **Updated 2026-10-07:** the row is no longer found by the `1-d)` prefix with column C fixed. It is
+> found by reading the QUESTION TEXT ("weight or volume"), and the answer is the first non-empty
+> cell to the right of that question. The layout actually found is reported on every extraction
+> (`packSizeLayout`) and checked against the registry in the 2026-10-07 entry at the bottom of this
+> file; an unknown layout raises a warning. Pack Size and Pack Format now ALWAYS stop for human
+> confirmation, with Pack Size shown as number + unit (e.g. `40` + `g`).
+
 **Plausibility check:** `packSize` must contain at least one digit (a real pack size always has
 a quantity — "Bag" alone, with no number, would be a Pack Format value that ended up in the
 wrong field, not a valid size). Same "warning, still blocks `--apply`" treatment as the other
@@ -424,11 +431,13 @@ nothing is extracted from a spec beyond what's here:
 | Fibre (g) | `7 Nutrition Information` | **Fatal** |
 | Salt (g) | `7 Nutrition Information` | **Fatal** |
 | Allergens (all 14 EU categories checked) | `8&9 Intolerance & Dietary` | **Fatal** if even one of the 19 source rows this maps from can't be located — an allergen can never be assumed absent |
-| Pack Size | `1&2 Manufacturer Detail` | Warning (still blocks `--apply`, but distinguished as non-safety in the message) |
+| Pack Size | `1&2 Manufacturer Detail` | **Always** a mandatory confirmation warning (since 2026-10-07), shown as number + unit; also a warning if the value is not a single measure or the layout is new |
+| Pack Format | `4 Packaging Detail` (or the variant's packaging sheet) | **Always** a mandatory confirmation warning (since 2026-10-07) |
 | Pack Format | `4 Packaging Detail` | Warning (same as above) |
 | Storage Conditions | `5&6 Durability & Micro Standard` | Warning — **plus always requires explicit human confirmation even on a clean pass** (safety-critical, see the standing rule above) |
 | Shelf Life (added 2026-09-29) | `5&6 Durability & Micro Standard`, "5-a)" row | Warning — **plus always requires explicit human confirmation even on a clean pass** (safety-critical, same rule) |
 | Ingredients List / Legal Ingredient Declaration (added 2026-09-29) | `3 Ingredient & Recipe`, below the "Legal Ingredient Declaration" label | Warning (non-safety — a missing declaration section is expected/normal for single-/near-single-ingredient raw materials) |
+| Ingredients List fallback (added 2026-10-07) | `3 Ingredient & Recipe`, the Ingredients/Percentage table at the top | Used ONLY when the declaration box is empty or missing; list is INFERRED (e.g. `Carrot (100%)`) and **always** needs explicit human confirmation |
 
 **"Fatal" means `status: "cannot_extract"`, and `spec-apply.js` refuses to even show a diff,
 let alone write anything.** "Warning" means `status: "extracted_with_warnings"`, which
@@ -2316,3 +2325,46 @@ expired, so no apply was possible in any case).
 **Known issue, not fixed:** `--override-code CODE/ALTCODE` silently drops the alternate code
 (only the "(ALT)" form inside a cell is parsed as an alternate). It has not caused a wrong match,
 since matching uses the primary code, but the docstring promises more than the code does.
+
+### 2026-10-07 — Pack Size number + unit: confirmation prompt, edit form, and where things stand
+
+**Rule: Pack Size is confirmed as a number and a unit (user instruction, 2026-10-07).** The
+extractor now reports `packSizeNumber` and `packSizeUnit` alongside `packSize`, and its mandatory
+warning reads e.g. "Pack Size inferred as '40g', read as number 40 + unit g (source cell read
+'40g')". In every confirmation prompt, show it as **Pack Size: 40 + g** (and Pack Format on its own
+line) and ask the person to confirm or deny; where the value is not a single number + unit the
+warning says so, and the person decides what it should be. This applies to every spec, with or
+without an exception, so nothing reaches `--apply` without that click.
+
+**Ingredient Specs "edit ingredient" form (`index.html` + `app.js`), written 2026-10-07, NOT yet
+deployed.** Pack Size is now two boxes, a number and a unit (g / kg / ml / l), like Cost already has
+a unit box. It is still ONE stored string (`"40g"`): no backend, storage.js, save-queue or database
+change. Design for data safety: the stored value is loaded into the (now hidden) text field
+unchanged and is only rewritten if someone edits the number or unit box; a stored value that is
+not a single number + unit (e.g. `1 kg / 3 kg`) is shown as editable raw text instead of being
+forced into the boxes; saving blocks a number without a unit, or a non-numeric number, with a
+message rather than writing a half-value. Tested by running the real functions from `app.js`
+against a stub page: for all 146 archived Pack Size values, opening the form altered 0 and would
+have blocked 0 saves (127 show in the boxes, 17 stay as raw text, 2 empty). NOT tested in a real
+browser: the app needs a sign-in the assistant doesn't have, so the first real use is the check.
+
+**Extractor changes made this session, all documented above:** question-text row finder and layout
+registry; `60gx100pcs` and bare `k` handled; Pack Size / Pack Format always confirmed; Ingredients
+from the declaration first, table as a confirmed fallback; number + unit reporting.
+
+**Open items (nothing below has been done):**
+1. Resolve the 24 live Pack Size values listed in SPEC-ISSUES-TO-REVIEW.md, one at a time, each
+   confirmed by clickable prompt.
+2. Back-fill Ingredients on the 11 specs whose live list is blank but whose table has one:
+   105970, 106139, 106206, 106218, 106219, 106220, 106222, 106223, 106226, 106228, 107427.
+3. Hard refusal in `spec-apply.js` for a Pack Size that is not a single measure unless explicitly
+   confirmed (today safety rests on the confirmation prompt alone).
+4. Automatic cross-check of Pack Size against numbers in the ingredient name / filename / legal
+   name (would have caught the 2.5g-for-2.5kg typo and the 1.2-1.5kg vs 1.6kg Tuna Bar).
+5. Fix `--override-code CODE/ALTCODE` dropping the alternate code.
+6. Compare live Pack Size values against the archives (needs a fresh sign-in; the cookie jar has
+   expired), and note 30 archived specs have no source file on disk so cannot be re-verified.
+7. Re-run the Matcha (107427) test through to the end (its Storage, Shelf Life and Ingredients
+   prompts were dismissed) when the next spec is uploaded.
+8. Deploy the Pack Size edit form once the user has agreed. `app.js` / `index.html` also still
+   contain the earlier performance fixes that are already live on the Pi but were never committed.
