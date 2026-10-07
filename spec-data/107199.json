@@ -19,10 +19,10 @@
   "allergens": [
     "Fish"
   ],
-  "packSize": "800g",
+  "packSize": "800 g",
   "packFormat": "PROMS: 608 SHAL [780], PEACH PAD 375x550, Top Film, Joii sticker",
-  "storageConditions": "0 - <5°C",
-  "shelfLife": "P+4 (maximum storage temperature is <5°C), Minimum shelf life on delivery: P+3",
+  "storageConditions": "0 - <5\u00b0C",
+  "shelfLife": "P+4 (maximum storage temperature is <5\u00b0C), Minimum shelf life on delivery: P+3",
   "ingredientsList": "Yellowfin tuna (Thunnus albacares) (Fish) 100%",
   "errors": [],
   "warnings": []

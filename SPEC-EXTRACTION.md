@@ -2406,3 +2406,47 @@ folder), prints what the login endpoint answered, and saves the session where th
 read it. The user signed in with their own NutriCost account (`QA_EMAIL` setting), so these four
 writes are recorded under that account. Local sessions are persistent cookies
 (`IsPersistent = true`), so they outlast a day, but the exact lifetime was not established.
+
+### 2026-10-07 — Pack Size format rule: "<number> <unit>", and 114 live values corrected
+
+**Rule (user instruction, 2026-10-07): every Pack Size is written as the number, a single space,
+then the unit -- `40 g`, not `40g` -- with the unit spelled `g`, `kg`, `ml` or `L` (capital L,
+because a lowercase l next to a number looks like a 1).** The number is kept exactly as written
+(`25.00 kg` stays `25.00 kg`). The extractor now outputs this form, the edit form's number and unit
+boxes join with a space, and a bare `k` is read as kg and flagged as inferred.
+
+**Why it came up:** 106253 Teriyaki Sauce had just been applied as `15Kg`. At confirmation the
+user was shown "number 15 + unit kg", but the string actually written was the spec's own `15Kg`
+(the extractor preserved the spec's capital letter and spacing). The user saw it in the live app
+and asked why it was wrong. Lesson: what is shown at confirmation must be exactly what is stored.
+
+**Review of all live values** (read from the API): of 148 ingredients with a Pack Size, 16 were
+already in the form, 86 only lacked the space, 29 also had a different unit spelling or capital
+letters (`Kg`, `KG`, `Litre`, `Litres`, `ltr`, `kgs`), and 17 are not a single number + unit.
+**Corrected 114 live values** to the form (the earlier 16 includes some that used a lowercase `l`,
+so the changed count differs from 86 + 29). Full before/after list was shown to the user first;
+`.scan/packsize_format_plan.txt` / `.json` hold it (the json can be used to reverse the change).
+Written with `scripts/packsize-fix-apply.js` (now takes a plan file; writes only `packSize`, matched
+by exact code, refuses any item whose live value no longer matches the plan, re-fetches every
+record afterwards): **114 succeeded, 0 failed, 0 verification mismatches.** The 114 matching
+`spec-data/*.json` archive files were updated too. The 17 non-single values are untouched and
+still listed in SPEC-ISSUES-TO-REVIEW.md.
+
+**Form retest:** the real functions from `app.js` against all 150 stored values: opening altered 0
+and would have blocked 0 saves. The form is still not deployed.
+
+**New request, not started (needs approval): store the number and the unit as separate data.**
+The number may be used as a weight value in future. Findings so far, nothing changed:
+- Backend is EF Core with a precedent: Pack Size itself was added as an additive column on
+  2026-09-28 (migration `AddIngredientPackSize`). Fields live in `Models.cs`, `Persistence/Entities.cs`,
+  `Persistence/AppDbContext.cs`, `Persistence/MappingExtensions.cs` (both directions), a projection in
+  `Program.cs`, plus a new migration. Adding `pack_size_value` (nullable number) and `pack_size_unit`
+  (text) would be additive: no existing column is touched or dropped.
+- The frontend merges each save over the existing record (`{ ...existing, ...data }`), so fields the
+  page already received round-trip. The risk is a page loaded BEFORE the upgrade: it has no new
+  fields, sends none, and the update would overwrite the columns with defaults. Mitigation: the server
+  keeps the stored values whenever a request does not send them (null = not sent, "" = cleared).
+- Deploying means a backend rebuild, a database migration and an API restart on the Pi: a production
+  change that needs a backup first (`scripts/backup-full.ps1`) and the user's go-ahead.
+- Also needed: `spec-apply.js` writing and verifying the two new fields, the edit form saving them,
+  and a backfill from the now-canonical strings (deterministic for the clean ones).

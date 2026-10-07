@@ -604,6 +604,14 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
         r"(\d+(?:\.\d+)?)\s*(kgs?|g|ml|l|litres?|ltr|k)(?:\b|(?=x\s*\d))", _re.IGNORECASE
     )
 
+    def canonical_pack_unit(u):
+        u = u.lower()
+        if u.startswith("kg") or u == "k":
+            return "kg"
+        if u in ("g", "ml"):
+            return u
+        return "L"
+
     def clean_pack_size_measure(raw, warnings):
         matches = list(PACK_SIZE_UNIT_PATTERN.finditer(raw))
         if len(matches) != 1:
@@ -616,17 +624,18 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
             )
             return raw
         m = matches[0]
-        measure = m.group(0).strip()
+        # Always written as "<number> <unit>" with a single space and a standard unit spelling
+        # (g, kg, ml, L) -- user instruction 2026-10-07. The number is kept exactly as written.
+        measure = "%s %s" % (m.group(1), canonical_pack_unit(m.group(2)))
         if m.group(2).lower() == "k":
-            measure = m.group(1) + "kg"
             warnings.append(
-                "Pack Size cell read %r -- the bare unit 'k' was INFERRED to mean kg (%r). Confirm "
-                "this against the source spec." % (raw, measure))
+                "Pack Size cell read %r -- the bare unit 'k' was INFERRED to mean kg. Confirm "
+                "this against the source spec." % raw)
         if measure != raw:
             warnings.append(
-                "Pack Size cell read %r -- reduced to the measure %r, dropping the surrounding "
-                "container/count wording (that belongs in Pack Format, which is extracted "
-                "separately). This split always requires human confirmation." % (raw, measure)
+                "Pack Size cell read %r -- written as %r (number, space, unit; any container or "
+                "count wording removed, since that belongs in Pack Format, which is extracted "
+                "separately). This always requires human confirmation." % (raw, measure)
             )
         return measure
 
@@ -980,7 +989,7 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
         if sm:
             pack_size_number = sm.group(1)
             u = sm.group(2).lower()
-            pack_size_unit = "kg" if u.startswith("kg") else (u if u in ("g", "ml") else "l")
+            pack_size_unit = canonical_pack_unit(u)
             split_text = "read as number %s + unit %s" % (pack_size_number, pack_size_unit)
         else:
             split_text = "NOT a single number + unit, so it cannot be split into the number and unit boxes"

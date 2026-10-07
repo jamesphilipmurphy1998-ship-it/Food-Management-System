@@ -22,7 +22,8 @@ function curlPut(url, body) {
   return { body: text.slice(0, idx), status: text.slice(idx + 1).trim() };
 }
 
-const plan = JSON.parse(fs.readFileSync("C:\\Dev\\NutriCost\\.scan\\packsize_fix_plan.json", "utf8"));
+const planPath = process.argv[2] || "C:\\Dev\\NutriCost\\.scan\\packsize_fix_plan.json";
+const plan = JSON.parse(fs.readFileSync(planPath, "utf8"));
 const allIngredients = curlGet(`${API_BASE}/api/ingredients?includeUnlinked=true`);
 
 let okCount = 0, failCount = 0;
@@ -42,7 +43,8 @@ for (const item of plan) {
     failures.push({ code: item.code, reason: "packSize changed since plan built", live: matched.packSize, expected: item.old_packSize });
     continue;
   }
-  const updated = { ...matched, packSize: item.new_packSize, packFormat: item.new_packFormat };
+  const updated = { ...matched, packSize: item.new_packSize };
+  if (item.new_packFormat !== undefined) updated.packFormat = item.new_packFormat;
   const result = curlPut(`${API_BASE}/api/ingredients/${matched.id}`, updated);
   if (result.status !== "200") {
     console.log(`FAIL ${item.code}: PUT status ${result.status}`);
@@ -66,7 +68,7 @@ let verifyOk = 0, verifyFail = 0;
 for (const item of plan) {
   const live = verifyList.find((i) => (i.code || "").trim().toUpperCase() === item.code.trim().toUpperCase());
   if (!live) continue;
-  if (live.packSize === item.new_packSize && live.packFormat === item.new_packFormat) {
+  if (live.packSize === item.new_packSize && (item.new_packFormat === undefined || live.packFormat === item.new_packFormat)) {
     verifyOk++;
   } else if (live.packSize === item.old_packSize) {
     // was skipped/failed, not a verification problem

@@ -17,9 +17,9 @@
     "salt": 0.1
   },
   "allergens": [],
-  "packSize": "10kg",
+  "packSize": "10 kg",
   "packFormat": "Liner (inner), Carton (outer)",
-  "storageConditions": "-18°C",
+  "storageConditions": "-18\u00b0C",
   "ingredientsList": "Carrot",
   "errors": [],
   "warnings": [],

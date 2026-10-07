@@ -14,10 +14,10 @@
     "sugar": 4.45,
     "protein": 0.9,
     "fibre": 1.6,
-    "salt": 0.000025
+    "salt": 2.5e-05
   },
   "allergens": [],
-  "packSize": "10kg",
+  "packSize": "10 kg",
   "packFormat": "Polyliners - Blue",
   "storageConditions": "Keep frozen -18 C",
   "ingredientsList": "IQF Red chilli puree nuggets",
