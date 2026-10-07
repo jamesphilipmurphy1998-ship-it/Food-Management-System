@@ -2937,3 +2937,12 @@ The extractor proposes an allergen note for 18 specs (`.scan/proposed_allergen_n
 `index.html` and `app.js` (cache tag `app.js?v=20261007-allergen-notes`) copied to `/opt/nutricost/` on the Pi after confirming the live files were byte-identical to the versions edited (checksums); rollback copies in
 `/opt/nutricost/frontend-previous-allergen-20261007/`. Verified: checksums match local, the served index.html contains the box (`new-ing-allergen-notes`) and the served app.js carries `allergenNotes`, service active, the live API returns
 `allergenNotes` (null on all 404 ingredients, none set yet). Rollback: copy the two files back from the previous folder (no restart needed). Next: the 106153 upload with its supplier note, and the user's decisions on `ALLERGEN-REVIEW.md`.
+
+
+### 2026-10-07 — 106153 Savoury Seasoning uploaded (first spec with an Allergen note)
+File `106153 (106717) RM Spec V5 24.01.2025 July 2026.xlsx` (code cell "106153 (105003)"). Every field confirmed by click: nutrition 1135 kJ / 270 kcal, fat 2.7, sat 0.4, carb 28.5, sugars 1.2, fibre 7.6, protein 29.3, salt 23.5;
+Pack Size 15 + kg (cell "15Kg"); Pack Format "Heavy Duty Plastic Sack"; Storage "Ambient" (full stop dropped); Shelf Life "12 months / Minimum shelf life on delivery 6 months" (spec row 5-a is "Shelf Life from manufacturer &
+Minimum shelf life on delivery" = "12 months / 6 months"); Ingredients "Seasoning Mix (Yeast Extract (Yeast Extract, Salt), Salt, Potato Starch, Onion Powder, Ground Sage, *Rapeseed Oil)." (declaration box, the processing-aid footnote left out by choice).
+ALLERGENS: NONE ticked. The spec answers Yes for wheat and barley (yeast extract from brewers wort) but the supplier comment says "<20ppm so no allergen declaration required" and the gluten-level row says No; user decided to follow the supplier.
+Allergen notes written: "Wheat: Yeast Extract derived from brewers wort (Wheat), but total content is <20ppm so no allergen declaration required. Barley: Yeast Extract derived from brewers wort (barley), but total content is <20ppm so no allergen declaration required."
+Verified live, archived in `spec-data/106153.json` (allergenNotes carried), used in 32 recipes. No other ingredient has an allergen note.

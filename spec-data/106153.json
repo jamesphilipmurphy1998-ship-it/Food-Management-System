@@ -1,0 +1,31 @@
+{
+  "status": "ok",
+  "sourceFile": "C:\\Users\\JamesMurphy\\OneDrive - Wasabi\\WASUK - Food Team - NPD\\New Wasabi System Development\\FMS System\\3. Supporting Docs\\Ingredient Specs\\106153 (106717) RM Spec V5 24.01.2025 July 2026.xlsx",
+  "appliedAt": "2026-10-07T16:07:40.993Z",
+  "name": "RM Savoury Seasoning",
+  "code": "106153",
+  "altCode": "105003",
+  "nutrition": {
+    "kj": 1135,
+    "kcal": 270,
+    "fat": 2.7,
+    "sat": 0.4,
+    "carb": 28.5,
+    "sugar": 1.2,
+    "protein": 29.3,
+    "fibre": 7.6,
+    "salt": 23.5
+  },
+  "allergens": [],
+  "packSize": "15 kg",
+  "packSizeValue": 15,
+  "packSizeUnit": "kg",
+  "packFormat": "Heavy Duty Plastic Sack",
+  "storageConditions": "Ambient",
+  "shelfLife": "12 months / Minimum shelf life on delivery 6 months",
+  "ingredientsList": "Seasoning Mix (Yeast Extract (Yeast Extract, Salt), Salt, Potato Starch, Onion Powder, Ground Sage, *Rapeseed Oil).",
+  "allergenNotes": "Wheat: Yeast Extract derived from brewers wort (Wheat), but total content is <20ppm so no allergen declaration required. Barley: Yeast Extract derived from brewers wort (barley), but total content is <20ppm so no allergen declaration required.",
+  "unitWeightG": null,
+  "errors": [],
+  "warnings": []
+}
