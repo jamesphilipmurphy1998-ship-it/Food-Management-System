@@ -2924,3 +2924,10 @@ Built so far: DB column `allergen_notes` (live); form box (built, tested in the 
 or "handled on site" rows declared not-contained; a PROPOSAL only, the user edits/confirms it); `spec-apply.js` and `spec-reapply-all.js` now carry `allergenNotes` (written only if the confirmed extraction JSON contains it; archived).
 Procedure per spec: whole-row check -> show the user the proposed note and any Yes-with-exemption rows -> confirm each by click -> put the confirmed text in the extraction JSON as `allergenNotes` -> apply.
 Re-run over all uploaded specs: `.scan/tools/run_all_proposed.py` (output `.scan/proposed_allergen_notes.txt`, local) and `ALLERGEN-REVIEW.md` (in the repo). Backfilling notes onto the already-uploaded specs needs the user's per-spec approval.
+
+
+### 2026-10-07 — Re-run of ALL uploaded specs with the whole-row rule (results; nothing changed in live data)
+All 152 specs read (103489 was locked earlier, now read; the sweep totals are unchanged in sections A/B/C of `ALLERGEN-REVIEW.md`: 39 rows in 18 specs / 7 odd answers / 15 exemption comments).
+Re-extraction compared with the stored ticks: 124 specs clean-extract and match the stored allergens except **106955** (spec: "product may contain naturally occurring SO2, not tested"; extractor ticks nothing, live item has Sulphur dioxide ticked from the original upload; needs a ruling under the new rule).
+28 specs cannot be re-extracted without their original override flags (102015, 102063, 102584, 102664, 105951, 106028, 106103, 106134, 106135, 106164, 106165, 106167, 106169, 106188, 106194, 106250, 106834, 107199, 107200, 107203, 107240, 107312, 107315, 107316, 107317, 107322, 107490, 107541); their rows are covered by the sweep only.
+The extractor proposes an allergen note for 18 specs (`.scan/proposed_allergen_notes.txt`, local): 102052, 102058, 103487, 105950, 105971, 106127, 106138, 106162, 106163, 106174, 106208, 106211, 106217, 106238, 106317, 106363, 106438, 107247. None written. The page box is not yet deployed to the Pi.
