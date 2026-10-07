@@ -22,5 +22,7 @@
   "shelfLife": "DOP (Date of Production) + 02 days",
   "ingredientsList": "Pepper Red 100%",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 10,
+  "packSizeUnit": "kg"
 }

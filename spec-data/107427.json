@@ -13,5 +13,7 @@
   "shelfLife": "720 days total shelf life. 180 days minimum shelf life on delivery",
   "ingredientsList": null,
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 40,
+  "packSizeUnit": "g"
 }

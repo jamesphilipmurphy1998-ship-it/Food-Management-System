@@ -23,5 +23,7 @@
   "shelfLife": "Shelf Life from Manufacturer-24 Months and Shelf Life on Delivery 21 Months",
   "ingredientsList": "Parboiled Easy cook Long Grain Rice",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 20,
+  "packSizeUnit": "kg"
 }

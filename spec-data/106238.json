@@ -25,5 +25,7 @@
   "ingredientsList": "Durum Wheat Semolina",
   "errors": [],
   "warnings": [],
-  "shelfLife": "9 months shelf life from manufacturer, minimum 50% shelf life upon delivery to Wasabi"
+  "shelfLife": "9 months shelf life from manufacturer, minimum 50% shelf life upon delivery to Wasabi",
+  "packSizeValue": 25,
+  "packSizeUnit": "kg"
 }

@@ -25,5 +25,7 @@
   "ingredientsList": "Shrimp 99.5% (Crustaceans), Salt",
   "errors": [],
   "warnings": [],
-  "shelfLife": "Shelf life from manufacturer: 24 months\nShelf life on delivery: 90 days"
+  "shelfLife": "Shelf life from manufacturer: 24 months\nShelf life on delivery: 90 days",
+  "packSizeValue": 180,
+  "packSizeUnit": "g"
 }

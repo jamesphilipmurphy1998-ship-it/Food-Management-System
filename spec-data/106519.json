@@ -25,5 +25,7 @@
   "shelfLife": "12 months (75% of total/ 9 Months)",
   "ingredientsList": "WHEATFLOUR (CALCIUM CARBONATE, IRON, NIACIN,  THIAMIN), RICE",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 25.0,
+  "packSizeUnit": "kg"
 }

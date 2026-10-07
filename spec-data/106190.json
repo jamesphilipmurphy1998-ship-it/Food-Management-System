@@ -23,5 +23,7 @@
   "ingredientsList": "Ingredients: Rice",
   "errors": [],
   "warnings": [],
-  "shelfLife": "24 months from Manufacturer;  Min 6 months shelf-life on delivery"
+  "shelfLife": "24 months from Manufacturer;  Min 6 months shelf-life on delivery",
+  "packSizeValue": 400,
+  "packSizeUnit": "g"
 }

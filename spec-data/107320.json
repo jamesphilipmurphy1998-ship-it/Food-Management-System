@@ -23,5 +23,7 @@
   "ingredientsList": "Shiitake Mushroom",
   "errors": [],
   "warnings": [],
-  "shelfLife": "24 months. Minimum shelf life on delivery 6 months"
+  "shelfLife": "24 months. Minimum shelf life on delivery 6 months",
+  "packSizeValue": 15,
+  "packSizeUnit": "kg"
 }

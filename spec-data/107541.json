@@ -24,5 +24,7 @@
   "shelfLife": "18 months, minimum 9 months on delivery",
   "ingredientsList": "Chicken,RSPO Palm Oil, Native Corn Starch, Wheat Flour, Native Potato Starch, Salt, Raising Agents (Disodium Diphosphate, Sodium Bicarbonate).",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 10,
+  "packSizeUnit": "kg"
 }

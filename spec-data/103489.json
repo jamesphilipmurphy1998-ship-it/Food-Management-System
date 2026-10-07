@@ -25,5 +25,7 @@
   "shelfLife": "12 months; Min shelf life on delivery: 3months",
   "ingredientsList": "Ingredients: Inaka Miso (Soybean, Water, Rice, Salt, Alcohol), Spinach, Spring Onion, Tapioca Starch, Flavour Enhancer (E621), Salt, Sugar, Yeast Extract, Kelp Extract, Wakame Seaweed.",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 8,
+  "packSizeUnit": "g"
 }

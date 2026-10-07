@@ -23,5 +23,7 @@
   "ingredientsList": "Onion",
   "errors": [],
   "warnings": [],
-  "shelfLife": "24 months, 12 months minimum shelf life on delivery"
+  "shelfLife": "24 months, 12 months minimum shelf life on delivery",
+  "packSizeValue": 10,
+  "packSizeUnit": "kg"
 }

@@ -22,5 +22,7 @@
   "ingredientsList": "Ingredients Ginger (83%), Water, Salt, Acidity Regulators (Acetic Acid, Citric Acid), Sweeteners (Aspartame*, Saccharin, Sucralose), Preservative (Potassium Sorbate).\n*Contains a source of phenylalanine.",
   "errors": [],
   "warnings": [],
-  "shelfLife": "18 months"
+  "shelfLife": "18 months",
+  "packSizeValue": 5,
+  "packSizeUnit": "g"
 }

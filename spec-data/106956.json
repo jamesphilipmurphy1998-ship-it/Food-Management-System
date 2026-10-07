@@ -21,5 +21,7 @@
   "shelfLife": "12 months from milling, minimum 6 months upon the delivery",
   "ingredientsList": "dehydrated mushroom powder",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 10,
+  "packSizeUnit": "kg"
 }

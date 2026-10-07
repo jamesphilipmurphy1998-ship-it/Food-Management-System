@@ -23,5 +23,7 @@
   "ingredientsList": "Carrot",
   "errors": [],
   "warnings": [],
-  "shelfLife": "24 Months, 18 months (75% of the shelf life on production)"
+  "shelfLife": "24 Months, 18 months (75% of the shelf life on production)",
+  "packSizeValue": 10,
+  "packSizeUnit": "kg"
 }

@@ -25,5 +25,7 @@
   "shelfLife": "365 days, 6 months",
   "ingredientsList": "Water, Soybean, Powdered Soy Protein, Firming Agent: Magnesium Chloride.",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 300,
+  "packSizeUnit": "g"
 }

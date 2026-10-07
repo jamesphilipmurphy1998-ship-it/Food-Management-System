@@ -25,5 +25,7 @@
   "ingredientsList": "Ingredients: Lemon Juice from concentrate (99.93%), Preservative (Potassium Metabisulphite)\nFor Allergens, see ingredients in bold.",
   "errors": [],
   "warnings": [],
-  "shelfLife": "24 months from the date of production if kept unopened in\nthe manufacturer's packaging. 18 months for the minimum shelf life  on the delivery"
+  "shelfLife": "24 months from the date of production if kept unopened in\nthe manufacturer's packaging. 18 months for the minimum shelf life  on the delivery",
+  "packSizeValue": 1,
+  "packSizeUnit": "L"
 }

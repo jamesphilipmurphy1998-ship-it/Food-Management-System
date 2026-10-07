@@ -23,5 +23,7 @@
   "ingredientsList": null,
   "errors": [],
   "warnings": [],
-  "shelfLife": "730 days; Minimum Shelf Life on Delivery: 365 Days"
+  "shelfLife": "730 days; Minimum Shelf Life on Delivery: 365 Days",
+  "packSizeValue": 1,
+  "packSizeUnit": "kg"
 }

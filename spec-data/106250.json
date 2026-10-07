@@ -25,5 +25,7 @@
   "shelfLife": "4 years, minimum shelf life on delivery 365 days",
   "ingredientsList": "Tuna (FISH), Salt, Water",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 1020,
+  "packSizeUnit": "g"
 }

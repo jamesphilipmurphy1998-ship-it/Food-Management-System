@@ -25,5 +25,7 @@
   "shelfLife": "730 days, minimum on delivery 3 months",
   "ingredientsList": "Soybean 99.5%, Salt 0.5%",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 400,
+  "packSizeUnit": "g"
 }

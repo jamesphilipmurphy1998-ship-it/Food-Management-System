@@ -23,5 +23,7 @@
   "shelfLife": "9 months (When stored as reccomended)",
   "ingredientsList": "All ingredients conform to Food Regulation Information 2014\n\n\nWHEAT FLOUR ( WHEAT FLOUR, CALCIUM CARBONATE, IRON, NIACIN, THIAMIN)",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 16,
+  "packSizeUnit": "kg"
 }

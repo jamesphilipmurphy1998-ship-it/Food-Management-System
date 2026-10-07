@@ -23,5 +23,7 @@
   "shelfLife": "12 months from date of manufacture, 3 months minimum from date of receipt",
   "ingredientsList": "Colour [E160(c)] (Paprika Extract).",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 25,
+  "packSizeUnit": "kg"
 }

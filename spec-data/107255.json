@@ -25,5 +25,7 @@
   "shelfLife": "3 days into wasabi 365 Days from Manufacturer",
   "ingredientsList": "Water, OATS 10%, rapeseed oil, acidity regulator (dipotassium phosphate), minerals (calcium carbonate, potassium iodide), salt, vitamins (D2, riboflavin, B12).",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 1,
+  "packSizeUnit": "L"
 }

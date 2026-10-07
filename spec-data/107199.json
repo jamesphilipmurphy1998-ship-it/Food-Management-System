@@ -25,5 +25,7 @@
   "shelfLife": "P+4 (maximum storage temperature is <5\u00b0C), Minimum shelf life on delivery: P+3",
   "ingredientsList": "Yellowfin tuna (Thunnus albacares) (Fish) 100%",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 800,
+  "packSizeUnit": "g"
 }

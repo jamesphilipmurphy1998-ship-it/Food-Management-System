@@ -25,5 +25,7 @@
   "shelfLife": "18 Month",
   "ingredientsList": "Water, Acid Hydrolyzed Soy Sauce(Defatted Soybean, Water), Salt, Brewed Soy sauce(Defatted Soybean, Wheat Flour, Water,Salt, Koji), Corn Syrup, Colour (E150c), Sweetener (E960), Flavor Enhancer (E621), Preservative (E214).",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 13,
+  "packSizeUnit": "L"
 }

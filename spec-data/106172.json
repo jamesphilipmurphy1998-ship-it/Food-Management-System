@@ -23,5 +23,7 @@
   "shelfLife": "Shelf life 365 days\nMin shelf life 5 months (150DAYS)  (Please refer to your sales representative)",
   "ingredientsList": "Glucose syrup, Water, Spirit vinegar, Fermented rice alcohol (Water, Rice, Alcohol, Salt, Rice malt), Sugar, Acidity regulator: Citric acid, Cane molasses.",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 18,
+  "packSizeUnit": "L"
 }

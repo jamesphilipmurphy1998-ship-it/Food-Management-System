@@ -25,5 +25,7 @@
   "shelfLife": "12 months.  9 months minimum shelf life on delivery.",
   "ingredientsList": "WATER, SOYBEANS, WHEAT, SALT, ALCOHOL (ETHANOL)",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 15,
+  "packSizeUnit": "kg"
 }

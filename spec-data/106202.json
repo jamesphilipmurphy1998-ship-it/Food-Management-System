@@ -25,5 +25,7 @@
   "ingredientsList": "WHEATFLOUR (CALCIUM CARBONATE, NIACIN, IRON, FOLIC ACID, THIAMIN), MAIZE STARCH, MODIFIED STARCH, SALT, SPICES (CAYENNE CHILLI, BLACK PEPPER, CUMIN), FLAVOUR ENHANCERS (E621 (1.00%), E635 (0.25%)), RAISING AGENTS (E450(I) (0.65%), E500(II)), GARLIC POWDER, ONION POWDER, STABILISER (E412), TURMERIC EXTRACT",
   "errors": [],
   "warnings": [],
-  "shelfLife": "6 months, 4 months"
+  "shelfLife": "6 months, 4 months",
+  "packSizeValue": 25,
+  "packSizeUnit": "kg"
 }

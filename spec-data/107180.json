@@ -25,5 +25,7 @@
   "shelfLife": "Shelf life from date of manufacture - 365 days / Minimum shelf life on delivery 90 days",
   "ingredientsList": "Water, soya beans, rice, salt, alcohol",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 20,
+  "packSizeUnit": "kg"
 }

@@ -2491,3 +2491,19 @@ without overriding `NUTRICOST_DB`.
 **Still to do for this feature:** make `spec-apply.js` write and verify the two fields; backfill them
 from the now-canonical strings (about 131 clean values); make the edit form save the number and unit
 separately and deploy it (to be tried in a real browser first); show them as separate fields in the UI.
+
+### 2026-10-07 — Pack Size number + unit: scripts done and 131 live values backfilled
+
+- `spec-apply.js` now writes and verifies `packSizeValue` / `packSizeUnit` alongside the text. They are
+  written ONLY when they agree exactly with the text value (`"<number> <unit>"`); if the text is not
+  a single measure, or an extraction was hand-edited so the two disagree, the parts are cleared
+  rather than stored as a contradiction (with a NOTE printed). `spec-reapply-all.js` restores them from
+  archives that carry them; older archives without them leave the live values untouched. Archives now
+  store both. Dry run on the Matcha spec confirmed the diff includes `packSizeValue: null -> 40` and
+  `packSizeUnit: "" -> "g"`.
+- **Backfill (`scripts/packsize-parts-backfill.js`)**: filled the two fields from the live text for the
+  131 values that are exactly `<number> <unit>` (87 kg, 28 g, 2 ml, 14 L). The 17 non-single values are
+  left without parts (they need a person's decision first); 256 ingredients have no Pack Size. Result of
+  the independent re-fetch: **131/131 correct, 0 text values changed, 0 other ingredients changed
+  (404/404 present).** Each write carries the record's `updatedAt`, so a record someone edited in the
+  meantime would be refused by the server rather than overwritten.

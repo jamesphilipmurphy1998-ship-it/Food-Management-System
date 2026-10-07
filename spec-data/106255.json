@@ -23,5 +23,7 @@
   "ingredientsList": "Pear puree; antioxidant: L-ascorbic acid (E300)",
   "errors": [],
   "warnings": [],
-  "shelfLife": "12 months when chilled, 24 months when frozen"
+  "shelfLife": "12 months when chilled, 24 months when frozen",
+  "packSizeValue": 20,
+  "packSizeUnit": "kg"
 }

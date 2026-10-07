@@ -23,5 +23,7 @@
   "shelfLife": "Production + 5 days. Minimum shelf life from delivery 3 days",
   "ingredientsList": "Boned in flank from the fore quarters minced with 20% fat from 85vl",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 15,
+  "packSizeUnit": "kg"
 }

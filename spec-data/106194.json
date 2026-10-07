@@ -23,5 +23,7 @@
   "shelfLife": "5 years from date of manufacture, 3 months minimum from date of receipt",
   "ingredientsList": "Flavour Enhancer, Monosodium Glutamate E621",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 25,
+  "packSizeUnit": "kg"
 }

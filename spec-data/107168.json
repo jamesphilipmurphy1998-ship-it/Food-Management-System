@@ -25,5 +25,7 @@
   "ingredientsList": "Water, Black Soybean Pellets (Fermented Soybeans (Soybeans, Water, Salt), Salt), Rice Vinegar , Spirit Vinegar, Soy Sauce (Water, Soyabeans, Salt, Spirit Vinegar), Cornflour, Colour: Plain Carmel, Salt, Yeast Extract (Yeast Extract, Water, Salt), Preservative: Postassium Sorbate.",
   "errors": [],
   "warnings": [],
-  "shelfLife": "365 DAYS (12 MONTHS), 273 days to customer"
+  "shelfLife": "365 DAYS (12 MONTHS), 273 days to customer",
+  "packSizeValue": 5,
+  "packSizeUnit": "kg"
 }

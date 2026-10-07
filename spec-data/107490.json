@@ -22,9 +22,11 @@
   ],
   "packSize": "2 kg",
   "packFormat": "OPPXX / PE L 2845 Blue Bags",
-  "storageConditions": "Frozen <-18°C",
+  "storageConditions": "Frozen <-18\u00b0C",
   "shelfLife": "Date of Production + 150 Days, Minimum Shleflife on delivery is 90 Days",
   "ingredientsList": "Cooked Pork Cumberland sausage: Pork, Pork Fat, Rusk (WHEAT Flour Fortified with Calcium Carbonate, Niacin, Iron, Folic acid, Thiamin), Water, Salt, Potato Starch, Black Pepper, Dextrose, Sage, Stabiliser: Sodium Di and Triphosphates (E450, E451), Preservative: Sodium Sulphite (E221), Antioxidant: Ascorbic acid (E300), Parsley, Nutmeg Extract, Coriander Extract, Sage Extract. Filled into Sodium Alginate casing.",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 2,
+  "packSizeUnit": "kg"
 }

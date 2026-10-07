@@ -23,5 +23,7 @@
   "shelfLife": "24 months, min 6 months upon delivery",
   "ingredientsList": "grd turmeric HT",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 25,
+  "packSizeUnit": "kg"
 }

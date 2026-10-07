@@ -21,5 +21,7 @@
   "shelfLife": "18 months, min 6 months upon delivery",
   "ingredientsList": "red crushed chillied HT",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 25,
+  "packSizeUnit": "kg"
 }

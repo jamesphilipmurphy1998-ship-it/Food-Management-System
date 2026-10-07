@@ -22,5 +22,7 @@
   "ingredientsList": "pineapple (60%), water, sugar, acidity regulator (E330).",
   "errors": [],
   "warnings": [],
-  "shelfLife": "3 years"
+  "shelfLife": "3 years",
+  "packSizeValue": 3,
+  "packSizeUnit": "kg"
 }

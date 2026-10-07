@@ -23,5 +23,7 @@
   "ingredientsList": "Water, Sugar, Chilli (16%)[ Chilli, Water, Salt, Acidity Regulator: Acetic Acid ], Garlic, Modified Tapioca Starch, Salt, Acidity Regulator [Acetic Acid]",
   "errors": [],
   "warnings": [],
-  "shelfLife": "540 days  / minimum shelf life on delivery: 60 days"
+  "shelfLife": "540 days  / minimum shelf life on delivery: 60 days",
+  "packSizeValue": 6,
+  "packSizeUnit": "kg"
 }

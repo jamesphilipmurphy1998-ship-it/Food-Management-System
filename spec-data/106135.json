@@ -23,5 +23,7 @@
   "shelfLife": "24 months\uff0cMin shelf life on delivery: 3months",
   "ingredientsList": "Ingredients: Wakame seaweed",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 500,
+  "packSizeUnit": "g"
 }

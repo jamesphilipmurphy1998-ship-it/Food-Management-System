@@ -19,9 +19,11 @@
   "allergens": [],
   "packSize": "5 kg",
   "packFormat": "Vacuum",
-  "storageConditions": "Chilled, Use within 24h of opening or until ,,Use By''date whichever is sooner. Keep at temperature from 0°C to +4°C.",
+  "storageConditions": "Chilled, Use within 24h of opening or until ,,Use By''date whichever is sooner. Keep at temperature from 0\u00b0C to +4\u00b0C.",
   "shelfLife": "Kill + 12 Days. Minimum life on delivery 6 days",
   "ingredientsList": "100% Chicken Thigh",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 5,
+  "packSizeUnit": "kg"
 }

@@ -25,5 +25,7 @@
   "shelfLife": "12 Months / Minimum shelf life on delivery 9 months",
   "ingredientsList": "Water, rice vinegar, soy sauce (water, soya beans, wheat, salt, alcohol (ethanol)), salt, tomato puree, shiitake mushrooms, sugar, wakame sea vegetable",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 5.3,
+  "packSizeUnit": "kg"
 }

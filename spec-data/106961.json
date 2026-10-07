@@ -26,5 +26,7 @@
   "shelfLife": "Total Life: 130 days\nMLOD: 97 days",
   "ingredientsList": "Water, Light Soy Sauce (Soy Sauce [Water, Soya Beans, Wheat, Salt, Alcohol (Ethanol)], Water, Sugar, Salt), Rice Vinegar, Sugar, Cornflour, Salt.",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 30,
+  "packSizeUnit": "g"
 }

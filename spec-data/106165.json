@@ -23,5 +23,7 @@
   "shelfLife": "30 months",
   "ingredientsList": "peas",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 10,
+  "packSizeUnit": "kg"
 }

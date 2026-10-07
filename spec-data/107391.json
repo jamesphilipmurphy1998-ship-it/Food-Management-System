@@ -23,5 +23,7 @@
   "shelfLife": "12 months / Min, Shelf life: 90 days.",
   "ingredientsList": "Water, Glucose Syrup, Spirit Vinegar, Salt, Rice Vinegar.",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 5,
+  "packSizeUnit": "L"
 }

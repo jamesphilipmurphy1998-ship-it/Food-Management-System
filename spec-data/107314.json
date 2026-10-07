@@ -24,5 +24,7 @@
   "shelfLife": "18 months, 6 months (on delivery)",
   "ingredientsList": "100% Organic hulled sesame seeds",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 3,
+  "packSizeUnit": "kg"
 }

@@ -23,5 +23,7 @@
   "shelfLife": "24months. Min on delivery is 22 months",
   "ingredientsList": "Dried Seaweed for sushi nori(100%)",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 250,
+  "packSizeUnit": "g"
 }

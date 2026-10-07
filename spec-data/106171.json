@@ -23,5 +23,7 @@
   "shelfLife": "9 months / min shelf life on delivery: 4 months",
   "ingredientsList": "Rapeseed Oil (65%), Water, Spirit Vinegar, Sugar, Salt, Modified Starch, Stabiliser (Xanthan Gum), Preservative (Potassium Sorbate), Lemon Juice Concentrate, Natural Flavouring, Colours (Turmeric, Paprika Extract).",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 10,
+  "packSizeUnit": "L"
 }

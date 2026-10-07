@@ -22,5 +22,7 @@
   "shelfLife": "24 months, min 6 months upon delivery",
   "ingredientsList": "black pepper 18# SS",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 25,
+  "packSizeUnit": "kg"
 }

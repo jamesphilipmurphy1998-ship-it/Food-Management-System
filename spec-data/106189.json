@@ -23,5 +23,7 @@
   "shelfLife": "24 months shelf life from manufacturer, minimum 50% life upon delivery to Wasabi.",
   "ingredientsList": "Cornflour",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 25,
+  "packSizeUnit": "kg"
 }

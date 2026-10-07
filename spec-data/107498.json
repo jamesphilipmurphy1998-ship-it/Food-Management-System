@@ -23,5 +23,7 @@
   "ingredientsList": "Plum Puree",
   "errors": [],
   "warnings": [],
-  "shelfLife": "6 months when chilled, 24 months when frozen"
+  "shelfLife": "6 months when chilled, 24 months when frozen",
+  "packSizeValue": 20,
+  "packSizeUnit": "kg"
 }

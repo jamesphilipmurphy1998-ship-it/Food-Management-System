@@ -26,5 +26,7 @@
   "shelfLife": "12 months shelf life from manufacturer /  9 months minimum shelf life on delivery",
   "ingredientsList": "Water, soya beans, wheat, salt, alcohol (ethanol), vinegar",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 10,
+  "packSizeUnit": "ml"
 }

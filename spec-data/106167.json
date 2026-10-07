@@ -22,5 +22,7 @@
   "storageConditions": "Store at ambient temperatures, off the floor in a clean dry area.\nKeep away from strongly odorous materials and direct sunlight.",
   "ingredientsList": null,
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 1000,
+  "packSizeUnit": "L"
 }

@@ -26,5 +26,7 @@
   "shelfLife": "18 Months after production date / Min. shelf life : 13 Months",
   "ingredientsList": "Water, Corn Syrup, Wheat Flour, Wheat, Salt, Red Pepper Powder(red pepper powder, water,salt, onion, garlic), Soybean, Alcohol, Garlic, Onion, Flavour Enhancer (E621).",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 14,
+  "packSizeUnit": "kg"
 }

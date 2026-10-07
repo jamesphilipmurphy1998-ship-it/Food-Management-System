@@ -23,5 +23,7 @@
   "ingredientsList": null,
   "errors": [],
   "warnings": [],
-  "shelfLife": "Production + 5 days, Delivery + 4 days"
+  "shelfLife": "Production + 5 days, Delivery + 4 days",
+  "packSizeValue": 1125,
+  "packSizeUnit": "kg"
 }

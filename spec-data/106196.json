@@ -25,5 +25,7 @@
   "ingredientsList": "Glucose Syrup (This glucose syrup is a purified and concentrated aqueous solution of nutritive saccharides obtained by hydrolysis of wheat starch). \nThe product is 100% single ingredient ( Glucose Syrup)",
   "errors": [],
   "warnings": [],
-  "shelfLife": "18 months (when repackaged in buckets)"
+  "shelfLife": "18 months (when repackaged in buckets)",
+  "packSizeValue": 25,
+  "packSizeUnit": "kg"
 }

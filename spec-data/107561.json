@@ -23,5 +23,7 @@
   "shelfLife": "P+10 days, D+8 days",
   "ingredientsList": "Sweetcorn, Red Pepper, Lime Juice, Olive Oil, Salt, Coarse Ground Black Pepper",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 1,
+  "packSizeUnit": "kg"
 }

@@ -26,5 +26,7 @@
   "shelfLife": "12 Months / Minimum shelf life on delivery 9 months",
   "ingredientsList": "Sugar, soy sauce (water, soya beans, wheat, salt, alcohol (ethanol)), water, sake, modified starch, colour: E150c, thickener: xanthan gum",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 6,
+  "packSizeUnit": "kg"
 }

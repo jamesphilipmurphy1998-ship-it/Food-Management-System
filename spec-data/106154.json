@@ -21,5 +21,7 @@
   "shelfLife": "24 months (AVT), 36 months (Nedspice)-MLOR: 6 months",
   "ingredientsList": "Ground White Pepper (100%)",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 25,
+  "packSizeUnit": "kg"
 }

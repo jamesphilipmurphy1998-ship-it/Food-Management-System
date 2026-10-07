@@ -173,6 +173,27 @@ if (allergensChanged) diff.push({ field: "allergens", before: beforeAllergens, a
   if (before !== after) diff.push({ field: f, before, after });
 });
 
+// Pack Size number + unit as their own fields (backend columns pack_size_value / pack_size_unit).
+// Written ONLY when they agree exactly with the text packSize ("<number> <unit>"); if the text is not
+// a single measure, or someone edited the extraction so the two disagree, the parts are cleared
+// (null / "") rather than left describing a different value. undefined = packSize not in this spec,
+// so the parts are not touched.
+let intendedPackSizeValue, intendedPackSizeUnit;
+if (extraction.packSize != null) {
+  const n = extraction.packSizeNumber, u = extraction.packSizeUnit;
+  if (n != null && u && extraction.packSize === `${n} ${u}`) {
+    intendedPackSizeValue = Number(n);
+    intendedPackSizeUnit = u;
+  } else {
+    intendedPackSizeValue = null;
+    intendedPackSizeUnit = "";
+    if (n != null || u) console.log(`NOTE: packSize ${JSON.stringify(extraction.packSize)} does not match its parts (${n} / ${u}) -- parts will be cleared, not written.`);
+  }
+  const beforeV = matched.packSizeValue == null ? null : Number(matched.packSizeValue);
+  if (beforeV !== intendedPackSizeValue) diff.push({ field: "packSizeValue", before: beforeV, after: intendedPackSizeValue });
+  if ((matched.packSizeUnit || "") !== intendedPackSizeUnit) diff.push({ field: "packSizeUnit", before: matched.packSizeUnit || "", after: intendedPackSizeUnit });
+}
+
 console.log("\n--- Diff (nutrition + allergens + pack size/format/storage only; cost, supplier, code, everything else untouched) ---");
 if (diff.length === 0) {
   console.log("No changes -- live ingredient already matches the spec.");
@@ -191,6 +212,7 @@ nutritionFields.forEach((f) => { if (extraction.nutrition[f] != null) { updated[
 if (allergensChanged) updated.allergens = afterAllergens;
 const intendedPackFields = {};
 ["packSize", "packFormat", "storageConditions", "shelfLife", "ingredientsList"].forEach((f) => { if (extraction[f] != null) { updated[f] = extraction[f]; intendedPackFields[f] = extraction[f]; } });
+if (intendedPackSizeUnit !== undefined) { updated.packSizeValue = intendedPackSizeValue; updated.packSizeUnit = intendedPackSizeUnit; }
 
 const result = curlPut(`${API_BASE}/api/ingredients/${matched.id}`, updated);
 console.log(`\nPUT status: ${result.status}`);
@@ -220,6 +242,11 @@ if (allergensChanged) {
 Object.keys(intendedPackFields).forEach((f) => {
   if ((verifyIng[f] || "") !== intendedPackFields[f]) mismatches.push({ field: f, intended: intendedPackFields[f], live: verifyIng[f] });
 });
+if (intendedPackSizeUnit !== undefined) {
+  const liveV = verifyIng.packSizeValue == null ? null : Number(verifyIng.packSizeValue);
+  if (liveV !== intendedPackSizeValue) mismatches.push({ field: "packSizeValue", intended: intendedPackSizeValue, live: verifyIng.packSizeValue });
+  if ((verifyIng.packSizeUnit || "") !== intendedPackSizeUnit) mismatches.push({ field: "packSizeUnit", intended: intendedPackSizeUnit, live: verifyIng.packSizeUnit });
+}
 
 if (mismatches.length === 0) {
   console.log("POST-UPLOAD VERIFICATION: PASSED — every intended field matches what's live.");
@@ -255,6 +282,8 @@ if (mismatches.length === 0) {
     nutrition: intendedNutrition,
     allergens: allergensChanged ? afterAllergens : (matched.allergens || []),
     packSize: intendedPackFields.packSize != null ? intendedPackFields.packSize : (matched.packSize || null),
+    packSizeValue: intendedPackSizeUnit !== undefined ? intendedPackSizeValue : (matched.packSizeValue == null ? null : matched.packSizeValue),
+    packSizeUnit: intendedPackSizeUnit !== undefined ? intendedPackSizeUnit : (matched.packSizeUnit == null ? null : matched.packSizeUnit),
     packFormat: intendedPackFields.packFormat != null ? intendedPackFields.packFormat : (matched.packFormat || null),
     storageConditions: intendedPackFields.storageConditions != null ? intendedPackFields.storageConditions : (matched.storageConditions || null),
     shelfLife: intendedPackFields.shelfLife != null ? intendedPackFields.shelfLife : (matched.shelfLife || null),

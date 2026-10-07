@@ -23,5 +23,7 @@
   "shelfLife": "P+7 days, D+5 days",
   "ingredientsList": "Pink Star Cabbage, White Cabbage, Carrot, Yellow Carrot, Mooli, White Wine Vinegar, White Sugar, Salt",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 1,
+  "packSizeUnit": "kg"
 }

@@ -23,5 +23,7 @@
   "ingredientsList": "IQF Red chilli puree nuggets",
   "errors": [],
   "warnings": [],
-  "shelfLife": "24 months from production (minimum shelf life on delivery is 6 months)"
+  "shelfLife": "24 months from production (minimum shelf life on delivery is 6 months)",
+  "packSizeValue": 10,
+  "packSizeUnit": "kg"
 }

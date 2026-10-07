@@ -25,5 +25,7 @@
   "shelfLife": "540 days, minimum on delivery 3 months",
   "ingredientsList": "White Sesame Seeds 100%",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 1,
+  "packSizeUnit": "kg"
 }

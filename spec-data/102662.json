@@ -22,5 +22,7 @@
   "shelfLife": "6 months / Minimum shelf life on delivery 4 months",
   "ingredientsList": "Water, sugar, spirit vinegar, salt, onion puree, molasses, tamarind paste, cornflour, garlic puree, cloves, ginger puree",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 15,
+  "packSizeUnit": "kg"
 }

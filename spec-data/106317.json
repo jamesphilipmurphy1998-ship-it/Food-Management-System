@@ -23,5 +23,7 @@
   "ingredientsList": null,
   "errors": [],
   "warnings": [],
-  "shelfLife": "Date of Production + 5 days, Delivery + 4 days"
+  "shelfLife": "Date of Production + 5 days, Delivery + 4 days",
+  "packSizeValue": 500,
+  "packSizeUnit": "g"
 }

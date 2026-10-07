@@ -24,5 +24,7 @@
   "shelfLife": "11 days at Manufacture & 3 days into wasabi",
   "ingredientsList": "Milk",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 2.27,
+  "packSizeUnit": "L"
 }

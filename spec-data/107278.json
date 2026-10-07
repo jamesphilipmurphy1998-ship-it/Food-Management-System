@@ -23,5 +23,7 @@
   "shelfLife": "2 years\nShelf life on delivery: 90 days",
   "ingredientsList": "Water, Rice(21%), Salt\n\nAcidity 4.5%",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 1,
+  "packSizeUnit": "L"
 }

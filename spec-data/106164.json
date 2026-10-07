@@ -25,5 +25,7 @@
   "shelfLife": "12 months / 6 months",
   "ingredientsList": "Onions (75%) , Palm Oil, Wheat Flour, Salt.",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 2.5,
+  "packSizeUnit": "kg"
 }

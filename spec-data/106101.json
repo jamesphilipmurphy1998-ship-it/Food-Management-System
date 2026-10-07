@@ -25,5 +25,7 @@
   "shelfLife": "24 months (Minimum shelf life on delivery : 20 months)",
   "ingredientsList": "sesame oil 100%",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 1.6,
+  "packSizeUnit": "L"
 }

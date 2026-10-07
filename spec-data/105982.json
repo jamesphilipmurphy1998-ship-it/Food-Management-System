@@ -25,5 +25,7 @@
   "shelfLife": "12 months, minimum on delivery 3 months",
   "ingredientsList": "Chilli Powder (50%), Roasted Orange Peel, Black Sesame, White Sesame, Seaweed, White Pepper, Ginger, Bay Leaf",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 300,
+  "packSizeUnit": "g"
 }

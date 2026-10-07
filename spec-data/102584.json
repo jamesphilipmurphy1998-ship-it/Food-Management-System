@@ -26,5 +26,7 @@
   "shelfLife": "730 days Min shelf life on deliver:  90 days",
   "ingredientsList": "Water, Soybean curd (31%) (Water, Soybean, Soybean oil, Firming agents (E511, E509)), Sugar, Soy sauce (Water, Defatted Soybean, Wheat (Gluten), Salt, Alcohol), Rice vinegar ( Rice, Sugar, Rice koji, Water, Salt).",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 900,
+  "packSizeUnit": "g"
 }

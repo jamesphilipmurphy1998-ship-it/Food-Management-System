@@ -24,5 +24,7 @@
   "shelfLife": "6 months",
   "ingredientsList": "Water, Sugar, Salt, Molasses, Non-modified starch DS5, Yeast extract, Barley malt extract and Garlic extract.",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 20,
+  "packSizeUnit": "kg"
 }

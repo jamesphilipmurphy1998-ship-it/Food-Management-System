@@ -22,5 +22,7 @@
   "shelfLife": "production +4 days, D +3",
   "ingredientsList": "Beef blade",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 15,
+  "packSizeUnit": "kg"
 }

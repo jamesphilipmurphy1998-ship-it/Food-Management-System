@@ -23,5 +23,7 @@
   "shelfLife": "24 months, minimum 18 months on delivery",
   "ingredientsList": "Leek",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 10,
+  "packSizeUnit": "kg"
 }

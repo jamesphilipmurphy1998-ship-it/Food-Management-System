@@ -23,5 +23,7 @@
   "shelfLife": "P+10 days, D+7 days",
   "ingredientsList": "Butternut Squash Necks, Rapeseed Oil, Salt, Coarse Ground Black Pepper",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 1,
+  "packSizeUnit": "kg"
 }

@@ -24,5 +24,7 @@
   "shelfLife": "356 Days; minimum life on delivery: 274days",
   "ingredientsList": "Wheat flour (Wheat flour, Calcium, Iron, Niacin, Thiamin), Salt, Paprika, Turmeric, Acidity Regulators: Potassium Carbonate, Citric Acid, Sodium Carbonate.",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 7.7,
+  "packSizeUnit": "kg"
 }

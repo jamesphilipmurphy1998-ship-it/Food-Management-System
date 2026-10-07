@@ -22,5 +22,7 @@
   "ingredientsList": null,
   "errors": [],
   "warnings": [],
-  "shelfLife": "6 months"
+  "shelfLife": "6 months",
+  "packSizeValue": 15,
+  "packSizeUnit": "kg"
 }

@@ -25,5 +25,7 @@
   "ingredientsList": "Water, Soybean (35%) , Rice, Salt.",
   "errors": [],
   "warnings": [],
-  "shelfLife": "397 days. Min shelf life on delivery to Wasabi : 60 days"
+  "shelfLife": "397 days. Min shelf life on delivery to Wasabi : 60 days",
+  "packSizeValue": 20,
+  "packSizeUnit": "kg"
 }

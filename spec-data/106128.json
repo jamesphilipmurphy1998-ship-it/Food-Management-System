@@ -23,5 +23,7 @@
   "ingredientsList": "Chives",
   "errors": [],
   "warnings": [],
-  "shelfLife": "Shelf life is not applicable to fresh produce, min shelf delivery on delivery into Wasabi is D +3 days"
+  "shelfLife": "Shelf life is not applicable to fresh produce, min shelf delivery on delivery into Wasabi is D +3 days",
+  "packSizeValue": 100,
+  "packSizeUnit": "g"
 }

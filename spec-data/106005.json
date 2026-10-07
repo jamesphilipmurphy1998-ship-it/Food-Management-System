@@ -25,5 +25,7 @@
   "shelfLife": "12 months\nMin is 75% of total (9 months)",
   "ingredientsList": "MAIZE STARCH, SALT, ACIDITY REGULATOR (E500(I)), SPIRIT VINEGAR POWDER, TAPIOCA STARCH, DRIED GLUCOSE SYRUP",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 25.0,
+  "packSizeUnit": "kg"
 }

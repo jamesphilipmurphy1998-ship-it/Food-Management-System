@@ -25,5 +25,7 @@
   "shelfLife": "180 days & 135 days",
   "ingredientsList": "Rapeseed Oil, Water, Yuzu Juice (7%), Sugar, Wasabi Powder (3.9%) (Horseradish Powder, Wasabi Japonica Powder, MUSTARD Powder, Spirulina Powder), Lemon Juice Concentrate, Rice Vinegar, Salt, Orange Juice Concentrate, MUSTARD Powder, Modified Starch, Modified Potato Starch, Preservative (Potassium Sorbate), Stabilisers (Xanthan Gum, Guar Gum), Colour (Chlorophyll), Colour (Lutein).",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 2,
+  "packSizeUnit": "kg"
 }

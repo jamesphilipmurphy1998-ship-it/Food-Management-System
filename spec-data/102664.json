@@ -25,5 +25,7 @@
   "shelfLife": "18 months",
   "ingredientsList": "Water, Soybean, Sugar, Salt, Wheat Flour",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 8,
+  "packSizeUnit": "L"
 }

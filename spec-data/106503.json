@@ -22,5 +22,7 @@
   "shelfLife": "24 months/ 8 months min shelf life on delievry",
   "ingredientsList": "Spirit Vinegar 5% Acidity",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 5,
+  "packSizeUnit": "L"
 }

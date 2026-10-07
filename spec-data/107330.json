@@ -23,5 +23,7 @@
   "ingredientsList": "Burnt sugar syrup or Plain Caramel, or E150a",
   "errors": [],
   "warnings": [],
-  "shelfLife": "24 Months from date of manufacture. 18 months minimum shelf life on delivery."
+  "shelfLife": "24 Months from date of manufacture. 18 months minimum shelf life on delivery.",
+  "packSizeValue": 25,
+  "packSizeUnit": "kg"
 }

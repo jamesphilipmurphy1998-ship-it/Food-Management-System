@@ -23,5 +23,7 @@
   "shelfLife": "24 months. Minimum shelf life on delivery 6 months",
   "ingredientsList": "Ginger",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 10,
+  "packSizeUnit": "kg"
 }

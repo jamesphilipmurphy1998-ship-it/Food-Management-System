@@ -23,5 +23,7 @@
   "ingredientsList": null,
   "errors": [],
   "warnings": [],
-  "shelfLife": "DOP (Date of Production) + 02 days"
+  "shelfLife": "DOP (Date of Production) + 02 days",
+  "packSizeValue": 10,
+  "packSizeUnit": "kg"
 }

@@ -26,5 +26,7 @@
   "shelfLife": "120 days & 90 days",
   "ingredientsList": "Water, SESAME Paste (20%), Sugar, Soy Sauce (Water, SOYBEANS, Salt, Spirit Vinegar), Mirin Style Seasoning (Glucose Syrup, Sugar, Water, Spirit Vinegar, Rice Vinegar, Black Treacle [Cane Molasses, Inverted Sugar Syrup], Acidity Regulator [Citric Acid]), Rapeseed Oil, Toasted SESAME Seed Oil (5%), Lime Concentrate, Spirit Vinegar, Modified Potato Starch, Acidity Regulator (Lactic Acid), Dried Chillies, Caramelised Sugar Syrup.",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 1,
+  "packSizeUnit": "kg"
 }

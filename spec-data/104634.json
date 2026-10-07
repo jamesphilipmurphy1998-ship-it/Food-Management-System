@@ -23,5 +23,7 @@
   "ingredientsList": "Vegan Mayonnaise (60%) (Rapeseed Oil, Water, Spirit Vinegar, Sugar, Salt, Modified Starch, Modified Potato Starch, Stabilisers [Xanthan Gum, Guar Gum], Preservative [Potassium Sorbate], Lemon Juice Concentrate, Ground Turmeric, Colour [Paprika Extract]), Sriracha Sauce (40%) (Red Peppers, Red Chillies, Sugar, Spirit Vinegar, Garlic Puree, Salt, Modified Maize Starch, Preservative [Potassium Sorbate], Chilli Powder).",
   "errors": [],
   "warnings": [],
-  "shelfLife": "90 days ( 68days minimum on delivery)"
+  "shelfLife": "90 days ( 68days minimum on delivery)",
+  "packSizeValue": 15,
+  "packSizeUnit": "g"
 }

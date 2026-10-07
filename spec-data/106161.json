@@ -23,5 +23,7 @@
   "ingredientsList": "Sugar",
   "errors": [],
   "warnings": [],
-  "shelfLife": "In excess of 18 months if good storage practice is observed. Does not require a best before date by law"
+  "shelfLife": "In excess of 18 months if good storage practice is observed. Does not require a best before date by law",
+  "packSizeValue": 25,
+  "packSizeUnit": "kg"
 }

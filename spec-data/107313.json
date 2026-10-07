@@ -22,5 +22,7 @@
   "ingredientsList": "chilli powder HT 10 000 -20 000 SHU",
   "errors": [],
   "warnings": [],
-  "shelfLife": "18 months, min 6 months upon delivery"
+  "shelfLife": "18 months, min 6 months upon delivery",
+  "packSizeValue": 25,
+  "packSizeUnit": "kg"
 }

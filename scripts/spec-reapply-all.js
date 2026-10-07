@@ -84,6 +84,11 @@ archiveFiles.forEach((file) => {
     const before = matched[f] || "";
     if (before !== after) diff.push({ field: f, before, after });
   });
+  if (archive.packSizeUnit != null) {
+    const bv = matched.packSizeValue == null ? null : Number(matched.packSizeValue), av = archive.packSizeValue == null ? null : Number(archive.packSizeValue);
+    if (bv !== av) diff.push({ field: "packSizeValue", before: bv, after: av });
+    if ((matched.packSizeUnit || "") !== archive.packSizeUnit) diff.push({ field: "packSizeUnit", before: matched.packSizeUnit || "", after: archive.packSizeUnit });
+  }
 
   if (diff.length === 0) {
     results.unchanged++;
@@ -101,6 +106,9 @@ archiveFiles.forEach((file) => {
   if (allergensChanged) updated.allergens = afterAllergens;
   const intendedPackFields = {};
   ["packSize", "packFormat", "storageConditions", "shelfLife", "ingredientsList"].forEach((f) => { if (archive[f] != null) { updated[f] = archive[f]; intendedPackFields[f] = archive[f]; } });
+  // Pack Size number + unit: restored from the archive when it carries them. Older archives have
+  // neither key (undefined), in which case the live values are left exactly as they are.
+  if (archive.packSizeUnit != null) { updated.packSizeValue = archive.packSizeValue == null ? null : archive.packSizeValue; updated.packSizeUnit = archive.packSizeUnit; }
 
   const tmpPath = path.join(SPEC_DATA_DIR, `.${archive.code}.put-body.json`);
   const result = curlPut(`${API_BASE}/api/ingredients/${matched.id}`, updated, tmpPath);

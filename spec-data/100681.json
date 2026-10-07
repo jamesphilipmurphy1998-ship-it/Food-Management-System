@@ -25,5 +25,7 @@
   "ingredientsList": "Water, soya beans, salt, alcohol (ethanol)",
   "errors": [],
   "warnings": [],
-  "shelfLife": "12 months shelf life from manufacturer /  9 months minimum shelf life on delivery"
+  "shelfLife": "12 months shelf life from manufacturer /  9 months minimum shelf life on delivery",
+  "packSizeValue": 10,
+  "packSizeUnit": "ml"
 }

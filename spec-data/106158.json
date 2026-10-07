@@ -28,5 +28,7 @@
   "shelfLife": "P +14 Days  and P+10 Days",
   "ingredientsList": "Imitation Crab Flake (65%) [Surimi [FISH, Sugar, Stabilisers: E451, E450], Water, Tapioca Starch, Corn Starch, Salt, Sugar, Humectant: Sorbitol, Crab (CRUSTACEAN) Extract, Crab Flavour, SOYBEAN Oil, Dextrose, Colours: E120,, E160c], Free Range Mayonnaise (29.6%) [Rapeseed Oil, Water, UK Pasteurised Free Range EGG Yolk, Spirit Vinegar, Cornflour, Sugar, Salt], Brown Crab (CRUSTACEAN) Meat (3%), Lemon Juice, Lemon Zest, Starch (Corn Flour), Salt, White Pepper.",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 2,
+  "packSizeUnit": "kg"
 }

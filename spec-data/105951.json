@@ -23,5 +23,7 @@
   "shelfLife": "Minimum durability date of the packaged product : manufacturing date + 24 months. Expiry date of the packaged product: manufacturing date + 5 years.",
   "ingredientsList": "Potato starch",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 25,
+  "packSizeUnit": "kg"
 }

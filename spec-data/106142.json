@@ -23,5 +23,7 @@
   "ingredientsList": "Flavor Enhancers [E621, E635], Salt, Glucose, Dried Kelp Powder, Sugar, Kelp extract (Dextrin, Kelp , Flavour Enhancer: Monosodium Glutamate, Salt)",
   "errors": [],
   "warnings": [],
-  "shelfLife": "18 months /  minimum shelf life on delivery : 90 days"
+  "shelfLife": "18 months /  minimum shelf life on delivery : 90 days",
+  "packSizeValue": 1,
+  "packSizeUnit": "kg"
 }

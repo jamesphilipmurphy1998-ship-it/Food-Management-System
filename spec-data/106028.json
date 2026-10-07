@@ -25,5 +25,7 @@
   "shelfLife": "12 months , 9 months",
   "ingredientsList": "WHEAT FLOUR (CALCIUM CARBONATE, IRON, NIACIN, Folic Acid, THIAMIN), SPICES (PAPRIKA, WHITE PEPPER), SALT, DRIED YEAST, STABILISER E500(II)",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 25.0,
+  "packSizeUnit": "kg"
 }

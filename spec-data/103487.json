@@ -23,5 +23,7 @@
   "shelfLife": "24months. Min shelf life on delivery is 22 month",
   "ingredientsList": "Dried Seaweed for Onigiri(100%)",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 125,
+  "packSizeUnit": "g"
 }

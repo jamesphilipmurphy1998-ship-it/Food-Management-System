@@ -25,5 +25,7 @@
   "ingredientsList": "Soya Beans (100%).",
   "errors": [],
   "warnings": [],
-  "shelfLife": "24 months * 75% of life on delivery"
+  "shelfLife": "24 months * 75% of life on delivery",
+  "packSizeValue": 10,
+  "packSizeUnit": "kg"
 }

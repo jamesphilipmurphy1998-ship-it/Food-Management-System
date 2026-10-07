@@ -26,5 +26,7 @@
   "ingredientsList": "Soy sauce (water, soya beans, wheat, salt, alcohol (ethanol)), water, rice vinegar, sugar, salt",
   "errors": [],
   "warnings": [],
-  "shelfLife": "12 Months / Minimum shelf life on delivery 9 months"
+  "shelfLife": "12 Months / Minimum shelf life on delivery 9 months",
+  "packSizeValue": 15,
+  "packSizeUnit": "g"
 }

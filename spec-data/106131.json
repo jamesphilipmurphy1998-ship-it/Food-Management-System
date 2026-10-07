@@ -26,5 +26,7 @@
   "ingredientsList": "Prawns (Crustaceans), Panko breadcrumb [Wheat Flour, Palm Oil, Sugar, Yeast, Salt] (35%), Batter Mix [Wheat Flour, Modified Cassava Starch, Maize Starch, Sea Salt, Thickener (Guar Gum, Xanthan Gum)], Dusting [Maize Starch, Potato Starch,Wheat Flour)], Stabilisers [Citric Acid, Potassium Citrate], Salt",
   "errors": [],
   "warnings": [],
-  "shelfLife": "Shelf life from manufacturer: 2 years\nShelf life on delivery: 90 days"
+  "shelfLife": "Shelf life from manufacturer: 2 years\nShelf life on delivery: 90 days",
+  "packSizeValue": 300,
+  "packSizeUnit": "g"
 }

@@ -23,5 +23,7 @@
   "shelfLife": "12 Months / Minimum shelf life on delivery 9 months",
   "ingredientsList": "Sugar, water, rice vinegar, mirin, glucose syrup, cornflour, salt, garlic puree, spice blend, black carrot, colour: E150a",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 15,
+  "packSizeUnit": "kg"
 }

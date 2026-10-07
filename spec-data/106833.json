@@ -23,5 +23,7 @@
   "shelfLife": "P+7 days, D+5 days",
   "ingredientsList": "Red Cabbage, Carrot, White Wine Vinegar, Butternut Squash, White Sugar",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "packSizeValue": 2,
+  "packSizeUnit": "kg"
 }
