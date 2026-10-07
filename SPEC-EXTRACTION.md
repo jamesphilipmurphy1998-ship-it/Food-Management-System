@@ -2860,3 +2860,9 @@ writes `unitWeightG` (ml x density, 1 if blank; kg/L x1000), `--each-weight-no` 
 ACCIDENT: a "must refuse" test of `--apply` on spec-data/103489.json (an archive, which lacks `packSizeNumber`) was a real write and cleared
 103489's Pack Size parts (text "8 g" intact, value/unit blank). User chose to leave it and come back. Restore plan: `.scan/fix_103489_restore.json`
 (`field-fix-apply.js`, needs approval). LESSON: never feed archives to spec-apply.js and never test `--apply` against live.
+
+
+### 2026-10-07 — 103489 Miso resolved
+User confirmed one EACH is 8 g. Pack Size parts restored to 8 / g (undoing the accidental clear) and Weight per each set 0 -> 8 g, both
+by `field-fix-apply.js`, each approved by click, verified, 0 other ingredients changed. 105048 (CPU Gyoza Dipping Sauce Sachet) is a KG recipe
+of 66.67 sachets (1000.1 g) as set up in the system; user chose to leave it; nothing uses it.
