@@ -297,3 +297,11 @@ and confirm every field by click.
 - `107049 Miso Caramel Sauce RM Spec- V2 (11.12.2024).xlsx`: refused, the nutrition sheet's Product Code is "SAU7046 Miso Caramel" but the ingredient sheet says 107049.
 - `107247 Smoked Back Bacon Whole Rashers RM Spec V1 (17.07.2025).xlsx`: refused, four allergen rows (wheat, gluten level, soya, sulphites) read "N- But handled on site", not Y/N.
 (The user dismissed the question about recording these, so this entry is a note only; they remain unprocessed.)
+
+
+## 2026-10-07 — 106187 Chicken breast: spec file named 106187_2 but its own Product Code cell says 102041 (HELD by the user, nothing written)
+`106187_2 (105005)Chicken Breast 200-240g Calibrated RM Spec V2 24.10.24.xlsx` (folder check 35). The spec's code cell reads 102041 (alt 105005), no live ingredient has either
+code; 105005 is the recipe "CPU RM Chicken Breast for Dicing", whose cost (5.38511) equals live 106187 "RM Chicken breast calibrated 210-250g - Ex Inner" (the spec says 200-240g).
+Extracted (not applied): 464 kJ / 110 kcal, fat 1.8, sat 0.5, carb 0, sugars 0, fibre 0, protein 23.3, salt 0.132; no allergens; Pack Size 5 kg (cell "2x5kg"); Pack Format
+"Plastic tray sealed with plastic film"; Storage "0-4°C" (superscript-styled text, needs a visual check); Shelf Life "13 days from production, delivery + 4 days"; ingredients "100% Chicken Breast".
+User chose to hold. To resume: confirm the file is for 106187 and that 200-240g vs 210-250g is the same product, then extract with `--override-code 106187` and confirm every field by click.
