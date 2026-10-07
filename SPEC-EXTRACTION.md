@@ -2851,3 +2851,12 @@ Held back by the user: 103489 Miso Block (Pack Size 8 g but the box may be 30 x 
 Not built yet: the spec-upload question "Costed per EACH and Pack Size is N g: is one EACH one N g unit, or is N g the whole bag/case?"
 (Yes -> copy to Weight per each; No -> leave blank and flag). Nori 102058 (250 g bag, costed per sheet) and onigiri seaweed
 103487 (125 g) are deliberately NOT set: Pack Size there is the bag, not one EACH. Recipes using these lines now count the weight.
+
+
+### 2026-10-07 — EACH weight question built into spec-apply.js (and one accident)
+`spec-apply.js` now asks, for an ingredient costed per EACH that is not packaging (category Packaging or an "NF " name), has a g/kg/ml/L
+Pack Size (this spec's, else the live one) and no Weight per each: "is one EACH one N g unit, or the whole bag/case?". `--each-weight-yes`
+writes `unitWeightG` (ml x density, 1 if blank; kg/L x1000), `--each-weight-no` flags it; neither flag -> `--apply` is refused. Tested dry-run only.
+ACCIDENT: a "must refuse" test of `--apply` on spec-data/103489.json (an archive, which lacks `packSizeNumber`) was a real write and cleared
+103489's Pack Size parts (text "8 g" intact, value/unit blank). User chose to leave it and come back. Restore plan: `.scan/fix_103489_restore.json`
+(`field-fix-apply.js`, needs approval). LESSON: never feed archives to spec-apply.js and never test `--apply` against live.

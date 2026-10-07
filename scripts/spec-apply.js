@@ -13,6 +13,9 @@
 //   node scripts/spec-apply.js <extraction.json>            (dry run -- prints the diff only)
 //   node scripts/spec-apply.js <extraction.json> --apply     (writes via PUT after showing the diff)
 //
+// EACH-costed ingredients with a g/kg/ml/L Pack Size and no Weight per each also need
+// --each-weight-yes or --each-weight-no (see the "EACH WEIGHT QUESTION" block); --apply refuses without one.
+//
 // Requires a signed-in session cookie jar at /tmp/qa_cookies.txt (or set COOKIE_JAR env var) --
 // on Windows pass the real Windows path (see SPEC-EXTRACTION.md), not the Git-Bash /tmp/... form.
 const fs = require("fs");
@@ -194,6 +197,36 @@ if (extraction.packSize != null) {
   if ((matched.packSizeUnit || "") !== intendedPackSizeUnit) diff.push({ field: "packSizeUnit", before: matched.packSizeUnit || "", after: intendedPackSizeUnit });
 }
 
+// "One EACH = one Pack Size?" question. When the live ingredient is costed per EACH, is not packaging, has
+// a g/kg/ml/L Pack Size (from this spec, else already live) and no Weight per each yet, a person must say whether
+// one EACH is one pack-size unit (sachet/pot: then the weight per each is set from the Pack Size, ml x density, 1
+// when blank) or whether the Pack Size is the whole bag/case (then it is left blank). The answer is never
+// assumed: --each-weight-yes / --each-weight-no, given only after the user has clicked the answer. Without
+// either flag, --apply is refused. Writes the existing unitWeightG field, so recipe maths is unchanged.
+const eachWeightYes = process.argv.includes("--each-weight-yes");
+const eachWeightNo = process.argv.includes("--each-weight-no");
+let intendedUnitWeightG;
+{
+  const effV = intendedPackSizeUnit !== undefined ? intendedPackSizeValue : (matched.packSizeValue == null ? null : Number(matched.packSizeValue));
+  const effU = intendedPackSizeUnit !== undefined ? intendedPackSizeUnit : (matched.packSizeUnit || "");
+  const isEach = String(matched.costUom || "").toUpperCase() === "EACH";
+  const isPkg = String(matched.cat || "").toLowerCase() === "packaging" || /^\s*(\((delisted|on hold)\)\s*)?nf/i.test(matched.name || ""); // same idea as the app's isPackagingItem (category, "NF " names)
+  const noWeight = !(Number(matched.unitWeightG) > 0);
+  const dens = Number(matched.density) > 0 ? Number(matched.density) : 1;
+  const unitG = { g: 1, kg: 1000, ml: dens, L: 1000 * dens }[effU];
+  if (isEach && !isPkg && noWeight && effV > 0 && unitG) {
+    const grams = Math.round(effV * unitG * 1e6) / 1e6;
+    console.log(`\nEACH WEIGHT QUESTION: ${matched.code} is costed per EACH and its Pack Size is ${effV} ${effU}. Is one EACH one ${effV} ${effU} unit (sachet/pot), or is that the whole bag/case?`);
+    console.log(`  Yes -> Weight per each: 0 -> ${grams} g (re-run with --each-weight-yes).  No -> left blank and flagged (re-run with --each-weight-no).`);
+    if (eachWeightYes && eachWeightNo) { console.log("Both --each-weight-yes and --each-weight-no given -- refusing."); process.exit(1); }
+    if (eachWeightYes) { intendedUnitWeightG = grams; diff.push({ field: "unitWeightG", before: Number(matched.unitWeightG) || 0, after: grams }); }
+    else if (eachWeightNo) console.log(`  FLAG: ${matched.code} costed per EACH with no weight per each -- a person must enter one.`);
+    else if (apply) { console.log("\nREFUSED: answer the EACH weight question first (nothing written)."); process.exit(1); }
+  } else if (eachWeightYes || eachWeightNo) {
+    console.log("NOTE: the EACH weight question does not apply to this ingredient; --each-weight-yes/no ignored.");
+  }
+}
+
 console.log("\n--- Diff (nutrition + allergens + pack size/format/storage only; cost, supplier, code, everything else untouched) ---");
 if (diff.length === 0) {
   console.log("No changes -- live ingredient already matches the spec.");
@@ -213,6 +246,7 @@ if (allergensChanged) updated.allergens = afterAllergens;
 const intendedPackFields = {};
 ["packSize", "packFormat", "storageConditions", "shelfLife", "ingredientsList"].forEach((f) => { if (extraction[f] != null) { updated[f] = extraction[f]; intendedPackFields[f] = extraction[f]; } });
 if (intendedPackSizeUnit !== undefined) { updated.packSizeValue = intendedPackSizeValue; updated.packSizeUnit = intendedPackSizeUnit; }
+if (intendedUnitWeightG !== undefined) updated.unitWeightG = intendedUnitWeightG;
 
 const result = curlPut(`${API_BASE}/api/ingredients/${matched.id}`, updated);
 console.log(`\nPUT status: ${result.status}`);
@@ -247,6 +281,7 @@ if (intendedPackSizeUnit !== undefined) {
   if (liveV !== intendedPackSizeValue) mismatches.push({ field: "packSizeValue", intended: intendedPackSizeValue, live: verifyIng.packSizeValue });
   if ((verifyIng.packSizeUnit || "") !== intendedPackSizeUnit) mismatches.push({ field: "packSizeUnit", intended: intendedPackSizeUnit, live: verifyIng.packSizeUnit });
 }
+if (intendedUnitWeightG !== undefined && Number(verifyIng.unitWeightG) !== intendedUnitWeightG) mismatches.push({ field: "unitWeightG", intended: intendedUnitWeightG, live: verifyIng.unitWeightG });
 
 if (mismatches.length === 0) {
   console.log("POST-UPLOAD VERIFICATION: PASSED — every intended field matches what's live.");
@@ -288,6 +323,7 @@ if (mismatches.length === 0) {
     storageConditions: intendedPackFields.storageConditions != null ? intendedPackFields.storageConditions : (matched.storageConditions || null),
     shelfLife: intendedPackFields.shelfLife != null ? intendedPackFields.shelfLife : (matched.shelfLife || null),
     ingredientsList: intendedPackFields.ingredientsList != null ? intendedPackFields.ingredientsList : (matched.ingredientsList || null),
+    unitWeightG: intendedUnitWeightG !== undefined ? intendedUnitWeightG : (Number(matched.unitWeightG) > 0 ? Number(matched.unitWeightG) : null),
     errors: [],
     warnings: []
   };
