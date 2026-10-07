@@ -203,3 +203,44 @@ in any filename; no match found. There is nothing to extract or apply.
 **Status:** blocked on the source document. Someone needs to obtain/upload a spec file for RM
 Baking Powder (106192) before this can be processed. Not a data-quality or extraction issue —
 purely a missing document.
+
+---
+
+## Pack Size audit (2026-10-07) -- live values needing a person's decision
+
+Found by auditing every archived extraction against its source spec (full output in
+`.scan/packsize_audit.txt`; the audit script is not committed). The extractor read the right
+cell in all 116 source files still on disk (column B label is always "Weight or Volume"), so
+these are not wrong-cell reads: they are values the cleanup deliberately left raw (ranges,
+two sizes, net-vs-gross, count-only, sentences), a stored-vs-name conflict, or a missing value.
+30 further archives have no source file on disk and could not be re-verified at all.
+
+Each needs a confirmed single per-unit measure (Pack Size) with any count/container wording in
+Pack Format. Nothing below has been changed.
+
+| Code | Ingredient | Stored Pack Size | Why flagged |
+|---|---|---|---|
+| 102015 | RM Avocado | '1x 14 in case with an individual weight 258-313g (5% tolerance for moisture loss = 245g)' | STORED VALUE NOT A PURE MEASURE: '1x 14 in case with an individual weight 258-313g (5% tolerance for moisture loss = 245g)' |
+| 102063 | RM Cucumber Whole | '12 per box' | STORED VALUE NOT A PURE MEASURE: '12 per box' |
+| 104714 | RM Gyoza Chicken and Vegetable, 1KG Bag | '20g/ Piece and 1 kg/Bag' | STORED VALUE NOT A PURE MEASURE: '20g/ Piece and 1 kg/Bag'; CONFLICT with name: stored 20g/ Piece and 1 kg/Bag vs "1KG"; CONFLICT with format: stored 20g/ Piece and 1 kg/Bag vs "1 kg" |
+| 105952 | RM Teriyaki Sauce Kikkoman (CPU Only) | '4L (4000ml)' | ARCHIVE != RAW and not a clean single-measure reduction (raw='4L'); STORED VALUE NOT A PURE MEASURE: '4L (4000ml)' |
+| 106099 | RM Pumpkin Croquette | '60gx100pcs' | STORED VALUE NOT A PURE MEASURE: '60gx100pcs' |
+| 106130 | RM Prawn Ebi (Tazaki Own brand) | '180g' | MASS/VOLUME mismatch with raw_1a: stored 180g vs "3L" |
+| 106163 | RM Pepper Green Square 25 MM | None | NO PACK SIZE stored |
+| 106164 | RM Onions Crispy Fried | '2.5kg' | ARCHIVE != RAW and not a clean single-measure reduction (raw='2.5g x 4') |
+| 106168 | RM Oyster Sauce | '20Kg' | MASS/VOLUME mismatch with format: stored 20Kg vs "18 litre" |
+| 106215 | RM Salmon 5-6 HOG Fresh chilled | '4-5 KG, 5-6 KG' | STORED VALUE NOT A PURE MEASURE: '4-5 KG, 5-6 KG' |
+| 106228 | RM Diced Red pepper 20mmx20mm PACK 5KG | '5kg, 10kg' | STORED VALUE NOT A PURE MEASURE: '5kg, 10kg' |
+| 106231 | RM Teriyaki Sauce 6 KG | '6Kg' | MASS/VOLUME mismatch with format: stored 6Kg vs "5Litre" |
+| 106254 | RM Gyoza Vegetable, 1KG Bag | '20g/ Piece and 1 kg/Bag' | STORED VALUE NOT A PURE MEASURE: '20g/ Piece and 1 kg/Bag'; CONFLICT with name: stored 20g/ Piece and 1 kg/Bag vs "1KG"; CONFLICT with format: stored 20g/ Piece and 1 kg/Bag vs "1 kg" |
+| 106355 | RM Cooked Prawn Tail-Off Size 31/40 | '700g Net Weight (1kg Gross Weight)' | STORED VALUE NOT A PURE MEASURE: '700g Net Weight (1kg Gross Weight)' |
+| 106607 | Yutaka Shredded Pickled Ginger Benishoga | 'Unit net weight : 1500g      Unit drained weight : 1000g' | STORED VALUE NOT A PURE MEASURE: 'Unit net weight : 1500g      Unit drained weight : 1000g' |
+| 106833 | RM Pickled Asian Slaw 1kg | '2kg' | CONFLICT with name: stored 2kg vs "1kg" |
+| 106834 | RM Vegan Kimchi Jongga | '1 kg / 3 kg' | STORED VALUE NOT A PURE MEASURE: '1 kg / 3 kg' |
+| 106946 | RM Duck Gyoza Frozen 1KG | '20g/Piece and 1 kg/Bag' | STORED VALUE NOT A PURE MEASURE: '20g/Piece and 1 kg/Bag'; CONFLICT with name: stored 20g/Piece and 1 kg/Bag vs "1KG"; CONFLICT with format: stored 20g/Piece and 1 kg/Bag vs "2 g"; CONFLICT with format: stored 20g/Piece and 1 kg/Bag vs "1 kg" |
+| 107200 | RM Tuna Bar SF YF (1 x 1.2kg-1.6kg pack) | '1.2kg - 1.5kg' | STORED VALUE NOT A PURE MEASURE: '1.2kg - 1.5kg'; CONFLICT with name: stored 1.2kg - 1.5kg vs "1.6kg" |
+| 107240 | RM Flat Noodles (Ribbon) | None | 1-d cell EMPTY in source but archive has None; NO PACK SIZE stored |
+| 107322 | RM Beef Mince Frozen (Red tractor) | '15kg' | ARCHIVE != RAW and not a clean single-measure reduction (raw='15k') |
+| 107390 | RM Simply Vanilla Syrup rPET bottle | '1 litre e (bottle) / 6 x 1 Litre - 6 Litres (Outercase)' | STORED VALUE NOT A PURE MEASURE: '1 litre e (bottle) / 6 x 1 Litre - 6 Litres (Outercase)' |
+| 107489 | RM Poached Egg (Free range) | 'Target weight 47g at point of pack. Weight spread is 43g-51g with possibility of outliers due to the natural variance of the product. Case net weight (1.29kg - 1.53kg).' | STORED VALUE NOT A PURE MEASURE: 'Target weight 47g at point of pack. Weight spread is 43g-51g with possibility of outliers due to the natural variance of the product. Case net weight (1.29kg - 1.53kg).' |
+| 107490 | RM Cooked Breakfast Sausage | '2 kg' | CONFLICT with raw_1b: stored 2 kg vs "50g"; CONFLICT with raw_1b: stored 2 kg vs "4g" |

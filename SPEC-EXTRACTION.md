@@ -2238,3 +2238,31 @@ typos included, unless told otherwise) still applies by default.
   write landed -- **47/47 succeeded, 0 failures, 0 verification mismatches**. The 47 corresponding
   `spec-data/*.json` archive files were also updated to match, so a future re-apply from archive
   doesn't regress this fix.
+
+### 2026-10-07 — Pack Size audit; Pack Size and Pack Format now always human-confirmed
+
+- **Audit** of every archived extraction against its source spec (146 archives; 116 source files
+  still on disk, 30 not re-verifiable). Result: the extractor reads the right cell every time
+  (column B of the "1-d)" row is "Weight or Volume : *" in all 116), but 24 live values need a
+  person's decision -- ranges, two-size strings, net-vs-gross text, count-only values, sentences,
+  one stored-vs-name conflict (106833), one missing value (106163). Listed in
+  [SPEC-ISSUES-TO-REVIEW.md](SPEC-ISSUES-TO-REVIEW.md). Some rows there are benign (documented
+  human corrections such as 106164 and 107322, and mass/volume differences explained by density)
+  and are included so the decision is explicit rather than assumed.
+- **Correction to an earlier statement in this log**: the Pack Size entry above says the app
+  "needs Pack Size to be a pure parseable number" for per-EACH costing/nutrition. Checked against
+  the code on 2026-10-07: the frontend only stores and displays `packSize` as text; the field that
+  drives EACH maths is `unitWeightG` ("Weight per each"). A clean single-measure Pack Size is still
+  the agreed convention (and would allow `unitWeightG` to be filled from it later), but nothing
+  currently breaks or improves based on it.
+- **Known gaps in the measure pattern (not yet fixed):** "60gx100pcs" (the "x" is attached to the
+  unit, so no match) and a bare "k" unit ("15k"). Both fail safe -- the value is left raw and
+  flagged -- but they were not caught automatically.
+- **Change made:** `spec-extract.py` now always emits a mandatory confirmation warning for Pack
+  Size and another for Pack Format whenever a value is extracted, exactly like Storage Conditions
+  and Shelf Life, so every spec stops for a person to confirm each field separately before
+  `--apply`, even on an otherwise clean extraction. Per the user: "ask the user to click confirm
+  for each bit, like you do on shelf life".
+- **Still to do (awaiting user decision):** label check on the "1-d)" row, the two pattern gaps,
+  a hard refusal in `spec-apply.js` for a non-single-measure Pack Size, an automatic cross-check
+  against numbers in the name/filename/legal name, and resolving the 24 flagged live values.

@@ -38,6 +38,10 @@ for a different-quantity relationship like Sodium->Salt (that stays behind its o
 --derive-salt-from-sodium flag). A human must have looked at the specific cell and confirmed it's
 genuinely a wrong-unit entry, not some other kind of problem, before this is used.
 
+Pack Size and Pack Format each ALWAYS raise their own mandatory confirmation warning whenever a
+value is extracted (like Storage Conditions and Shelf Life), so every spec stops for a human to
+confirm each field separately before --apply, even on an otherwise clean extraction.
+
 Pack Size is always reduced to a single "<number><unit>" measure (e.g. "10ml", "1kg") when
 exactly one such token can be found in the source cell -- container/count wording ("sachet",
 "x 4", "per carton") is dropped from Pack Size and belongs in Pack Format instead. This isn't
@@ -862,6 +866,17 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
             missing = sorted(set(EXPECTED_ALLERGEN_ROWS.keys()) - found_categories)
             if missing:
                 errors.append("Allergen categories expected by this template were NOT found in the sheet (could mean the format changed and a category was dropped): %s -- REFUSING to extract any allergens, since a missing category cannot be confirmed absent" % missing)
+
+    # Pack Size and Pack Format are always human-confirmed, same as Storage Conditions and Shelf
+    # Life above -- per explicit user instruction 2026-10-07, after a review of how Pack Size is
+    # read found several live values still holding ranges, two-size strings, net-vs-gross text and
+    # a source typo (2.5g for 2.5kg) that no automated check can reliably catch. Unconditional on
+    # purpose: fires on every extraction that has a value, even a clean single measure. Both are
+    # emitted here, after both fields are final, so one point covers every extraction path.
+    if pack_size is not None:
+        warnings.append("Pack Size extracted as %r -- always requires explicit human confirmation before writing, regardless of whether it looks plausible. It must be a single measure for ONE unit (e.g. '10ml', '1kg') with no container or count wording; confirm it against the source spec, then re-run with --confirm-warnings." % pack_size)
+    if pack_format is not None:
+        warnings.append("Pack Format extracted as %r -- always requires explicit human confirmation before writing, regardless of whether it looks plausible. This is where container type and count/case wording belong; confirm it against the source spec, then re-run with --confirm-warnings." % pack_format)
 
     status = "cannot_extract" if errors else ("extracted_with_warnings" if warnings else "ok")
     return {
