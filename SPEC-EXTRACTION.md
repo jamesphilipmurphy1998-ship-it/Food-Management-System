@@ -2700,3 +2700,40 @@ versions:
   product contains). Example: 105950 states "may contain traces of milk".
 Adding any of these would be a new field end to end (backend column and migration, API, edit form, extractor,
 apply script), the same way Pack Size number and unit were added. None has been started.
+
+### 2026-10-07 — DESIGN (approved in principle, NOT built): "Ready to eat / Ready to cook" box
+
+**What the specs actually say** (all 150 re-read; every cell on every sheet searched for any wording):
+125 specs have the question (121 as "Ready to Eat or ready to cook", 4 as "8-a) Is it ready to eat?"); 25 have no
+such question anywhere and say nothing about it elsewhere (mostly single ingredients and older specs: avocado,
+honey, peppers, nori, oils, noodles, soy sauces). Of the 125 answers: 50 are exactly "Ready to eat"/"RTE" (any
+capitalisation, trailing full stop ignored), 31 are exactly "Ready to cook"/"RTC", 9 are blank / "N/A" / "N", and
+35 use other wording: other ways of saying ready to eat ("Cooked, Ready to eat", "Open & Eat", "Yes / IT CAN BE
+EATEN DIRECTLY", "Raw Ready to Eat", a bare "yes"); other ways of saying cook first ("Product must be cooked
+prior to consumption", "Requires further processing - Heat treatment", a bare "cook", "Not ready to eat..."); ready to
+eat only after a step ("once defrosted", "after rehydration", "re-heating recommended", "submerge in water
+75-95C for 5 minutes"); both ("Ready to Eat and Ready to Cook"); "Ready to drink" and "Ready to use"; "Wash before
+use" / "Ready to wash" on fresh produce; "as per spec (if meets customers requirements for RDE)" on four spices;
+"N/A - used during food manufacture" on two additives. The full lists are in `.scan/rte_review.txt` and
+`.scan/rte_wide_search.txt`.
+
+**Decided by the user:** (1) the box is FREE TEXT, not a fixed list. (2) Extraction is exact-match only: an
+answer that is exactly RTE, RTC, "ready to eat" or "ready to cook" is proposed as read (stored as the plain words
+"Ready to eat" / "Ready to cook"); ANYTHING ELSE, and any blank or N/A, stops and asks the user what to store,
+showing the supplier's exact words. (3) For the specs with no such question the prompt must say so plainly ("this
+spec has no ready-to-eat/cook question, so the box is BLANK") and ask for the user's approval; it is never inferred
+from the product type. Every spec still gets the user's click, per the standing rules.
+
+**Plan, each stage to be approved separately before it is done:**
+1. Backend (production database change, same method as the Pack Size number/unit field: full backup, new build tested
+   on a scratch copy first, deploy, verify against the backup): one new nullable text column on `ingredients`, API field
+   `readyToEat`, and the keep-existing rule on both ingredient PUT endpoints so a page opened before the upgrade
+   cannot blank it. Deliberately left out of the version-history snapshot (adding a key would create a fake new
+   version for every ingredient); so a change to this box alone is not versioned.
+2. Edit form: a text box beside Pack Format / Storage; saved and loaded with the ingredient; tried in a real browser
+   first, then deployed.
+3. Extractor and apply scripts: read the row (both question wordings), report the supplier's raw wording, mandatory
+   confirmation prompts as above; `spec-apply.js` / `spec-reapply-all.js` write and verify the field; archives store it.
+4. Backfill for the 150 specs already uploaded, by approval: the exact RTE / RTC answers shown as a list with ingredient
+   names for one group approval; the 35 other wordings one by one; the 9 blanks and the 25 with no question confirmed
+   as blank.
