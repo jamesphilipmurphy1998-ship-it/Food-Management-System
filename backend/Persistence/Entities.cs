@@ -24,6 +24,8 @@ public sealed class IngredientEntity
     public decimal UnitWeightG { get; set; }
     public string Supplier { get; set; } = "";
     public string PackSize { get; set; } = "";
+    public decimal? PackSizeValue { get; set; }
+    public string? PackSizeUnit { get; set; }
     public string PackFormat { get; set; } = "";
     public string StorageConditions { get; set; } = "";
     public string ShelfLife { get; set; } = "";

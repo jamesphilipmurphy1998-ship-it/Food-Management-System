@@ -13,9 +13,9 @@ scripts never touch this.
 | **Pi, same Postgres server** | `nutricost` database, owned by `nutricost_app` user | `localhost:5432` (Pi-local only) |
 | Local dev machine (optional) | Same backend, run locally for editing/testing | `http://localhost:5055` |
 
-Auth is **disabled** on the Pi deployment (`NUTRICOST_AUTH_MODE=disabled`) — there's no
-Wasabi Apps homepage service running on the Pi for NutriCost to redirect to, so the login
-check is skipped entirely there. Locally (no env var set) auth still behaves as coded
+Auth on the Pi deployment is **`NUTRICOST_AUTH_MODE=local`** (checked 2026-10-07; this file used to say
+`disabled`, which is no longer true: the API answers 401 until you sign in with a local account).
+There's no Wasabi Apps homepage service running on the Pi for NutriCost to redirect to. Locally (no env var set) auth still behaves as coded
 (redirects to `http://localhost:5000`), which only matters if the homepage is also
 running locally.
 

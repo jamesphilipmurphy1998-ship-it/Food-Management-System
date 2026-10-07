@@ -35,6 +35,13 @@ public sealed class Ingredient
     public decimal UnitWeightG { get; set; }
     public string Supplier { get; set; } = "";
     public string PackSize { get; set; } = "";
+    /// <summary>Numeric part of Pack Size as its own value (40 for "40 g"), so it can be used as
+    /// a weight/volume later. null = not set. Written together with PackSizeUnit.</summary>
+    public decimal? PackSizeValue { get; set; }
+    /// <summary>Unit part of Pack Size: g, kg, ml or L. null means the client did NOT send this
+    /// field (an older page), and the ingredient PUT endpoints then KEEP the stored value rather
+    /// than blanking it; "" means it was deliberately cleared.</summary>
+    public string? PackSizeUnit { get; set; }
     public string PackFormat { get; set; } = "";
     public string StorageConditions { get; set; } = "";
     /// <summary>Shelf life as stated by the manufacturer's spec -- e.g. "Production + 5 days.

@@ -873,6 +873,14 @@ app.MapPut("/api/ingredients/{id}", async (AppDbContext db, HttpContext ctx, str
     }
 
     ingredient.Id = id;
+    // Keep-existing rule for the Pack Size parts: a client that doesn't send PackSizeUnit at all
+    // (a page loaded before this field existed) must NOT blank the stored number and unit.
+    // null = not sent -> keep what is stored; "" = deliberately cleared -> honour it.
+    if (ingredient.PackSizeUnit == null)
+    {
+        ingredient.PackSizeValue = entity.PackSizeValue;
+        ingredient.PackSizeUnit = entity.PackSizeUnit;
+    }
     db.Entry(entity).CurrentValues.SetValues(ingredient.ToEntity());
     entity.UpdatedAt = now;
     await db.SaveChangesAsync();
@@ -946,6 +954,12 @@ app.MapPut("/api/ingredients", async (AppDbContext db, HttpContext ctx, List<Ing
         if (string.IsNullOrWhiteSpace(ing.Id)) continue;
         if (trackedExisting.TryGetValue(ing.Id, out var entity))
         {
+            // Same keep-existing rule as the single-record PUT above.
+            if (ing.PackSizeUnit == null)
+            {
+                ing.PackSizeValue = entity.PackSizeValue;
+                ing.PackSizeUnit = entity.PackSizeUnit;
+            }
             db.Entry(entity).CurrentValues.SetValues(ing.ToEntity());
         }
         else

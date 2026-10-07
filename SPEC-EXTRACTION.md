@@ -2450,3 +2450,44 @@ The number may be used as a weight value in future. Findings so far, nothing cha
   change that needs a backup first (`scripts/backup-full.ps1`) and the user's go-ahead.
 - Also needed: `spec-apply.js` writing and verifying the two new fields, the edit form saving them,
   and a backfill from the now-canonical strings (deterministic for the clean ones).
+
+### 2026-10-07 — Pack Size number and unit stored as separate fields: backend stage DONE and live
+
+**What changed in production:** two new nullable columns on `ingredients`: `pack_size_value`
+(numeric) and `pack_size_unit` (text), migration `AddIngredientPackSizeParts`. The API model
+(`packSizeValue`, `packSizeUnit`), entity, column mapping and both mapping directions carry them.
+The text `packSize` field is unchanged and still what everything reads today. The version-history
+snapshot deliberately does NOT include the new fields, so no ingredient got a fake new version.
+
+**Safeguard (the important part):** on both ingredient update endpoints (`PUT /api/ingredients/{id}`
+and the bulk `PUT /api/ingredients`) a request that does not send `packSizeUnit` at all (a page
+loaded before this existed) keeps the stored number and unit instead of blanking them. `null` =
+not sent = keep; `""` = deliberately cleared = honoured.
+
+**How it was proven before touching production** (the Pi's database login cannot create databases,
+so a scratch database was made with the Pi's admin database user, then dropped):
+1. Full backup first (`scripts/backup-full.ps1`, staged locally; a copy of the database dump is
+   kept in `.scan/backups/`). The dump was verified (valid gzip, 404 ingredient rows = live).
+2. Copy of the live database (rows, versions and a whole-table fingerprint all identical), new
+   build started against the COPY ONLY on `127.0.0.1:5099` (not reachable from the network).
+3. 18 checks, all passed: migration applied to the copy and not to production; every existing
+   column identical to production afterwards; the parts round-trip; an older page saving WITHOUT the
+   new fields (single and bulk) leaves the stored values intact; a deliberate clear works; no fake
+   version rows; every other ingredient row byte-identical. (One check in that run, "T7", was
+   written so it could not fail and is disregarded; the real production check is the next point.)
+4. Copy database dropped, test instance stopped, production fingerprint unchanged.
+
+**Production deploy:** previous program saved on the Pi in `/opt/nutricost/backend-previous-20261007/`
+(rollback = stop service, copy those two files back, start; the extra empty columns are harmless to the
+old program). Service restarted: migration applied, both columns exist, no rows have values yet, no
+errors logged. **Verified against the pre-change backup restored into a scratch database: 0 of 404
+ingredient rows differ; recipes and ingredient_versions identical.** Scratch database dropped.
+
+**Also learned:** the Pi runs `NUTRICOST_AUTH_MODE=local` (PI-RUNBOOK.md said `disabled`; corrected);
+the backend applies pending migrations at every startup, so the first start of any new build changes
+the database; local dev settings point at a Supabase database, so never run the backend locally
+without overriding `NUTRICOST_DB`.
+
+**Still to do for this feature:** make `spec-apply.js` write and verify the two fields; backfill them
+from the now-canonical strings (about 131 clean values); make the edit form save the number and unit
+separately and deploy it (to be tried in a real browser first); show them as separate fields in the UI.
