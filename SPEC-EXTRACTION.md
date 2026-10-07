@@ -2840,3 +2840,14 @@ Use this for any new field or schema change. Every step that changes something n
   cook" box. The design (free text; exact RTE / RTC / "ready to eat" / "ready to cook" proposed as read; anything else or blank
   asked; specs with no such question shown as blank for approval) is in the DESIGN entry above and the user has agreed to it
   in principle, but has not yet approved building any stage.
+
+
+### 2026-10-07 — Weight per each set from Pack Size (8 ingredients, each approved by click)
+Rule agreed with the user: only for non-packaging ingredients costed per EACH whose Pack Size is a g/ml measure and whose
+"Weight per each" (`unitWeightG`) was blank; an EACH with no Pack Size stays with no weight. ml uses density (1 when N/A).
+Written to `unitWeightG` (existing field, so no recipe maths changed) with `scripts/field-fix-apply.js`; verified, 0 other ingredients changed.
+Set: 107172 10, 106102 20, 104634 15, 106234 15, 106444 15, 105241 5, 100681 10, 106961 30 (g).
+Held back by the user: 103489 Miso Block (Pack Size 8 g but the box may be 30 x 8 g; cost 0.2575/each = £32/kg) -- revisit.
+Not built yet: the spec-upload question "Costed per EACH and Pack Size is N g: is one EACH one N g unit, or is N g the whole bag/case?"
+(Yes -> copy to Weight per each; No -> leave blank and flag). Nori 102058 (250 g bag, costed per sheet) and onigiri seaweed
+103487 (125 g) are deliberately NOT set: Pack Size there is the bag, not one EACH. Recipes using these lines now count the weight.
