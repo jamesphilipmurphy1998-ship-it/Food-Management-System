@@ -244,3 +244,31 @@ Pack Format. Nothing below has been changed.
 | 107390 | RM Simply Vanilla Syrup rPET bottle | '1 litre e (bottle) / 6 x 1 Litre - 6 Litres (Outercase)' | STORED VALUE NOT A PURE MEASURE: '1 litre e (bottle) / 6 x 1 Litre - 6 Litres (Outercase)' |
 | 107489 | RM Poached Egg (Free range) | 'Target weight 47g at point of pack. Weight spread is 43g-51g with possibility of outliers due to the natural variance of the product. Case net weight (1.29kg - 1.53kg).' | STORED VALUE NOT A PURE MEASURE: 'Target weight 47g at point of pack. Weight spread is 43g-51g with possibility of outliers due to the natural variance of the product. Case net weight (1.29kg - 1.53kg).' |
 | 107490 | RM Cooked Breakfast Sausage | '2 kg' | CONFLICT with raw_1b: stored 2 kg vs "50g"; CONFLICT with raw_1b: stored 2 kg vs "4g" |
+
+---
+
+## Upload review (2026-10-07) -- everything uploaded, checked against live data and source specs
+
+Method and results are in SPEC-EXTRACTION.md (same date). Nothing below has been changed yet.
+
+**Likely real errors (need a decision):**
+| Code | Ingredient | Problem |
+|---|---|---|
+| 107497 | RM IQF Julienne Carrot | The supplier spec has kJ and kcal swapped (kJ 35, kcal 146; carrot is about 35 kcal and 146 kJ, and its macros give 37 kcal). It was written as-entered by an earlier decision, but the same swap in 107685 (IQF Carrot Diced) and 106959 (Red Chilli Puree) WAS corrected. Used in 131 recipes. Recommend swapping to kJ 146 / kcal 35. |
+| 106250 | RM Tuna Chunks In Brine | Spec states 503 kJ and 102 kcal, but 503 kJ is about 120 kcal and the macros also give about 120. It was accepted as "rounding" because only kcal was compared with the macros. |
+| 102584 | RM Inari Cooked Bean Curd Ytk | Spec has sugars 14.1 g above carbohydrate 12.3 g (lab values). The extractor never checked sugars against carbohydrate. |
+| 106163 | RM Pepper Green Square 25 MM | The spec states Pack Size "10 kg" and ingredients "Pepper Green 100%", but live has neither (uploaded before those were extracted). |
+
+**Gaps that can be filled from the source (each needs its own confirmation):** 22 uploaded specs have a
+blank Ingredients List although the spec has one (declaration box or ingredient table): 103895 (this one
+declares gluten but has no ingredient text), 105970, 106041, 106127, 106139, 106160, 106163, 106167, 106169,
+106206, 106208, 106218, 106219, 106220, 106222, 106223, 106226, 106228, 106251, 106317, 106438, 107427.
+
+**Already known / decided earlier, listed so they are not rediscovered:** 17 Pack Sizes that are not a single
+number + unit (section above); blank Pack Format on 106096, 106100, 106133, 106140, 106170, 107497 (a
+dropped value or a template with no such field); 106167 blank shelf life and ingredients (paused);
+12 kcal-versus-macros gaps that were confirmed when uploaded (vinegar/lemon acid, alcohol, fibre counted
+in carbohydrate, and so on).
+
+**One pairing worth a glance:** 106202 live "RM Frying powder" vs spec name "Chicken Breading WSB MK2"
+(matched on code; the least obvious name pair of all 150).

@@ -2538,3 +2538,39 @@ Full database dump from before any of this: `.scan/backups/nutricost-db-2026-10-
 SPEC-ISSUES-TO-REVIEW.md) have no number/unit yet; 11 specs' ingredient lists could be filled from their
 tables (Matcha's dry run shows it); the OneDrive copy of this backup was not made (`backup-full.ps1
 -ConfirmOneDrive` would do it); the number is not yet used for any calculation.
+
+### 2026-10-07 — Review of every uploaded spec (150): results
+
+**Checks run:** (1) live data against what was uploaded (archives); (2) live data against a fresh re-read
+of every source spec (all 150 source files were found; 147 re-read automatically, 3 checked by hand);
+(3) consistency checks on the live values (kJ vs kcal, kcal vs macros, saturates vs fat, sugars vs
+carbohydrate, totals, salt, negatives); (4) allergens against the ingredient text; (5) pack size text vs
+number and unit; (6) storage vs shelf life; (7) repeated ingredient items; (8) duplicate codes;
+(9) a lowest-name-similarity list to catch a spec landing on the wrong ingredient.
+
+**Clean:** 0 of 150 live records drifted from what was uploaded. **Allergens: 0 differences from the source
+specs** across the 147 re-read; the other 3 (105951, 106217, 106955) were checked by hand and match
+(105951's "N, <=10mg/kg" is below the declaration threshold; 106217's missing row label shows N; 106955's
+"may contain naturally occurring SO2" was resolved earlier by declaring Sulphur dioxide). The keyword check of
+allergens against ingredient text found no genuinely missing allergen (every flag was a false alarm: "rice
+malt", "Gluten Free soy sauce", a "may contain traces of milk" statement the system doesn't record, and my
+checker calling sulphites "Sulphites" where the app says "Sulphur dioxide"). All 131 Pack Size number/unit
+pairs agree with their text. No duplicate codes, no negative values, no spec on an obviously wrong
+ingredient.
+
+**Found:** the four likely errors and the 22 fillable ingredient lists in SPEC-ISSUES-TO-REVIEW.md. Two of
+the nutrition ones got through because the extractor's sanity check only compares kcal with the macros: it
+does not compare kJ with kcal, or sugars with carbohydrate. 107497 was a recorded "write as entered" decision
+that later evidence (the same supplier's swap in 107685 and 106959, corrected) argues against.
+
+**Other differences from the source were all explained** as earlier approved edits: swapped kJ/kcal
+corrected (106959, 107685), fibre left unset (105241), typo fixes in shelf life and storage (106215, 107317,
+107541, 106243, 107685), Pack Format count suffixes (the 47 retro edits) and a handful of hand-agreed
+formats, the 105952 heading removal and the 107561 repeated-ingredient fix.
+
+**Limits of this review:** it proves the data matches the supplier specs and is internally consistent; it
+cannot prove a supplier spec is itself right. Allergen text matching is keyword-based. The system records only
+what a product contains, so "may contain" statements live only in ingredient text.
+
+**Follow-up for the extractor (not yet done):** add kJ-vs-kcal (about 4.184) and sugars-vs-carbohydrate checks
+to `spec-extract.py` so these are raised at upload time.
