@@ -909,6 +909,7 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
     # require EVERY expected category to be present as its own row before trusting any of it.
     allergens = []
     allergen_supplier_comments = []
+    cross_risk_rows = []
     as_ = wb[allergen_sheet_name]
     allergen_header_row = find_row_starting_with(as_, "Potential Component")
     if allergen_header_row is None:
@@ -994,6 +995,10 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
                 cont_ = " ".join(str(as_.cell(row=r_, column=contains_col).value or "").split())
                 cross_ = " ".join(str(as_.cell(row=r_, column=cross_col).value or "").split()) if cross_col else ""
                 comm_ = " ".join(str(as_.cell(row=r_, column=comment_col).value or "").split()) if comment_col else ""
+                _eu_row = _re.match(r"^(wheat|oat|rye|spelt|barley|gluten level|crustacean|egg|fish|lupin|milk|mollusc|mustard|nut/nut|peanut|sesame|soya|sulphite|celery)", lab_s, _re.IGNORECASE)
+                _says_no = cont_.upper().startswith("N")
+                if _eu_row and _says_no and (cross_.lower().startswith(("y", "present")) or "handled on site" in cont_.lower()):
+                    cross_risk_rows.append(lab_s.split("/")[0].split(" (")[0].rstrip(":* "))
                 if cross_ and cross_.upper() not in ("N", "NO"):
                     warnings.append("Allergen row %r: 'Risk of cross contamination?' says %r (contains: %r) -- needs human review." % (lab_s, cross_, cont_))
                 if comm_:
@@ -1034,6 +1039,9 @@ def extract(path, override_code=None, derive_salt_from_sodium=False, allow_blank
         "nutrition": nutrition,
         "allergens": allergens,
         "allergenSupplierComments": allergen_supplier_comments,
+        # PROPOSAL ONLY (user rule 2026-10-07): cross-contamination / "used on site" / "below ppm" answers are still a No and never tick an
+        # allergen; they are recorded as a note. A person edits/confirms this text, then it is written as allergenNotes in the extraction JSON.
+        "proposedAllergenNote": ("Supplier: cross-contamination risk (declared not contained): %s." % ", ".join(cross_risk_rows)) if cross_risk_rows else None,
         "packSize": pack_size,
         "packSizeLayout": pack_size_layout,
         "packSizeNumber": pack_size_number,

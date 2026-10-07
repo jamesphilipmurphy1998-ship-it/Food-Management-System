@@ -78,7 +78,7 @@ archiveFiles.forEach((file) => {
   const afterAllergens = (archive.allergens || []).slice().sort();
   const allergensChanged = JSON.stringify(beforeAllergens) !== JSON.stringify(afterAllergens);
   if (allergensChanged) diff.push({ field: "allergens", before: beforeAllergens, after: afterAllergens });
-  ["packSize", "packFormat", "storageConditions", "shelfLife", "ingredientsList"].forEach((f) => {
+  ["packSize", "packFormat", "storageConditions", "shelfLife", "ingredientsList", "allergenNotes"].forEach((f) => {
     const after = archive[f];
     if (after == null) return;
     const before = matched[f] || "";
@@ -108,7 +108,7 @@ archiveFiles.forEach((file) => {
   nutritionFields.forEach((f) => { if (archive.nutrition && archive.nutrition[f] != null) { updated[f] = archive.nutrition[f]; intendedNutrition[f] = archive.nutrition[f]; } });
   if (allergensChanged) updated.allergens = afterAllergens;
   const intendedPackFields = {};
-  ["packSize", "packFormat", "storageConditions", "shelfLife", "ingredientsList"].forEach((f) => { if (archive[f] != null) { updated[f] = archive[f]; intendedPackFields[f] = archive[f]; } });
+  ["packSize", "packFormat", "storageConditions", "shelfLife", "ingredientsList", "allergenNotes"].forEach((f) => { if (archive[f] != null) { updated[f] = archive[f]; intendedPackFields[f] = archive[f]; } });
   // Pack Size number + unit: restored from the archive when it carries them. Older archives have
   // neither key (undefined), in which case the live values are left exactly as they are.
   if (archive.packSizeUnit != null) { updated.packSizeValue = archive.packSizeValue == null ? null : archive.packSizeValue; updated.packSizeUnit = archive.packSizeUnit; }

@@ -169,7 +169,7 @@ const afterAllergens = (extraction.allergens || []).slice().sort();
 const allergensChanged = JSON.stringify(beforeAllergens) !== JSON.stringify(afterAllergens);
 if (allergensChanged) diff.push({ field: "allergens", before: beforeAllergens, after: afterAllergens });
 
-["packSize", "packFormat", "storageConditions", "shelfLife", "ingredientsList"].forEach((f) => {
+["packSize", "packFormat", "storageConditions", "shelfLife", "ingredientsList", "allergenNotes"].forEach((f) => {
   const after = extraction[f];
   if (after == null) return; // not extracted from this spec -- don't touch it
   const before = matched[f] || "";
@@ -244,7 +244,7 @@ const intendedNutrition = {};
 nutritionFields.forEach((f) => { if (extraction.nutrition[f] != null) { updated[f] = extraction.nutrition[f]; intendedNutrition[f] = extraction.nutrition[f]; } });
 if (allergensChanged) updated.allergens = afterAllergens;
 const intendedPackFields = {};
-["packSize", "packFormat", "storageConditions", "shelfLife", "ingredientsList"].forEach((f) => { if (extraction[f] != null) { updated[f] = extraction[f]; intendedPackFields[f] = extraction[f]; } });
+["packSize", "packFormat", "storageConditions", "shelfLife", "ingredientsList", "allergenNotes"].forEach((f) => { if (extraction[f] != null) { updated[f] = extraction[f]; intendedPackFields[f] = extraction[f]; } });
 if (intendedPackSizeUnit !== undefined) { updated.packSizeValue = intendedPackSizeValue; updated.packSizeUnit = intendedPackSizeUnit; }
 if (intendedUnitWeightG !== undefined) updated.unitWeightG = intendedUnitWeightG;
 
@@ -323,6 +323,7 @@ if (mismatches.length === 0) {
     storageConditions: intendedPackFields.storageConditions != null ? intendedPackFields.storageConditions : (matched.storageConditions || null),
     shelfLife: intendedPackFields.shelfLife != null ? intendedPackFields.shelfLife : (matched.shelfLife || null),
     ingredientsList: intendedPackFields.ingredientsList != null ? intendedPackFields.ingredientsList : (matched.ingredientsList || null),
+    allergenNotes: intendedPackFields.allergenNotes != null ? intendedPackFields.allergenNotes : (matched.allergenNotes || null),
     unitWeightG: intendedUnitWeightG !== undefined ? intendedUnitWeightG : (Number(matched.unitWeightG) > 0 ? Number(matched.unitWeightG) : null),
     errors: [],
     warnings: []

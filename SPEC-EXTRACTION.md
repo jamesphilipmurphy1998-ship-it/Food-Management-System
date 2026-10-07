@@ -2914,3 +2914,13 @@ the system has no may-contain field, so these risks are not recorded anywhere ye
 **New field "Allergen notes" (free text under the Fruit/Veg/Nut tick box):** step 1 done and approved: nullable column `allergen_notes` (migration `AddIngredientAllergenNotes`), model, mapping and keep-existing rule
 on both PUT endpoints; tested 15/15 on a scratch copy on the Pi (production fingerprint identical before/after); deployed to the live Pi (rollback copy `/opt/nutricost/backend-previous-allergen-20261007`); verified:
 service active, column and migration present, 0 of 404 ingredient rows differ from the pre-change backup, recipes and versions identical. NOT built yet: the form box, the extractor/apply/archive carry-through, then the 106153 upload.
+
+
+### 2026-10-07 — RULE (user decision): cross-contamination / "used on site" / "below ppm" is still a NO, recorded as a note, never a tick
+Allergen ticks record only what a product **contains**. A supplier answer such as "cross-contamination risk: Yes", "N- But handled on site", "handled/used on site but not present", "carry-over below 10ppm" or
+"gluten below 20ppm" is still a **No**: do NOT tick the allergen; instead put the supplier's wording in the ingredient's **Allergen notes** (free-text box directly under the "Fruit, Vegetable or Nut" tick box).
+A row the supplier answers **Yes** but then comments as below a threshold / "no declaration required" (e.g. 106153 wheat/barley from yeast extract) is NOT automatic: ASK the user each time what to tick, and keep the comment as a note.
+Built so far: DB column `allergen_notes` (live); form box (built, tested in the browser pane, NOT yet deployed to the Pi); `spec-extract.py` returns `allergenSupplierComments` and a `proposedAllergenNote` (cross-contamination
+or "handled on site" rows declared not-contained; a PROPOSAL only, the user edits/confirms it); `spec-apply.js` and `spec-reapply-all.js` now carry `allergenNotes` (written only if the confirmed extraction JSON contains it; archived).
+Procedure per spec: whole-row check -> show the user the proposed note and any Yes-with-exemption rows -> confirm each by click -> put the confirmed text in the extraction JSON as `allergenNotes` -> apply.
+Re-run over all uploaded specs: `.scan/tools/run_all_proposed.py` (output `.scan/proposed_allergen_notes.txt`, local) and `ALLERGEN-REVIEW.md` (in the repo). Backfilling notes onto the already-uploaded specs needs the user's per-spec approval.

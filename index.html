@@ -1257,6 +1257,11 @@
         <input type="checkbox" id="new-ing-fvn"> Fruit, Vegetable or Nut (FVN eligible for HFSS)
       </label>
     </div>
+    <div class="form-group">
+      <label class="form-label">Allergen notes</label>
+      <textarea class="form-input" id="new-ing-allergen-notes" rows="2" placeholder="e.g. Supplier comment: yeast extract from brewers wort (wheat), &lt;20ppm, no allergen declaration required"></textarea>
+      <p style="font-size:11px;color:var(--nc-gray-400);margin:2px 0 0">Optional. Supplier comments or cross-contamination notes about allergens, kept for reference. Does not change the allergen ticks above.</p>
+    </div>
     <div class="form-group ingredient-lifecycle-row" style="border-top:1px solid var(--nc-gray-200);margin-top:8px;padding-top:12px;display:none">
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
         <span id="ingredient-status-badge" class="badge badge-status badge-development">In development</span>
@@ -1926,7 +1931,7 @@
 <script src="hfss.js?v=20260930-perf-fixes"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="app.js?v=20261007-packsize-parts"></script>
+<script src="app.js?v=20261007-allergen-notes"></script>
 <script src="excel-import.js?v=20260929-no-fvn-guessing"></script>
 <script src="reports.js?v=20260923-cache-buster"></script>
 </body>

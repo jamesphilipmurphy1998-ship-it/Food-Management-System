@@ -2759,6 +2759,8 @@
     if (costUomEl) costUomEl.value = "KG";
     var fvnEl = document.getElementById("new-ing-fvn");
     if (fvnEl) fvnEl.checked = false;
+    var allergenNotesNewEl = document.getElementById("new-ing-allergen-notes");
+    if (allergenNotesNewEl) allergenNotesNewEl.value = "";
     var approvedEl = document.getElementById("new-ing-approved");
     if (approvedEl) approvedEl.checked = false;
     renderAllergenCheckboxes([]);
@@ -2841,6 +2843,8 @@
     var ingredientsListEl = document.getElementById("new-ing-ingredients-list");
     if (ingredientsListEl) ingredientsListEl.value = data.ingredientsList || "";
     document.getElementById("new-ing-fvn").checked = !!data.fvn;
+    var allergenNotesEl = document.getElementById("new-ing-allergen-notes");
+    if (allergenNotesEl) allergenNotesEl.value = data.allergenNotes || "";
     var approvedEl = document.getElementById("new-ing-approved");
     if (approvedEl) approvedEl.checked = !!data.approved;
     renderAllergenCheckboxes(data.allergens || []);
@@ -3100,6 +3104,7 @@
       shelfLife: (function () { var el = document.getElementById("new-ing-shelf-life"); return el ? el.value.trim() : ""; })(),
       ingredientsList: (function () { var el = document.getElementById("new-ing-ingredients-list"); return el ? el.value.trim() : ""; })(),
       allergens: allergens,
+      allergenNotes: (function () { var el = document.getElementById("new-ing-allergen-notes"); return el ? el.value.trim() : ""; })(),
       fvn: document.getElementById("new-ing-fvn").checked
     };
     // Approval lifecycle is driven entirely by the dedicated buttons/endpoints now (see
