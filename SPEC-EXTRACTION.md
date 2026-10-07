@@ -2574,3 +2574,21 @@ what a product contains, so "may contain" statements live only in ingredient tex
 
 **Follow-up for the extractor (not yet done):** add kJ-vs-kcal (about 4.184) and sugars-vs-carbohydrate checks
 to `spec-extract.py` so these are raised at upload time.
+
+### 2026-10-07 — 107497 IQF Julienne Carrot: swapped energy corrected
+
+After the full upload review the user confirmed correcting **RM IQF Julienne Carrot (107497)** from
+kJ 35 / kcal 146 to **kJ 146 / kcal 35**. Evidence shown: the spec's own macros (7.9 g carbohydrate, 0.6 g
+protein, 0.3 g fat) give 36.7 kcal; 35 kcal x 4.184 = 146.4 kJ (almost exact); and the same supplier's IQF
+Carrot Diced (107685) and Red Chilli Puree (106959) had the same swap, corrected at upload. This reverses
+the earlier "write as entered" decision for this item. It feeds 131 of the 1,098 recipes (1 directly, the rest
+through sub-recipes), whose carrot energy was previously about four times too high; their nutrition is
+calculated live, so they correct themselves.
+Done with the new `scripts/field-fix-apply.js` (a plan file of confirmed corrections; refuses if a live value
+isn't the expected old one; attaches an explanatory comment to the version history; verifies by re-fetch):
+status 200, both fields correct, **0 other ingredients changed (404/404)**. `spec-data/107497.json` updated so
+a re-apply from archive does not undo it. Plan kept in `.scan/fix_107497.json`.
+
+**Still open from the review (user did not choose these yet):** 106250 Tuna (kJ 503 vs kcal 102), 102584
+Inari (sugars above carbohydrate), 106163 Pepper Green (Pack Size 10 kg and ingredients are in the spec),
+the 22 blank ingredient lists, and adding kJ-vs-kcal and sugars-vs-carbohydrate checks to the extractor.

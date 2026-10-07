@@ -254,7 +254,7 @@ Method and results are in SPEC-EXTRACTION.md (same date). Nothing below has been
 **Likely real errors (need a decision):**
 | Code | Ingredient | Problem |
 |---|---|---|
-| 107497 | RM IQF Julienne Carrot | The supplier spec has kJ and kcal swapped (kJ 35, kcal 146; carrot is about 35 kcal and 146 kJ, and its macros give 37 kcal). It was written as-entered by an earlier decision, but the same swap in 107685 (IQF Carrot Diced) and 106959 (Red Chilli Puree) WAS corrected. Used in 131 recipes. Recommend swapping to kJ 146 / kcal 35. |
+| 107497 | RM IQF Julienne Carrot | **FIXED 2026-10-07 (set to kJ 146 / kcal 35, confirmed by the user).** The supplier spec has kJ and kcal swapped (kJ 35, kcal 146; carrot is about 35 kcal and 146 kJ, and its macros give 37 kcal). It was written as-entered by an earlier decision, but the same swap in 107685 (IQF Carrot Diced) and 106959 (Red Chilli Puree) WAS corrected. Used in 131 recipes. Recommend swapping to kJ 146 / kcal 35. |
 | 106250 | RM Tuna Chunks In Brine | Spec states 503 kJ and 102 kcal, but 503 kJ is about 120 kcal and the macros also give about 120. It was accepted as "rounding" because only kcal was compared with the macros. |
 | 102584 | RM Inari Cooked Bean Curd Ytk | Spec has sugars 14.1 g above carbohydrate 12.3 g (lab values). The extractor never checked sugars against carbohydrate. |
 | 106163 | RM Pepper Green Square 25 MM | The spec states Pack Size "10 kg" and ingredients "Pepper Green 100%", but live has neither (uploaded before those were extracted). |
