@@ -28,5 +28,6 @@
   "errors": [],
   "warnings": [],
   "packSizeValue": 10,
-  "packSizeUnit": "ml"
+  "packSizeUnit": "ml",
+  "unitWeightG": 10
 }

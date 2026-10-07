@@ -2881,3 +2881,12 @@ Used in 40 recipes. The extractor still cannot split a combined Shelf Life/Stora
 
 ### 2026-10-07 — 103004 Water needs no spec
 User: Water is complete, blank nutrition is correct by default. Exclude 103004 when regenerating the "RM without a spec" list (69 -> 68). No data changed.
+
+
+### 2026-10-07 — Weight per each now survives a wipe (archives + spec-reapply-all.js), both approved by the user
+Gap found: the 9 weights set with `field-fix-apply.js` (100681 10, 103489 8, 104634 15, 105241 5, 106102 20, 106234 15, 106444 15, 106961 30, 107172 10 g)
+were not in the archives and `spec-reapply-all.js` did not restore the field. Fixed: `unitWeightG` added to those 9 archives from the live values (105978's
+already had it), and `spec-reapply-all.js` now restores `unitWeightG` when the archive carries a positive value (absent/null leaves live alone).
+Tested by a dry run (0 differences against live) and by temporarily changing one archive to 99 (dry run reported 20 -> 99; archive restored).
+STILL NOT in archives: weights a person types by hand in the app (including packaging item weights), and any edit made outside spec uploads.
+`field-fix-apply.js` does not update archives; a corrected value needs the matching archive edited too.

@@ -27,5 +27,6 @@
   "warnings": [],
   "shelfLife": "12 months shelf life from manufacturer /  9 months minimum shelf life on delivery",
   "packSizeValue": 10,
-  "packSizeUnit": "ml"
+  "packSizeUnit": "ml",
+  "unitWeightG": 10
 }

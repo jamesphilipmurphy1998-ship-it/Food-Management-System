@@ -27,5 +27,6 @@
   "warnings": [],
   "shelfLife": "90 days, chilled. 68 days on delivery.",
   "packSizeValue": 15,
-  "packSizeUnit": "g"
+  "packSizeUnit": "g",
+  "unitWeightG": 15
 }

@@ -24,5 +24,6 @@
   "warnings": [],
   "shelfLife": "18 months",
   "packSizeValue": 5,
-  "packSizeUnit": "g"
+  "packSizeUnit": "g",
+  "unitWeightG": 5
 }

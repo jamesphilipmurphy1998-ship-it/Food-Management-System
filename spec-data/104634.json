@@ -25,5 +25,6 @@
   "warnings": [],
   "shelfLife": "90 days ( 68days minimum on delivery)",
   "packSizeValue": 15,
-  "packSizeUnit": "g"
+  "packSizeUnit": "g",
+  "unitWeightG": 15
 }

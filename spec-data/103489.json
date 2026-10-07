@@ -27,5 +27,6 @@
   "errors": [],
   "warnings": [],
   "packSizeValue": 8,
-  "packSizeUnit": "g"
+  "packSizeUnit": "g",
+  "unitWeightG": 8
 }

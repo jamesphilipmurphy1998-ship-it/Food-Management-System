@@ -90,6 +90,9 @@ archiveFiles.forEach((file) => {
     if ((matched.packSizeUnit || "") !== archive.packSizeUnit) diff.push({ field: "packSizeUnit", before: matched.packSizeUnit || "", after: archive.packSizeUnit });
   }
 
+  // Weight per each: restored only when the archive carries a positive value (null/absent leaves the live value alone).
+  const archiveUnitWeight = Number(archive.unitWeightG) > 0 ? Number(archive.unitWeightG) : null;
+  if (archiveUnitWeight !== null && (Number(matched.unitWeightG) || 0) !== archiveUnitWeight) diff.push({ field: "unitWeightG", before: Number(matched.unitWeightG) || 0, after: archiveUnitWeight });
   if (diff.length === 0) {
     results.unchanged++;
     return;
@@ -110,6 +113,7 @@ archiveFiles.forEach((file) => {
   // neither key (undefined), in which case the live values are left exactly as they are.
   if (archive.packSizeUnit != null) { updated.packSizeValue = archive.packSizeValue == null ? null : archive.packSizeValue; updated.packSizeUnit = archive.packSizeUnit; }
 
+  if (archiveUnitWeight !== null) updated.unitWeightG = archiveUnitWeight;
   const tmpPath = path.join(SPEC_DATA_DIR, `.${archive.code}.put-body.json`);
   const result = curlPut(`${API_BASE}/api/ingredients/${matched.id}`, updated, tmpPath);
   if (result.status !== "200") {
