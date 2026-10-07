@@ -2622,3 +2622,10 @@ updated so a re-apply does not blank them. Plan kept in `.scan/fix_ingredients_7
 own open issue), and 13 table-sourced single-ingredient lists awaiting the user's approval after asking to see
 the ingredient names next to the codes: 105970, 106139, 106160, 106206, 106218, 106219, 106220, 106222, 106223,
 106226, 106228, 106317, 107427.
+
+**Follow-up, same day: the 13 table-sourced lists were then approved by the user and written** (105970, 106139,
+106160, 106206, 106218, 106219, 106220, 106222, 106223, 106226, 106228, 106317, 107427), each as the single
+ingredient with (100%) taken from the spec's ingredient table because its declaration box was empty, shown to
+the user beside the ingredient name before approval. Written with `field-fix-apply.js`: all 13 correct, **0 other
+ingredients changed (404/404)**; archives updated; plan in `.scan/fix_ingredients_13.json`. Of the 22 originally
+blank, 20 are now filled; still blank are 103895 (user: come back to it) and 106167 (paused, own open issue).
