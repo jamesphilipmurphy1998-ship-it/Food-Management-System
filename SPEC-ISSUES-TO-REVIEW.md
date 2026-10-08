@@ -345,3 +345,11 @@ No spec file exists in the Ingredient Specs folder for this ingredient (checked 
 
 ## 2026-10-08 — 106192 RM Baking Powder: no spec found (re-confirmed; already listed above)
 Re-checked the Ingredient Specs folder on 2026-10-08: still no file under the code 106192 or "baking". The live item still has no nutrition (category Other, cost 3.41 KG). Nothing has been changed. To resolve: get the spec from the supplier.
+
+
+## 2026-10-08 — 106157 RM Salt Table Tub: no spec found (user added to the issues list)
+No spec file exists in the Ingredient Specs folder for this ingredient (checked against its code on the folder checks up to 2026-10-08), and it has no nutrition on the live item (category Other, cost 0.6447 KG). Nothing has been changed. To resolve: get the spec from the supplier, then process it like any new spec.
+
+
+## 2026-10-08 — 107346 RM Salt Tub: no spec found (user added to the issues list)
+No spec file exists in the Ingredient Specs folder for this ingredient (checked against its code on the folder checks up to 2026-10-08), and it has no nutrition on the live item (category Other, cost 0.64339 KG). Nothing has been changed. To resolve: get the spec from the supplier, then process it like any new spec.
