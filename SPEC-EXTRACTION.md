@@ -3066,3 +3066,12 @@ no allergens ticked (no EU-14 row Yes; Animal "pork ribs", Vegetable "spices, on
 Storage "Keep frozen at -18°C or colder" (stray space before the degree sign removed); Shelf Life "18 months / Minimum shelf life on delivery 12 months" (spec: "Total Shelf Life 18 months; Shelf Life on Delivery 12 months");
 ingredients (declaration box) "Pork Ribs (85%), Water, Gochujang Seasoning (Glucose Syrup, Sugar, Spices (Dried Onion, Dried Garlic, Cayenne Pepper, Cumin, Oregano), Maize Starch, Salt, Yeast Extract, Preservative (Sodium Diacetate E262ii), Paprika Extract), Salt.".
 Name accepted (spec "Korean style pork ribs" vs live "RM Pork Cooked Korean Riblets Frozen", live name unchanged). Costed per KG. Verified live, archived. Folder check 47 queue is now empty (106155 rapeseed oil held on the issues list).
+
+
+### 2026-10-08 — 106229 RM Diced Yellow pepper 20mmx20mm PACK 5KG uploaded (two pack sizes on the spec)
+File `106229 Yellow Pepper Diced 20mm RM Spec V3 (26.08.2026).xlsx` (title "Yellow Pepper Diced 20mm", code 106229, no alt). Extracted with warnings. The Pack Size cell reads "5kg, 10kg" (two sizes): the extractor left it unsplit; user chose Pack Size 5 + kg (matches the item name "PACK 5KG"),
+set in the extraction JSON (packSize "5 kg", number 5, unit kg), and Pack Format "5kg or 10kg blue food grade bag" so the 10kg size is still recorded. Every field confirmed by click: 96 kJ / 23 kcal, fat 0.2, sat 0.0, carb 4.6, sugars 4.4, fibre 2.2, protein 0.8, salt 0.0025;
+no allergens ticked (every row No; the Celery and Sulphites rows carry the generic comment "Handle in the Factory. Allergen cross contamination is controlled through allergen handling procedurs and annual testing", no cross-contamination Yes; user chose NO note);
+Storage "Chilled (0 - 5 C)" and Shelf Life "Date of Production + 5 days, Delivery + 4 days" as extracted; ingredients "Yellow Pepper (100%)" (declaration box EMPTY, taken from the ingredient table, confirmed by the user). Name accepted (spec "Yellow Pepper Diced 20mm" vs live "RM Diced Yellow pepper 20mmx20mm PACK 5KG", live name unchanged).
+Costed per KG. Verified live, archived, used in 60 recipes.
+Also this turn: 107252 RM Twinings Pure Green Tea added to the issues list as "no spec found" (the only tea with a spec is the matcha 107427; teas 107253 and 107254 also have no spec).
