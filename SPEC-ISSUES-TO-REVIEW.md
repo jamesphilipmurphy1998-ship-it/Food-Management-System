@@ -337,3 +337,7 @@ No spec file exists in the Ingredient Specs folder for this ingredient (checked 
 
 ## 2026-10-08 — 107499 RM Chinese Five Spice: no spec found (user added to the issues list)
 No spec file exists in the Ingredient Specs folder for this ingredient (checked against its code on the folder checks up to 2026-10-08), and it has no nutrition on the live item (category Other, cost 7.49 KG). Nothing has been changed. To resolve: get the spec from the supplier, then process it like any new spec.
+
+
+## 2026-10-08 — 107088 RM Not RTE-Gyoza Japanese-style apple dumpling: no spec found (user added to the issues list)
+No spec file exists in the Ingredient Specs folder for this ingredient (checked against its code on the folder checks up to 2026-10-08), and it has no nutrition on the live item (category Other, cost 5.3042 KG). Nothing has been changed. To resolve: get the spec from the supplier, then process it like any new spec.
