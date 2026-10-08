@@ -3058,3 +3058,11 @@ allergens: Sesame ticked (sesame row Yes: "Sesame seeds, oil"; vegetable, seed a
 Pack Format "12/1kg, transparent plastic pouch" (count added and the spec's typo "plasic" corrected, user's choice); Storage "Keep under -18°C" (spec uses the single ℃ symbol); Shelf Life "24 months from Manufacturer; 20 - 6 months shelf-life on delivery" exactly as extracted (the "20 - 6" looks like a spec typo; user kept it as read);
 ingredients without the leading word "Ingredients:": "Wakame Seaweed, Cane sugar, Rice vinegar (Water, Rice, Koji), Sesame oil, White Sesame seeds, Chilli pepper, Yeast extract". Name accepted (spec "Frozen Seasoned Seaweed Salad" vs live "Seaweed Wakame Salad Frozen Bag", live name unchanged). Costed per KG. Verified live, archived, used in 4 recipes.
 Earlier in this check: 106155 rapeseed oil held (stale code cells; see issues list). Queue: 107138 Korean style pork ribs.
+
+
+### 2026-10-08 — 107138 RM Pork Cooked Korean Riblets Frozen uploaded
+File `107138 Korean style pork ribs Wasabi RM Spec V1 (16.12.2024).xlsx` (title "Korean style pork ribs", code 107138, no alt code). Extracted cleanly with warnings. Every field confirmed by click: 1048.4 kJ / 252.3 kcal, fat 18.3, sat 7.73, carb 3.56, sugars 3, fibre 1.73, protein 17.47, salt 0.84 (macros agree with the kcal);
+no allergens ticked (no EU-14 row Yes; Animal "pork ribs", Vegetable "spices, onion, garlic...", Maize "Maize Starch" rows Yes but not EU-14; no cross-contamination answers), no note; Pack Size 1 + kg (cell "1 kg"); Pack Format "Sous-vide bag in primary box" as extracted;
+Storage "Keep frozen at -18°C or colder" (stray space before the degree sign removed); Shelf Life "18 months / Minimum shelf life on delivery 12 months" (spec: "Total Shelf Life 18 months; Shelf Life on Delivery 12 months");
+ingredients (declaration box) "Pork Ribs (85%), Water, Gochujang Seasoning (Glucose Syrup, Sugar, Spices (Dried Onion, Dried Garlic, Cayenne Pepper, Cumin, Oregano), Maize Starch, Salt, Yeast Extract, Preservative (Sodium Diacetate E262ii), Paprika Extract), Salt.".
+Name accepted (spec "Korean style pork ribs" vs live "RM Pork Cooked Korean Riblets Frozen", live name unchanged). Costed per KG. Verified live, archived. Folder check 47 queue is now empty (106155 rapeseed oil held on the issues list).

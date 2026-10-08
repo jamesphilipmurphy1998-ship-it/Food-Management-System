@@ -1,0 +1,31 @@
+{
+  "status": "ok",
+  "sourceFile": "C:\\Users\\JamesMurphy\\OneDrive - Wasabi\\WASUK - Food Team - NPD\\New Wasabi System Development\\FMS System\\3. Supporting Docs\\Ingredient Specs\\107138 Korean style pork ribs Wasabi RM Spec V1 (16.12.2024).xlsx",
+  "appliedAt": "2026-10-08T11:28:20.592Z",
+  "name": "RM Pork Cooked Korean Riblets Frozen",
+  "code": "107138",
+  "altCode": null,
+  "nutrition": {
+    "kj": 1048.4,
+    "kcal": 252.3,
+    "fat": 18.3,
+    "sat": 7.73,
+    "carb": 3.56,
+    "sugar": 3,
+    "protein": 17.47,
+    "fibre": 1.73,
+    "salt": 0.84
+  },
+  "allergens": [],
+  "packSize": "1 kg",
+  "packSizeValue": 1,
+  "packSizeUnit": "kg",
+  "packFormat": "Sous-vide bag in primary box",
+  "storageConditions": "Keep frozen at -18°C or colder",
+  "shelfLife": "18 months / Minimum shelf life on delivery 12 months",
+  "ingredientsList": "Pork Ribs (85%), Water, Gochujang Seasoning (Glucose Syrup, Sugar, Spices (Dried Onion, Dried Garlic, Cayenne Pepper, Cumin, Oregano), Maize Starch, Salt, Yeast Extract, Preservative (Sodium Diacetate E262ii), Paprika Extract), Salt.",
+  "allergenNotes": null,
+  "unitWeightG": null,
+  "errors": [],
+  "warnings": []
+}
