@@ -1,0 +1,30 @@
+{
+  "status": "ok",
+  "sourceFile": "C:\\Users\\JamesMurphy\\OneDrive - Wasabi\\WASUK - Food Team - NPD\\New Wasabi System Development\\FMS System\\3. Supporting Docs\\Ingredient Specs\\106210 (105010)- Frozen pork neck sliced 3.5mm- RM Spec- V1.xls",
+  "appliedAt": "2026-10-08T09:22:21.086Z",
+  "name": "RM Pork Neck Slice",
+  "code": "106210",
+  "altCode": null,
+  "nutrition": {
+    "kj": 553,
+    "kcal": 132,
+    "fat": 4.06,
+    "sat": 1.25,
+    "carb": 0.1,
+    "sugar": 0.1,
+    "protein": 22.4,
+    "salt": 0.12
+  },
+  "allergens": [],
+  "packSize": "5 kg",
+  "packSizeValue": 5,
+  "packSizeUnit": "kg",
+  "packFormat": "4x5kg, plastic",
+  "storageConditions": "-8°C",
+  "shelfLife": "28 days",
+  "ingredientsList": "Pork Neck",
+  "allergenNotes": null,
+  "unitWeightG": null,
+  "errors": [],
+  "warnings": []
+}

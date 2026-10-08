@@ -3024,3 +3024,14 @@ The kcal sanity warning (33 vs macro sum 23.7) is explained by the blank fibre; 
 Pack Size 10 + kg (cell "1x10kg"); Pack Format "1x10kg, blue food grade liner" (count wording added, user's choice; spec says "Blue food grade liner"); Storage "Store at -18°C or colder" as extracted; Shelf Life "24 months"; ingredients "Green beans" (the user chose this over the spec's "Frozen cut beans 26mm");
 no allergens ticked (only Vegetable = Yes, "Product is a vegetable"; no cross-contamination answers), no note. Name confirmed (spec "Green beans 26mm" vs live "RM IQF 1" Cut Green Beans Yearsley Case", 26 mm is about 1 inch; live name unchanged). Costed per KG. Verified live, archived.
 Folder check 40 queue is now empty.
+
+
+### 2026-10-08 — 106210 RM Pork Neck Slice uploaded (old .xls, blank code cells, no Fibre row, storage temperature set by the user)
+File `106210 (105010)- Frozen pork neck sliced 3.5mm- RM Spec- V1.xls` — an OLD .xls format the extractor cannot read. It was converted by Excel (COM, SaveAs .xlsx) from a COPY in `%LOCALAPPDATA%\Temp\xlsconv\` (the original was not touched) and extracted from the copy;
+the archive's `sourceFile` points at the original .xls. (No xlrd / LibreOffice on this PC. To avoid this next time, ask for specs in .xlsx.) The spec's Product Code cell is BLANK on the manufacturer sheet and "0" on every other sheet; the code appears only in the file name,
+so it was extracted with `--override-code 106210` after the user confirmed ("Yes, it is 106210"). Also no Fibre row: Fibre stays as it is (live 0), `--allow-blank-nutrition fibre`.
+Every field confirmed by click: 553 kJ / 132 kcal, fat 4.06, sat 1.25, carb 0.1, sugars 0.1, protein 22.4, salt 0.12; no allergens (only Animal = Yes, "Pork"), no note; Pack Size 5 + kg (cell "4x5kg"); Pack Format "4x5kg, plastic" (count added, user's choice; spec says "Plastic");
+ingredients "Pork Neck"; name accepted (spec "Pork neck slice 2cm x 2cm" / "Pork neck slice 3.5mm (2cm x 2cm)" vs live "RM Pork Neck Slice", live name unchanged).
+STORAGE / SHELF LIFE (user decision, differs from the spec text): the spec's storage cell reads "<-8oC" (superscript "o" = degree sign, i.e. below -8°C); shelf life from manufacturer "28 days"; transport "-2°C to +8°C"; once opened "0°C to 6°C - 3 days"; the file name says "Frozen".
+The user first asked for "-18", then (seeing the transport/once-opened temperatures that suggest a chilled product) chose the exact text: Storage "-8°C", Shelf Life "28 days". The frozen vs chilled question is NOT settled; recorded in SPEC-ISSUES-TO-REVIEW.md to confirm with the supplier.
+Costed per KG, £5.76. Verified live, archived.

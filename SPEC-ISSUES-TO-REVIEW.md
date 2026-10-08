@@ -353,3 +353,8 @@ No spec file exists in the Ingredient Specs folder for this ingredient (checked 
 
 ## 2026-10-08 — 107346 RM Salt Tub: no spec found (user added to the issues list)
 No spec file exists in the Ingredient Specs folder for this ingredient (checked against its code on the folder checks up to 2026-10-08), and it has no nutrition on the live item (category Other, cost 0.64339 KG). Nothing has been changed. To resolve: get the spec from the supplier, then process it like any new spec.
+
+
+## 2026-10-08 — 106210 RM Pork Neck Slice: storage temperature unclear (uploaded with the user's text; to confirm with the supplier)
+The spec's Storage cell reads "<-8oC" (below -8°C), shelf life 28 days, transport "-2°C to +8°C", once opened "0°C to 6°C - 3 days", and the file name says "Frozen pork neck sliced". The temperatures suggest a chilled product, the name says frozen, and -8°C is neither a normal frozen nor chilled setpoint.
+Written to the live item at the user's choice: Storage "-8°C", Shelf Life "28 days". To resolve: ask the supplier whether the product is frozen (-18°C) or chilled (<8°C) and correct Storage on the live item. Source is an old .xls, converted by Excel from a copy for extraction.
