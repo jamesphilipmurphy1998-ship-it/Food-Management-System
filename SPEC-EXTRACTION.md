@@ -3035,3 +3035,11 @@ ingredients "Pork Neck"; name accepted (spec "Pork neck slice 2cm x 2cm" / "Pork
 STORAGE / SHELF LIFE (user decision, differs from the spec text): the spec's storage cell reads "<-8oC" (superscript "o" = degree sign, i.e. below -8°C); shelf life from manufacturer "28 days"; transport "-2°C to +8°C"; once opened "0°C to 6°C - 3 days"; the file name says "Frozen".
 The user first asked for "-18", then (seeing the transport/once-opened temperatures that suggest a chilled product) chose the exact text: Storage "-8°C", Shelf Life "28 days". The frozen vs chilled question is NOT settled; recorded in SPEC-ISSUES-TO-REVIEW.md to confirm with the supplier.
 Costed per KG, £5.76. Verified live, archived.
+
+
+### 2026-10-08 — 106136 RM Breadcrumbs Panko 14Mm Yellow Yutaka uploaded (no Fibre row; gluten ticked, soya note)
+File `106136 (105021) - 14mm Panko Breadcrumb Wasabi RM Spec V9 (07.02.2025).xlsx` (title "Yutaka Frozen Breadcrumbs 14mm Yellow 10kg", code 106136, alt 105021 = recipe). The extractor first refused it: no Fibre row. User: Fibre stays as it is (live 0), `--allow-blank-nutrition fibre`.
+(The file was briefly locked in Excel mid-way; nothing was written until it was closed and re-read.) Every field confirmed by click: 1528 kJ / 364 kcal, fat 3.2, sat 1, carb 72, sugars 3.2, protein 11.8, salt 1.4;
+ALLERGENS: Cereals containing gluten ticked (wheat and gluten-level rows Yes, "wheat"); Soya row is No with supplier comment "E306 is exempt based on FIR reg" -> stays No, recorded as the Allergen note "Soya: E306 is exempt based on FIR reg (supplier)." (user's choice);
+Pack Size 10 + kg (cell "10kg"); Pack Format "10kg plastic bag" (weight added, user's choice; spec says "Plastic bag."); Storage "Keep frozen -18°C" as extracted; Shelf Life "18 months / Minimum shelf life on delivery 90 days" (spec "18 months  / minimum shelf life on delivery : 90 days");
+ingredients from the declaration box, double space tidied: "Wheat flour (Gluten)95.5%, Vegetable Oil (Palm Oil, Antioxidant : Tocopherol), Salt, Yeast, Colour :Red Paprika.". Name accepted (words in a different order; live name unchanged). Costed per KG, £3.69. Verified live, archived, used in 4 recipes.

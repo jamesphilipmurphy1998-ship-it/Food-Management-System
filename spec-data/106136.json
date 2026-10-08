@@ -1,0 +1,32 @@
+{
+  "status": "ok",
+  "sourceFile": "C:\\Users\\JamesMurphy\\OneDrive - Wasabi\\WASUK - Food Team - NPD\\New Wasabi System Development\\FMS System\\3. Supporting Docs\\Ingredient Specs\\106136 (105021) - 14mm Panko Breadcrumb Wasabi RM Spec V9 (07.02.2025).xlsx",
+  "appliedAt": "2026-10-08T10:50:23.589Z",
+  "name": "RM Breadcrumbs Panko 14Mm Yellow Yutaka",
+  "code": "106136",
+  "altCode": "105021",
+  "nutrition": {
+    "kj": 1528,
+    "kcal": 364,
+    "fat": 3.2,
+    "sat": 1,
+    "carb": 72,
+    "sugar": 3.2,
+    "protein": 11.8,
+    "salt": 1.4
+  },
+  "allergens": [
+    "Cereals containing gluten"
+  ],
+  "packSize": "10 kg",
+  "packSizeValue": 10,
+  "packSizeUnit": "kg",
+  "packFormat": "10kg plastic bag",
+  "storageConditions": "Keep frozen -18°C",
+  "shelfLife": "18 months / Minimum shelf life on delivery 90 days",
+  "ingredientsList": "Wheat flour (Gluten)95.5%, Vegetable Oil (Palm Oil, Antioxidant : Tocopherol), Salt, Yeast, Colour :Red Paprika.",
+  "allergenNotes": "Soya: E306 is exempt based on FIR reg (supplier).",
+  "unitWeightG": null,
+  "errors": [],
+  "warnings": []
+}
