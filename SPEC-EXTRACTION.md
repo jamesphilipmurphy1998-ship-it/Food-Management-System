@@ -3075,3 +3075,11 @@ no allergens ticked (every row No; the Celery and Sulphites rows carry the gener
 Storage "Chilled (0 - 5 C)" and Shelf Life "Date of Production + 5 days, Delivery + 4 days" as extracted; ingredients "Yellow Pepper (100%)" (declaration box EMPTY, taken from the ingredient table, confirmed by the user). Name accepted (spec "Yellow Pepper Diced 20mm" vs live "RM Diced Yellow pepper 20mmx20mm PACK 5KG", live name unchanged).
 Costed per KG. Verified live, archived, used in 60 recipes.
 Also this turn: 107252 RM Twinings Pure Green Tea added to the issues list as "no spec found" (the only tea with a spec is the matcha 107427; teas 107253 and 107254 also have no spec).
+
+
+### 2026-10-08 — 107496 RM Potato Puffs - Pre-fried - frozen uploaded (the paused 120087 Lamb Weston spec; resolved)
+File `120087 Spec Lamb Weston Potato Puff s 10x1Kg V1 (signed) (1).xlsx` (a second copy of the "(signed)" file that was paused on 2026-10 earlier; extraction identical). The spec's own Product Code cell reads 120087 on every sheet (the manufacturer's code), no live item has it; the user confirmed it is
+107496 ("Yes, it is 107496") and it was extracted with `--override-code 107496`. This resolves the "120087 / 107496" issue-list entry. Every field confirmed by click: 654 kJ / 156 kcal, fat 7.1, sat 0.67, carb 20, sugars 0.5, fibre 2.6, protein 1.9, salt 0.9;
+no allergens (no EU-14 row Yes, no comments, no cross-contamination answers), no note; Pack Size 1 + kg (cell "10x1kg"); Pack Format "10x1kg, food grade vertical form sealed plastic bag" (count added, user's choice); Storage "Frozen, max -18°C" (spec: "frozen max -18c");
+Shelf Life "548 days / Minimum shelf life on delivery 365 days" (spec: "548 min 365 days from delivery"); ingredients with the spec's broken words and a missing space tidied ("sunfl ower", "fl akes", "Dextrose,Flavouring"): "Potatoes (82%), Vegetable oils (rapeseed, sunflower, in varying proportions), Potato starch, Onion, Potato flakes, Salt, Dextrose, Flavouring (Onion extract), Spice.".
+Name and supplier accepted (spec "Lamb Weston Potato Puff s 10x1Kg" vs live "RM Potato Puffs - Pre-fried - frozen", supplier Fresh Direct (UK) Ltd; live name and supplier unchanged). Costed per KG. Verified live, archived. Queue: the TS FOC2000 chocolate spec (likely 107465 RM Hot Chocolate).

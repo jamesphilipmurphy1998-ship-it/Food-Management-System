@@ -370,3 +370,7 @@ User chose to hold. To resume: confirm the spec belongs to 106155 (and the 20L p
 
 ## 2026-10-08 — 107252 RM Twinings Pure Green Tea: no spec found (user added to the issues list)
 No spec file exists in the Ingredient Specs folder for this ingredient (checked against its code on the folder checks up to 2026-10-08; no tea spec in the folder other than the matcha), and it has no nutrition on the live item (category Other, cost 0.16158 EACH). Nothing has been changed. To resolve: get the spec from the supplier, then process it like any new spec (it is costed per EACH, so the "is one EACH one tea bag?" weight question will apply).
+
+
+## 2026-10-08 — RESOLVED: 120087 Lamb Weston Potato Puffs
+The user confirmed this spec is for 107496 RM Potato Puffs - Pre-fried - frozen; uploaded on 2026-10-08 with `--override-code 107496` (see SPEC-EXTRACTION.md). The "paused" entry above is closed.

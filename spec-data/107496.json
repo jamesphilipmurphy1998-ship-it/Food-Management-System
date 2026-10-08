@@ -1,0 +1,31 @@
+{
+  "status": "ok",
+  "sourceFile": "C:\\Users\\JamesMurphy\\OneDrive - Wasabi\\WASUK - Food Team - NPD\\New Wasabi System Development\\FMS System\\3. Supporting Docs\\Ingredient Specs\\120087 Spec Lamb Weston Potato Puff s 10x1Kg V1 (signed) (1).xlsx",
+  "appliedAt": "2026-10-08T12:41:32.234Z",
+  "name": "RM Potato Puffs - Pre-fried – frozen",
+  "code": "107496",
+  "altCode": null,
+  "nutrition": {
+    "kj": 654,
+    "kcal": 156,
+    "fat": 7.1,
+    "sat": 0.67,
+    "carb": 20,
+    "sugar": 0.5,
+    "protein": 1.9,
+    "fibre": 2.6,
+    "salt": 0.9
+  },
+  "allergens": [],
+  "packSize": "1 kg",
+  "packSizeValue": 1,
+  "packSizeUnit": "kg",
+  "packFormat": "10x1kg, food grade vertical form sealed plastic bag",
+  "storageConditions": "Frozen, max -18°C",
+  "shelfLife": "548 days / Minimum shelf life on delivery 365 days",
+  "ingredientsList": "Potatoes (82%), Vegetable oils (rapeseed, sunflower, in varying proportions), Potato starch, Onion, Potato flakes, Salt, Dextrose, Flavouring (Onion extract), Spice.",
+  "allergenNotes": null,
+  "unitWeightG": null,
+  "errors": [],
+  "warnings": []
+}
