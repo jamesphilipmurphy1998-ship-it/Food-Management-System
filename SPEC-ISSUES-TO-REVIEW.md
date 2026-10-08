@@ -329,3 +329,7 @@ These live ingredients have no nutrition and look like placeholders or leftovers
 - 107639-B - Do not use this item either (category Other, cost 5.38511 KG)
 - 107640-B - Do not use this item (category Other, cost 3.4797 KG)
 - P00040 - P00040 (category Other, cost 0 KG)
+
+
+## 2026-10-08 — 107735 RM IQF Garlic Puree Nuggets: no spec found (user added to the issues list)
+No spec file exists in the Ingredient Specs folder for this ingredient (checked against its code on the folder checks up to 2026-10-08), and it has no nutrition on the live item (category Other, cost 4.47924 KG). Nothing has been changed. To resolve: get the spec from the supplier, then process it like any new spec.
