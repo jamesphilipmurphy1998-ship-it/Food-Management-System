@@ -1,0 +1,30 @@
+{
+  "status": "ok",
+  "sourceFile": "C:\\Users\\JamesMurphy\\OneDrive - Wasabi\\WASUK - Food Team - NPD\\New Wasabi System Development\\FMS System\\3. Supporting Docs\\Ingredient Specs\\106227 (105565) Yellow pepper sliced 7cmx1cm - RM Spec-V1.xlsx",
+  "appliedAt": "2026-10-08T08:56:01.773Z",
+  "name": "RM Yellow pepper sliced 7cmx1cm Pack 5KG",
+  "code": "106227",
+  "altCode": "105565",
+  "nutrition": {
+    "kj": 65,
+    "kcal": 15,
+    "fat": 0.4,
+    "sat": 0.1,
+    "carb": 2.6,
+    "sugar": 2.4,
+    "protein": 0.8,
+    "salt": 0.001
+  },
+  "allergens": [],
+  "packSize": "5 kg",
+  "packSizeValue": 5,
+  "packSizeUnit": "kg",
+  "packFormat": "5kg blue food grade bag",
+  "storageConditions": "Chilled (1 - 5 C)",
+  "shelfLife": "DOP (Date of Production) + 02 days",
+  "ingredientsList": "Pepper Yellow 100%",
+  "allergenNotes": "Supplier: cross-contamination risk (declared not contained): Celery. Supplier answer: Yes, but controlled.",
+  "unitWeightG": null,
+  "errors": [],
+  "warnings": []
+}

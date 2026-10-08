@@ -3008,3 +3008,11 @@ Extracted cleanly with warnings. kcal sanity warning (180.6 vs macro sum 148): t
 no allergens ticked (no EU-14 row Yes; vegetable/fruit/seed/yeast/maize rows Yes with "Refer to section 3"; nuts/peanuts/sesame No with comment "Not used on site", user chose NO note); Pack Size 4 + kg (cell "4kg");
 Pack Format "4kg pail with lid" (weight wording added, user's choice; spec says "Pail, lid"); Storage "Ambient"; Shelf Life "365 Days (12 Months), min 273 days to customer"; ingredients from the declaration box with stray spaces tidied (double spaces and spaces before commas) and shown in full before confirming.
 Name mismatch confirmed (spec "UMAMI VEGAN RAMEN BROTH" vs live "Ramen Broth Vegatable with Boosted Unami", live name unchanged). Costed per KG. Verified live, archived, used in 22 recipes.
+
+
+### 2026-10-08 — 106227 RM Yellow pepper sliced 7cmx1cm Pack 5KG uploaded (no Fibre row; first spec with a "proposed allergen note" confirmed)
+File `106227 (105565) Yellow pepper sliced 7cmx1cm - RM Spec-V1.xlsx` (title "Yellow Pepper Sliced 70mm x 10mm", code 106227, alt 105565 = recipe). The extractor first refused it: no Fibre row. User: Fibre stays as it is (live 0), extracted with `--allow-blank-nutrition fibre` (not written, not archived).
+Every field confirmed by click: 65 kJ / 15 kcal, fat 0.4, sat 0.1, carb 2.6, sugars 2.4, protein 0.8, salt 0.001; Pack Size 5 + kg (cell "5 kg"); Pack Format "5kg blue food grade bag" (weight wording added, user's choice; spec says "Blue Food Grade Bag");
+Storage "Chilled (1 - 5 C)" (extra space removed); Shelf Life "DOP (Date of Production) + 02 days" as extracted; ingredients "Pepper Yellow 100%". ALLERGENS: none ticked. The Celery row answers contains No, comment "Celery", cross-contamination "Yes, but controlled":
+per the rule this stays a No and the user chose the note: "Supplier: cross-contamination risk (declared not contained): Celery. Supplier answer: Yes, but controlled." (the extractor's proposed note plus the supplier's answer), saved in Allergen notes.
+Name check confirmed (spec "Yellow Pepper Sliced 70mm x 10mm" vs live "RM Yellow pepper sliced 7cmx1cm Pack 5KG", same size written differently; live name unchanged). Costed per KG. Verified live, archived. Queue after this: 106281 Green Beans (new file, folder check 40).
