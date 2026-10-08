@@ -2956,3 +2956,10 @@ Verified live, archived in `spec-data/106153.json` (allergenNotes carried), used
 After a folder check found five new specs I offered a pick-list and started on two at once; the user corrected it ("but we do 1 at a time?"). The rule is now in the "START HERE" box at the top of this file and in the memory notes.
 Queue after the 2026-10-08 folder check (one at a time, in this order): 106439 Broccoli Floret (in progress), 107559 Edamame Hummus (spec's own code is WASABI013, file named 107559; user said it is 107559, needs a code override),
 106141 Beansprouts (no Fibre row, refused), 106568 Red Jalapeno Sriracha Mayo (saturated fat blank, refused), 106615 Portobello Mushroom (fibre blank, kcal mismatch 14 vs 11.7, refused).
+
+
+### 2026-10-08 — 107559 RM Edamame Hummus uploaded (code override: spec cell "WASABI013/ 107559")
+File `107559 RM Edamame Hummus Spec 0.5kg (v1 Jun,26).xlsx`; the spec's Product Code cell reads "WASABI013/ 107559" on every sheet, overridden to 107559 (user: "it is 107559"). Every field confirmed by click: nutrition 688 kJ / 165 kcal, fat 11.6, sat 1.11,
+carb 7.2, sugars 2.7, fibre 4.6, protein 8.4, salt 0.7; allergens: Soya only (the seed and soya rows say cross-contamination Y but both are ingredients; seed is not an EU-14 allergen); Pack Size 0.5 + kg (cell "8 x 0.5Kg");
+Pack Format "8 x 0.5kg, heat sealed, gas flushed bag yellow" (count wording added from the Pack Size cell, user's choice); Storage "Store chilled"; Shelf Life "P+9 days, D+7 days" as extracted; ingredients from the declaration box;
+no Allergen note. Costed per KG, so no EACH-weight question. Verified live, archived, used in 2 recipes.

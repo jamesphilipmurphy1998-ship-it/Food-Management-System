@@ -1,0 +1,33 @@
+{
+  "status": "ok",
+  "sourceFile": "C:\\Users\\JamesMurphy\\OneDrive - Wasabi\\WASUK - Food Team - NPD\\New Wasabi System Development\\FMS System\\3. Supporting Docs\\Ingredient Specs\\107559 RM Edamame Hummus Spec 0.5kg (v1 Jun,26).xlsx",
+  "appliedAt": "2026-10-08T08:12:49.982Z",
+  "name": "RM Edamame Hummus",
+  "code": "107559",
+  "altCode": null,
+  "nutrition": {
+    "kj": 688,
+    "kcal": 165,
+    "fat": 11.6,
+    "sat": 1.11,
+    "carb": 7.2,
+    "sugar": 2.7,
+    "protein": 8.4,
+    "fibre": 4.6,
+    "salt": 0.7
+  },
+  "allergens": [
+    "Soya"
+  ],
+  "packSize": "0.5 kg",
+  "packSizeValue": 0.5,
+  "packSizeUnit": "kg",
+  "packFormat": "8 x 0.5kg, heat sealed, gas flushed bag yellow",
+  "storageConditions": "Store chilled",
+  "shelfLife": "P+9 days, D+7 days",
+  "ingredientsList": "Soya Beans, Peas, Spinach, Chickpeas, Water, Rapeseed Oil, Sunflower Seeds, Diced Garlic, Parsley, Salt",
+  "allergenNotes": null,
+  "unitWeightG": null,
+  "errors": [],
+  "warnings": []
+}
