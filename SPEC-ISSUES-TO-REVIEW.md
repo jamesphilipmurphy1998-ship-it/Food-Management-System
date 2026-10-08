@@ -366,3 +366,7 @@ The file name says 106155 (105597). Searched all live oils and oil spec files: 1
 Pack is 20L but the live name says 5L branch. Extracted (not applied): 3696 kJ / 899 kcal, fat 100, sat 6.6, carb 0, sugars 0, fibre 0, protein 0.5, salt 0.01; no allergens (only Seed = Yes, "Oil is derived from Rape seeds", not an EU-14 allergen);
 Pack Size 20 L; Pack Format "HDPE Bottle"; Storage "Store at ambient temperatures, off the floor in a clean dry area. Keep away from strongly odorous materials and direct sunlight"; Shelf Life "18 months from the date of production if kept unopened in the manufacturer's packaging / 14 Months: Minimum Shelf Life on the delivery"; ingredients "Rapeseed oil, Antifoaming agent (E900)".
 User chose to hold. To resume: confirm the spec belongs to 106155 (and the 20L pack), then go through every field with `--override-code 106155`. Side note: the uploaded 106167 archive has Pack Size "1000 L" (looks like an old typo) and no shelf life or ingredients; this spec has both.
+
+
+## 2026-10-08 — 107252 RM Twinings Pure Green Tea: no spec found (user added to the issues list)
+No spec file exists in the Ingredient Specs folder for this ingredient (checked against its code on the folder checks up to 2026-10-08; no tea spec in the folder other than the matcha), and it has no nutrition on the live item (category Other, cost 0.16158 EACH). Nothing has been changed. To resolve: get the spec from the supplier, then process it like any new spec (it is costed per EACH, so the "is one EACH one tea bag?" weight question will apply).
