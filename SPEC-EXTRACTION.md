@@ -18,6 +18,8 @@
 >
 > **ONE SPEC AT A TIME (user rule 2026-10-08).** After a folder check, summarise the new files in one line each (with any blockers), then take the FIRST one all the way through (table, each field confirmed by click, apply, verify, log, commit) before opening the next. Never offer the user a pick-list of specs and never start two together; the rest are queued, or held only if the user says so.
 >
+> **PRODUCT NAME ABOVE EVERY QUESTION (user rule 2026-10-08).** Every confirmation prompt for a spec starts with the product code and name (e.g. "107559 RM Edamame Hummus - Pack Size: ..."), with a bold header line naming the product just above the prompts, so a question is never ambiguous when specs are handled one after another.
+>
 > **How a spec is processed.** (1) `python scripts/spec-extract.py "<file>" [flags] 2>/dev/null > file.json` --
 > the flags (`--override-code`, `--derive-salt-from-sodium`, `--allow-blank-nutrition`, `--confirm-cross-sheet-mismatch`,
 > `--correct-unit-mismatch`) are added only after the user has confirmed that specific situation for that spec;
