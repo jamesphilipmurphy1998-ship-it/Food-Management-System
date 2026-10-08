@@ -1,0 +1,33 @@
+{
+  "status": "ok",
+  "sourceFile": "C:\\Users\\JamesMurphy\\OneDrive - Wasabi\\WASUK - Food Team - NPD\\New Wasabi System Development\\FMS System\\3. Supporting Docs\\Ingredient Specs\\TS FOC2000 FLOW Original Choc 2kg Spec_Feb25 (1).xlsx",
+  "appliedAt": "2026-10-08T12:47:47.467Z",
+  "name": "RM Hot Chocolate",
+  "code": "107465",
+  "altCode": null,
+  "nutrition": {
+    "kj": 1622,
+    "kcal": 385,
+    "fat": 6.1,
+    "sat": 3.8,
+    "carb": 71,
+    "sugar": 68,
+    "protein": 6.8,
+    "fibre": 7.2,
+    "salt": 0.54
+  },
+  "allergens": [
+    "Milk"
+  ],
+  "packSize": "2 kg",
+  "packSizeValue": 2,
+  "packSizeUnit": "kg",
+  "packFormat": "2000g pouch",
+  "storageConditions": "Cool dry storage in original closed packaging protected from dust, moisture, light and extremes of temperature and humidity.",
+  "shelfLife": "18 months from production / 75% remaining life into customer haulier",
+  "ingredientsList": "Granulated White Sugar, Cocoa Powder (26%), Sweet Whey Powder (Milk), Natural Flavouring, Anti-caking Agent: Silicone Dioxide, Salt.",
+  "allergenNotes": null,
+  "unitWeightG": null,
+  "errors": [],
+  "warnings": []
+}
