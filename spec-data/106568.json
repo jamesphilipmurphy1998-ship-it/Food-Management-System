@@ -1,0 +1,30 @@
+{
+  "status": "ok",
+  "sourceFile": "C:\\Users\\JamesMurphy\\OneDrive - Wasabi\\WASUK - Food Team - NPD\\New Wasabi System Development\\FMS System\\3. Supporting Docs\\Ingredient Specs\\106568 Red Jalapeno Sriracha Mayonnaise RM Spec V6 (01.09.2026).xlsx",
+  "appliedAt": "2026-10-08T08:29:33.932Z",
+  "name": "Sauce AAK Red Jalapeno Sriracha Mayonnaise Bottle",
+  "code": "106568",
+  "altCode": null,
+  "nutrition": {
+    "kj": 1552,
+    "kcal": 376,
+    "fat": 36,
+    "carb": 12,
+    "sugar": 10,
+    "protein": 0.8,
+    "fibre": 0.8,
+    "salt": 2.3
+  },
+  "allergens": [],
+  "packSize": "1 kg",
+  "packSizeValue": 1,
+  "packSizeUnit": "kg",
+  "packFormat": "6 x 1kg, 1 litre bottle with screw on cap, with induction heat seal, tamper evident film inside cap.",
+  "storageConditions": "Chilled storage",
+  "shelfLife": "90 days / Minimum shelf life on delivery 68 days",
+  "ingredientsList": "Rapeseed Oil, Red Jalapeno Chilies (22.48%) (Red Jalapeño Chilies, Water, Salt, Acidity Regulator (Acetic Acid)), Water, Sugar, Garlic Puree, Spirit Vinegar, Salt, Chilli Powder, Red Habanero Mash (Red Habanero, Salt, Acidity Regulator [Acetic Acid]), Modified Starch, Stabilisers (Xanthan Gum, Guar Gum), Preservative (Potassium Sorbate), Yeast Extract Powder, Modified Potato Starch, Tabasco® Sauce (Distilled Vinegar, Red Pepper, Salt), Colour (Paprika Extract).",
+  "allergenNotes": null,
+  "unitWeightG": null,
+  "errors": [],
+  "warnings": []
+}

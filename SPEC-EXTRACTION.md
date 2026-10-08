@@ -2971,3 +2971,13 @@ so it was extracted with `--allow-blank-nutrition fibre`; Fibre is not written a
 no allergens ticked (only Vegetable = Yes, "Beansprouts"); the Sulphites row (No) has the supplier comment "Please see attached allergen" with no attachment: user chose NO note; Pack Size 350 + g (cell "350g");
 Pack Format "FOOD GRADE/CONTACT PRIMARY LDPE 4 pack inner dimensions = L24 W22 H4 (cm). 5G HEAT SEALED" (tidied of stray tabs/spaces; spec row 4-a); Storage "Between 2°c and 5°c" and Shelf Life "5 days D+2 into customer (3 days)" as extracted; ingredients "Beansprouts".
 Costed per KG so no EACH question. Verified live, archived, used in 9 recipes. Next in the queue: 106568 Red Jalapeno Sriracha Mayo, then 106615 Portobello Mushroom.
+
+
+### 2026-10-08 — 106568 Sauce AAK Red Jalapeno Sriracha Mayonnaise Bottle uploaded (saturated fat blank in the spec)
+File `106568 Red Jalapeno Sriracha Mayonnaise RM Spec V6 (01.09.2026).xlsx`. The extractor first refused it: the "of which saturate fat" row exists but is blank. User: leave Saturates as it is (live 0), extracted with `--allow-blank-nutrition sat`
+(saturates not written, not in the archive). The per-pack column on the spec's nutrition sheet is nonsense (e.g. kcal 15515) and was ignored; per-100g values used (macros agree: 4x0.8 + 4x12 + 9x36 = 375 vs 376 kcal).
+Every field confirmed by click: 1552 kJ / 376 kcal, fat 36, carb 12, sugars 10, fibre 0.8, protein 0.8, salt 2.3; no allergens ticked (no EU-14 row Yes; vegetable/fruit/yeast/alcohol rows Yes with cross-contamination N/A) and no allergen note;
+Pack Size 1 + kg (cell "6 x 1kg"); Pack Format "6 x 1kg, 1 litre bottle with screw on cap, with induction heat seal, tamper evident film inside cap." (count added from the Pack Size cell, user's choice);
+Storage "Chilled storage"; Shelf Life "90 days / Minimum shelf life on delivery 68 days" (spec row 5-a reads "90 days & 68 days"); ingredients: the full declaration box text (user asked to see it in full before confirming; question text was shortened with "..." the first time, which is not to be done again).
+Name mismatch confirmed (spec "Red Jalapeno Sriracha Mayonnaise" vs live "Sauce AAK Red Jalapeno Sriracha Mayonnaise Bottle"). Costed per KG. "Shelf life once opened: 7 days, chilled" is on the spec but has no field. Verified live, archived, used in 12 recipes.
+Next in the queue: 106615 Portobello Mushroom. LESSON: never abbreviate a list with "..." in a confirmation question; show the whole text.
