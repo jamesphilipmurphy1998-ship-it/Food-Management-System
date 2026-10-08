@@ -320,3 +320,12 @@ Extracted (not applied; user confirmed nutrition, Pack Size and Pack Format as r
 no allergens (celery and sulphites rows carry the supplier comment "Handle in the Factory. Allergen cross contamination is controlled through allergen handling procedurs and annual testing", answered No);
 Pack Size 500 g (cell "500g"); Pack Format "Blue Food Grade Bag"; Storage "Chilled (0 - 5 C)"; Shelf Life "Date of Production + 4 days, Delivery + 3 days"; ingredients "Broccoli florets (100%)" (declaration box empty, taken from the ingredient table).
 To resume: decide whether this spec belongs to the existing 106439 (and whether the live name/size should change), then confirm storage, shelf life, ingredients and any allergen note by click and apply.
+
+
+## 2026-10-08 — Placeholder / junk ingredient entries with no spec (moved off the "needing a spec" list; need a clean-up decision, not a spec)
+These live ingredients have no nutrition and look like placeholders or leftovers rather than real products. Nothing has been changed. To resolve: decide for each whether to delete, rename or fill it in.
+- (no code) - gdfs (category Raw Material, cost 0 KG)
+- 106113 - 106113 - Sides x 6 (category Other, cost 0.28509 EACH)
+- 107639-B - Do not use this item either (category Other, cost 5.38511 KG)
+- 107640-B - Do not use this item (category Other, cost 3.4797 KG)
+- P00040 - P00040 (category Other, cost 0 KG)
