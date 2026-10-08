@@ -3139,3 +3139,7 @@ Energy is consistent (4x23 + 9x2 = 110 kcal; kJ 461). Name/product: the spec is 
 Every field confirmed by click: 461 kJ / 110 kcal, fat 2, protein 23; no allergens ticked (only Animal = Yes, "Chicken breast"), no note; Pack Size 10 + kg (cell "210-230g (10kg carton)": the carton weight; the extractor could not split it, set in the JSON by the user's choice);
 Pack Format "10kg carton, loose packed, 30 micron liner, fillets 210-230g" (spec "10kg loose packed - 30 micron liner"); Storage "Frozen -18°C" (spec "Frozen -18c"); Shelf Life "18 months / Minimum shelf life on delivery 12 months" (spec "18 months BBD - 12 month MLOD (IQF)"); ingredients "Chicken breast fillet (100% Chicken)" (shortened from "Frozen broiler-chicken breast fillet without inner fillet - Calibrated 210-230g (100% Chicken)", user's choice).
 Costed per KG. Verified live, archived, used in 2 recipes.
+
+
+### 2026-10-08 — 102037 Salt spec held (probably 106157 RM Salt Table Tub); recorded on the issues list
+New file found at folder check 57; its code 102037 matches no live item but its supplier (JJ Food Service Ltd) is the supplier of 106157. Not applied; see SPEC-ISSUES-TO-REVIEW.md.
