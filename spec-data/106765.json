@@ -1,0 +1,33 @@
+{
+  "status": "ok",
+  "sourceFile": "C:\\Users\\JamesMurphy\\OneDrive - Wasabi\\WASUK - Food Team - NPD\\New Wasabi System Development\\FMS System\\3. Supporting Docs\\Ingredient Specs\\106765 (105815) - Seaweed salad.RM Spec V3 (06.11.2024).xlsx",
+  "appliedAt": "2026-10-08T11:27:05.697Z",
+  "name": "Seaweed Wakame Salad Frozen Bag",
+  "code": "106765",
+  "altCode": "105815",
+  "nutrition": {
+    "kj": 438,
+    "kcal": 105,
+    "fat": 3.01,
+    "sat": 0.479,
+    "carb": 16.5,
+    "sugar": 9.2,
+    "protein": 1.14,
+    "fibre": 3.4,
+    "salt": 2.26
+  },
+  "allergens": [
+    "Sesame"
+  ],
+  "packSize": "1 kg",
+  "packSizeValue": 1,
+  "packSizeUnit": "kg",
+  "packFormat": "12/1kg, transparent plastic pouch",
+  "storageConditions": "Keep under -18°C",
+  "shelfLife": "24 months from Manufacturer; 20 - 6 months shelf-life on delivery",
+  "ingredientsList": "Wakame Seaweed, Cane sugar, Rice vinegar (Water, Rice, Koji), Sesame oil, White Sesame seeds, Chilli pepper, Yeast extract",
+  "allergenNotes": null,
+  "unitWeightG": null,
+  "errors": [],
+  "warnings": []
+}
