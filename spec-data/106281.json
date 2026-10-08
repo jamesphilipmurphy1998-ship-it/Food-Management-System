@@ -1,0 +1,30 @@
+{
+  "status": "ok",
+  "sourceFile": "C:\\Users\\JamesMurphy\\OneDrive - Wasabi\\WASUK - Food Team - NPD\\New Wasabi System Development\\FMS System\\3. Supporting Docs\\Ingredient Specs\\106281 (106146)- Green Beans- RM Spec 26.08.2026.xlsx",
+  "appliedAt": "2026-10-08T09:13:41.564Z",
+  "name": "RM IQF 1\" Cut Green Beans Yearsley Case",
+  "code": "106281",
+  "altCode": "106146",
+  "nutrition": {
+    "kj": 136,
+    "kcal": 33,
+    "fat": 0.1,
+    "sat": 0.1,
+    "carb": 3.7,
+    "sugar": 1,
+    "protein": 2,
+    "salt": 0.03
+  },
+  "allergens": [],
+  "packSize": "10 kg",
+  "packSizeValue": 10,
+  "packSizeUnit": "kg",
+  "packFormat": "1x10kg, blue food grade liner",
+  "storageConditions": "Store at -18°C or colder",
+  "shelfLife": "24 months",
+  "ingredientsList": "Green beans",
+  "allergenNotes": null,
+  "unitWeightG": null,
+  "errors": [],
+  "warnings": []
+}

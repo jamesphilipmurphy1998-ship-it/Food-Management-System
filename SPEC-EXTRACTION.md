@@ -3016,3 +3016,11 @@ Every field confirmed by click: 65 kJ / 15 kcal, fat 0.4, sat 0.1, carb 2.6, sug
 Storage "Chilled (1 - 5 C)" (extra space removed); Shelf Life "DOP (Date of Production) + 02 days" as extracted; ingredients "Pepper Yellow 100%". ALLERGENS: none ticked. The Celery row answers contains No, comment "Celery", cross-contamination "Yes, but controlled":
 per the rule this stays a No and the user chose the note: "Supplier: cross-contamination risk (declared not contained): Celery. Supplier answer: Yes, but controlled." (the extractor's proposed note plus the supplier's answer), saved in Allergen notes.
 Name check confirmed (spec "Yellow Pepper Sliced 70mm x 10mm" vs live "RM Yellow pepper sliced 7cmx1cm Pack 5KG", same size written differently; live name unchanged). Costed per KG. Verified live, archived. Queue after this: 106281 Green Beans (new file, folder check 40).
+
+
+### 2026-10-08 — 106281 RM IQF 1" Cut Green Beans Yearsley Case uploaded (fibre blank in the spec)
+File `106281 (106146)- Green Beans- RM Spec 26.08.2026.xlsx` (title "Green beans 26mm", code 106281, alt 106146 = recipe). The extractor first refused it: the Fibre row exists but is blank. User: Fibre stays as it is (live 0), extracted with `--allow-blank-nutrition fibre` (not written, not archived).
+The kcal sanity warning (33 vs macro sum 23.7) is explained by the blank fibre; kJ agrees (136 / 4.184 = 32.5). Every field confirmed by click: 136 kJ / 33 kcal, fat 0.1, sat 0.1, carb 3.7, sugars 1, protein 2, salt 0.03;
+Pack Size 10 + kg (cell "1x10kg"); Pack Format "1x10kg, blue food grade liner" (count wording added, user's choice; spec says "Blue food grade liner"); Storage "Store at -18°C or colder" as extracted; Shelf Life "24 months"; ingredients "Green beans" (the user chose this over the spec's "Frozen cut beans 26mm");
+no allergens ticked (only Vegetable = Yes, "Product is a vegetable"; no cross-contamination answers), no note. Name confirmed (spec "Green beans 26mm" vs live "RM IQF 1" Cut Green Beans Yearsley Case", 26 mm is about 1 inch; live name unchanged). Costed per KG. Verified live, archived.
+Folder check 40 queue is now empty.
