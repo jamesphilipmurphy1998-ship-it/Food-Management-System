@@ -1,0 +1,31 @@
+{
+  "status": "ok",
+  "sourceFile": "C:\\Users\\JamesMurphy\\OneDrive - Wasabi\\WASUK - Food Team - NPD\\New Wasabi System Development\\FMS System\\3. Supporting Docs\\Ingredient Specs\\107495 Baked Beans in tomato sauce V1 04.11.2025.xlsx",
+  "appliedAt": "2026-10-08T14:57:45.124Z",
+  "name": "RM Baked Beans",
+  "code": "107495",
+  "altCode": null,
+  "nutrition": {
+    "kj": 338,
+    "kcal": 80,
+    "fat": 0.5,
+    "sat": 0.1,
+    "carb": 14,
+    "sugar": 4.1,
+    "protein": 3.6,
+    "fibre": 3.4,
+    "salt": 0.4
+  },
+  "allergens": [],
+  "packSize": "840 g",
+  "packSizeValue": 840,
+  "packSizeUnit": "g",
+  "packFormat": "6x840g, metal can",
+  "storageConditions": "Store unopened can in a cool dry place",
+  "shelfLife": "24 months / Minimum shelf life on delivery 6 months",
+  "ingredientsList": "Haricot beans (44%), Water, Tomatoes (27%), Sugar, Modified Maize Starch, Glucose-Fructose Syrup, Salt, Onion Powder, Paprika Powder, Flavouring, Paprika Extract",
+  "allergenNotes": null,
+  "unitWeightG": null,
+  "errors": [],
+  "warnings": []
+}
