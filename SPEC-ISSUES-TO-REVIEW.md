@@ -390,3 +390,8 @@ it is costed per EACH so the "is one EACH one tea bag?" weight question will app
 
 ## 2026-10-08 — RESOLVED: tea bags 107252, 107253, 107254 need no spec
 The user decided these three tea bags are complete with no nutrition values (like Water): the "no spec found" entry for 107252 and the "Quality Attribute Sheet only" entry for 107253 above are closed; 107254 never needed one. Nothing changed on the live items.
+
+
+## 2026-10-08 — 107319 RM Chicken breast: nutrition is INCOMPLETE (spec gives only energy, fat, protein)
+The spec `107319 IQF Chicken Fillet without inner fillets RM Spec V1.xlsx` leaves saturates, carbohydrate, sugars, fibre and salt blank. The upload wrote only 461 kJ / 110 kcal, fat 2, protein 23; the other five stay at the live 0 (they are NOT confirmed zeros). To resolve: ask the supplier (Matthews Meats) for a complete nutrition table, then set the five values with `scripts/field-fix-apply.js` and update `spec-data/107319.json`.
+Also note the name difference: the spec is a frozen IQF fillet, the live item is called "...IQF Defrosted".

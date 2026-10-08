@@ -1,0 +1,26 @@
+{
+  "status": "ok",
+  "sourceFile": "C:\\Users\\JamesMurphy\\OneDrive - Wasabi\\WASUK - Food Team - NPD\\New Wasabi System Development\\FMS System\\3. Supporting Docs\\Ingredient Specs\\107319 IQF Chicken Fillet without inner fillets RM Spec V1.xlsx",
+  "appliedAt": "2026-10-08T15:06:34.888Z",
+  "name": "RM Chicken breast boneless & skinless IQF Defrosted",
+  "code": "107319",
+  "altCode": null,
+  "nutrition": {
+    "kj": 461,
+    "kcal": 110,
+    "fat": 2,
+    "protein": 23
+  },
+  "allergens": [],
+  "packSize": "10 kg",
+  "packSizeValue": 10,
+  "packSizeUnit": "kg",
+  "packFormat": "10kg carton, loose packed, 30 micron liner, fillets 210-230g",
+  "storageConditions": "Frozen -18°C",
+  "shelfLife": "18 months / Minimum shelf life on delivery 12 months",
+  "ingredientsList": "Chicken breast fillet (100% Chicken)",
+  "allergenNotes": null,
+  "unitWeightG": null,
+  "errors": [],
+  "warnings": []
+}
