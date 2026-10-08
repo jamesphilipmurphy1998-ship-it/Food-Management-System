@@ -3111,3 +3111,8 @@ allergens ticked: Cereals containing gluten and Soya (wheat, gluten-level and so
 ingredients (declaration box): "Water, sugar, soy sauce (water, soya beans, wheat, salt, alcohol (ethanol)), spirit vinegar, colour: E150a, cornflour, onion puree, molasses, mirin, MSG, salt, tamarind paste, sake, wheat flour (wheat flour, calcium carbonate, niacin, iron, folic acid, thiamin), garlic puree, ginger puree, cloves".
 Name accepted (spec "Yakisoba Sauce Blend" vs live "RM Pre-mix Yakisoba Sauce (shoda)", live name unchanged). Costed per KG. Verified live, archived, used in 109 recipes (the most of any spec so far; 104630 is next with 108). Queue: 107253 Lemongrass Citrus and Ginger Tea QAS.
 NOTE: this is the first spec where "handled on same line / full clean down" answers were recorded as a note; earlier specs with the same wording (see ALLERGEN-REVIEW.md) were not.
+
+
+### 2026-10-08 — 107253 tea file is a Quality Attribute Sheet only (nothing uploaded)
+`107253 Lemongrass Citrus and Ginger Tea QAS.xlsx`: a Raw Material Quality Attribute Sheet (appearance, flavour, aroma, texture, sign-off), not a nutrition spec; no nutrition, allergens, ingredients, pack size or shelf life, and its 5 pictures are product photos. Refused by the extractor; nothing written; recorded in SPEC-ISSUES-TO-REVIEW.md.
+Also worth knowing for the future: a file named "...QAS" is a quality sheet, not the technical specification we need.
