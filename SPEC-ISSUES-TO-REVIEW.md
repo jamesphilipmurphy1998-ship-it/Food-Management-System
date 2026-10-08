@@ -374,3 +374,8 @@ No spec file exists in the Ingredient Specs folder for this ingredient (checked 
 
 ## 2026-10-08 — RESOLVED: 120087 Lamb Weston Potato Puffs
 The user confirmed this spec is for 107496 RM Potato Puffs - Pre-fried - frozen; uploaded on 2026-10-08 with `--override-code 107496` (see SPEC-EXTRACTION.md). The "paused" entry above is closed.
+
+
+## 2026-10-08 — 106502 RM Starch Karage Breader: salt on the spec contradicts itself (uploaded WITHOUT salt; left at the live 0)
+On `106502 (106518) starch karaage breader spec V3 (10.10.2025).xlsx` the Salt cell reads 0, its source note reads "Salt as NaCl: 15.63g/100g", and the Sodium cell reads 359.8 (labelled "g", only plausible as mg: 359.8 mg x 2.5 = 0.8995 g salt). 15.63 g/100g is implausible (no salt in the ingredient list; raising agents E450i/E500ii give sodium).
+The user chose to leave Salt as it is (0) and flag it; every other value was uploaded. To resolve: ask the supplier (Newly Weds Foods) for the correct salt/sodium, then set Salt with `scripts/field-fix-apply.js` and update `spec-data/106502.json`.

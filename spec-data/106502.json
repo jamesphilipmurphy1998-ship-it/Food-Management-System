@@ -1,0 +1,30 @@
+{
+  "status": "ok",
+  "sourceFile": "C:\\Users\\JamesMurphy\\OneDrive - Wasabi\\WASUK - Food Team - NPD\\New Wasabi System Development\\FMS System\\3. Supporting Docs\\Ingredient Specs\\106502 (106518) starch karaage breader spec V3 (10.10.2025).xlsx",
+  "appliedAt": "2026-10-08T12:53:52.254Z",
+  "name": "RM Starch Karage Breader Newly Weds Foods MK2",
+  "code": "106502",
+  "altCode": "106518",
+  "nutrition": {
+    "kj": 1500,
+    "kcal": 353,
+    "fat": 1,
+    "sat": 0.3,
+    "carb": 81.5,
+    "sugar": 1,
+    "protein": 3.9,
+    "fibre": 1.4
+  },
+  "allergens": [],
+  "packSize": "18 kg",
+  "packSizeValue": 18,
+  "packSizeUnit": "kg",
+  "packFormat": "18kg Ripp n Flow blue bag",
+  "storageConditions": "Ambient",
+  "shelfLife": "12 months",
+  "ingredientsList": "Potato Starch, Rice Flour, Dried Potato, Tapioca Starch, Garlic Powder, Ginger, Raising Agents (E450i, E500ii)",
+  "allergenNotes": "Gluten level: supplier comment 'Not tested'.",
+  "unitWeightG": null,
+  "errors": [],
+  "warnings": []
+}
