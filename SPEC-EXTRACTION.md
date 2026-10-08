@@ -16,6 +16,8 @@
 > `backup-full.ps1` makes the code zip plus a database dump. Live app: http://192.168.0.50:5001 (Pi, folders under
 > `/opt/nutricost/`; rollback copies `backend-previous-20261007` and `frontend-previous-20261007` are on the Pi).
 >
+> **ONE SPEC AT A TIME (user rule 2026-10-08).** After a folder check, summarise the new files in one line each (with any blockers), then take the FIRST one all the way through (table, each field confirmed by click, apply, verify, log, commit) before opening the next. Never offer the user a pick-list of specs and never start two together; the rest are queued, or held only if the user says so.
+>
 > **How a spec is processed.** (1) `python scripts/spec-extract.py "<file>" [flags] 2>/dev/null > file.json` --
 > the flags (`--override-code`, `--derive-salt-from-sodium`, `--allow-blank-nutrition`, `--confirm-cross-sheet-mismatch`,
 > `--correct-unit-mismatch`) are added only after the user has confirmed that specific situation for that spec;
@@ -2946,3 +2948,9 @@ Minimum shelf life on delivery" = "12 months / 6 months"); Ingredients "Seasonin
 ALLERGENS: NONE ticked. The spec answers Yes for wheat and barley (yeast extract from brewers wort) but the supplier comment says "<20ppm so no allergen declaration required" and the gluten-level row says No; user decided to follow the supplier.
 Allergen notes written: "Wheat: Yeast Extract derived from brewers wort (Wheat), but total content is <20ppm so no allergen declaration required. Barley: Yeast Extract derived from brewers wort (barley), but total content is <20ppm so no allergen declaration required."
 Verified live, archived in `spec-data/106153.json` (allergenNotes carried), used in 32 recipes. No other ingredient has an allergen note.
+
+
+### 2026-10-08 — RULE: one spec at a time
+After a folder check found five new specs I offered a pick-list and started on two at once; the user corrected it ("but we do 1 at a time?"). The rule is now in the "START HERE" box at the top of this file and in the memory notes.
+Queue after the 2026-10-08 folder check (one at a time, in this order): 106439 Broccoli Floret (in progress), 107559 Edamame Hummus (spec's own code is WASABI013, file named 107559; user said it is 107559, needs a code override),
+106141 Beansprouts (no Fibre row, refused), 106568 Red Jalapeno Sriracha Mayo (saturated fat blank, refused), 106615 Portobello Mushroom (fibre blank, kcal mismatch 14 vs 11.7, refused).
