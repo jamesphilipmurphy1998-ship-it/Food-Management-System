@@ -2981,3 +2981,12 @@ Pack Size 1 + kg (cell "6 x 1kg"); Pack Format "6 x 1kg, 1 litre bottle with scr
 Storage "Chilled storage"; Shelf Life "90 days / Minimum shelf life on delivery 68 days" (spec row 5-a reads "90 days & 68 days"); ingredients: the full declaration box text (user asked to see it in full before confirming; question text was shortened with "..." the first time, which is not to be done again).
 Name mismatch confirmed (spec "Red Jalapeno Sriracha Mayonnaise" vs live "Sauce AAK Red Jalapeno Sriracha Mayonnaise Bottle"). Costed per KG. "Shelf life once opened: 7 days, chilled" is on the spec but has no field. Verified live, archived, used in 12 recipes.
 Next in the queue: 106615 Portobello Mushroom. LESSON: never abbreviate a list with "..." in a confirmation question; show the whole text.
+
+
+### 2026-10-08 — 106615 IQF Sliced Portobello Mushroom uploaded (fibre blank in the spec)
+File `106615 (106709)-Portobello Mushroom- RM Spec- V5, 04.09.2026.xlsx`. The extractor first refused it: the Fibre row exists but is blank. User: leave Fibre as it is (live 0), extracted with `--allow-blank-nutrition fibre` (fibre not written, not in the archive).
+The kcal sanity warning (kcal 14 vs 4/4/9 macro sum 11.7) is explained by the missing fibre and agrees with the kJ (57 / 4.184 = 13.6); the user confirmed the values as stated. Nutrition values on the spec carry "g" suffixes (e.g. "0.1g"), read correctly.
+Every field confirmed by click: 57 kJ / 14 kcal, fat 0.1, sat 0.0, carb 0.4, sugars 0.2, protein 2.3, salt 0.015 (sodium 6 mg); no allergens (every row No, no comments), no note; Pack Size 10 + kg (cell "10kg");
+Pack Format "Blue Liner" (the only text in spec row 4-a); Storage "Keep Frozen -18 or colder" and Shelf Life "24 months, 12 months minimum on delivery" as extracted; ingredients "Portabello Mushroom" (the spec's spelling).
+Name mismatch confirmed (spec "IQF Portobello Mushroom" vs live "IQF Sliced Portobello Mushroom"). Costed per KG. "Once opened: until end of life if stored correctly" is on the spec but has no field. Verified live, archived, used in 22 recipes.
+Queue after the 2026-10-08 folder check is now empty except the held 106439 Broccoli (on the issues list).

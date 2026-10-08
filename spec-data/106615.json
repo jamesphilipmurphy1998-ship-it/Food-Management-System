@@ -1,0 +1,30 @@
+{
+  "status": "ok",
+  "sourceFile": "C:\\Users\\JamesMurphy\\OneDrive - Wasabi\\WASUK - Food Team - NPD\\New Wasabi System Development\\FMS System\\3. Supporting Docs\\Ingredient Specs\\106615 (106709)-Portobello Mushroom- RM Spec- V5, 04.09.2026.xlsx",
+  "appliedAt": "2026-10-08T08:33:11.889Z",
+  "name": "IQF Sliced Portobello Mushroom",
+  "code": "106615",
+  "altCode": null,
+  "nutrition": {
+    "kj": 57,
+    "kcal": 14,
+    "fat": 0.1,
+    "sat": 0,
+    "carb": 0.4,
+    "sugar": 0.2,
+    "protein": 2.3,
+    "salt": 0.015
+  },
+  "allergens": [],
+  "packSize": "10 kg",
+  "packSizeValue": 10,
+  "packSizeUnit": "kg",
+  "packFormat": "Blue Liner",
+  "storageConditions": "Keep Frozen -18 or colder",
+  "shelfLife": "24 months, 12 months minimum on delivery",
+  "ingredientsList": "Portabello Mushroom",
+  "allergenNotes": null,
+  "unitWeightG": null,
+  "errors": [],
+  "warnings": []
+}
