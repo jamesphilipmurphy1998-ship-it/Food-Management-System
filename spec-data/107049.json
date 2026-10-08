@@ -1,0 +1,33 @@
+{
+  "status": "ok",
+  "sourceFile": "C:\\Users\\JamesMurphy\\OneDrive - Wasabi\\WASUK - Food Team - NPD\\New Wasabi System Development\\FMS System\\3. Supporting Docs\\Ingredient Specs\\107049 Miso Caramel Sauce  RM Spec- V2 (11.12.2024).xlsx",
+  "appliedAt": "2026-10-08T15:33:25.745Z",
+  "name": "RM Miso Caramel",
+  "code": "107049",
+  "altCode": null,
+  "nutrition": {
+    "kj": 1624.61,
+    "kcal": 348.91,
+    "fat": 8.54,
+    "sat": 6.68,
+    "carb": 74.23,
+    "sugar": 69.62,
+    "protein": 2.47,
+    "fibre": 0,
+    "salt": 2.2
+  },
+  "allergens": [
+    "Soya"
+  ],
+  "packSize": "500 g",
+  "packSizeValue": 500,
+  "packSizeUnit": "g",
+  "packFormat": "500g clear food grade PET/PE-EVOH-PE heat sealed co-extruded multi-layered bag",
+  "storageConditions": "Chilled 0-5°C",
+  "shelfLife": "Date of production + 60 days / Minimum life on delivery: production + 45 days including day of delivery",
+  "ingredientsList": "Soft Dark Brown Sugar [Sugar (92%), Cane Molasses (8%)] (46.78%), Coconut Milk(Coconut Extract(60%), Water(39.50%), Guar Gum(E412)(0.35%), Sucrose Esters of Fatty Acids(E473)(0.10%), Sodium Carboxymethyl Cellulose(E466)(0.05%) (28.07%), Miso Paste White(Water(30-35%), Soya Beans(30-35%), Rice(15-20%), Salt (10-15%), Alcohol (ethanol)(1-5%) (11.70%), Water (9.36%), Starch (Cornflour) [Water (66.50%), Starch (33.50%)] (3.15%), Vanilla Flavouring [Water, Propylene Glycol E1520, Flavourings, Colour: Caramel E150a.] (0.94%)",
+  "allergenNotes": "Sulphur dioxide: <10ppm present within the Sugar and Cornflour, theoretical level in finished product <10ppm (supplier), not ticked. Handled on site: milk, honey, waxed fruit, fruit, yeast, maize, cocoa, mustard; gluten handled on site <20ppm. Nut and sesame free site.",
+  "unitWeightG": null,
+  "errors": [],
+  "warnings": []
+}

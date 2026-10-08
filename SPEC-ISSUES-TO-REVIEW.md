@@ -403,3 +403,7 @@ Also note the name difference: the spec is a frozen IQF fillet, the live item is
 Extracted with `--override-code 106157 --allow-blank-nutrition fibre` (NOT applied): energy 0 kJ / 0 kcal, fat 0, sat 0, carb 0, sugars 0, protein 0, salt 99.9 g (source "typical analysis"; sodium row 38.9), no allergens (every row No, no comments), Pack Size 6 kg (cell "6kg"), no Pack Format (the packaging sheet gives only dimensions 200mm x 200mm x 185mm),
 Storage "store in a cool dry place" (one combined cell, section 8-b; minimum shelf life on delivery n/a, so no Shelf Life), ingredients "salt, anti-caking agent: Sodium Ferrocyanide", "ready to eat: yes".
 The user was asked the four confirmation questions (code, nutrition, Pack Size, Pack Format) and gave no answer, then asked for it to be marked as an issue. To resume: confirm it is 106157, then go through each field by click and apply with `--override-code 106157 --allow-blank-nutrition fibre` (this would also close the 106157 "no spec found" entry above).
+
+
+## 2026-10-08 — RESOLVED (with a caveat): 107049 Miso Caramel uploaded
+The cross-sheet code mismatch was confirmed by the user and the spec uploaded (see SPEC-EXTRACTION.md). CAVEAT still open: the spec's energy is inconsistent (1624.61 kJ vs 348.91 kcal; kJ implies ~388 kcal, macros ~384 kcal). Written as the spec states at the user's choice; ask the supplier (Beacon Foods Ltd) and correct kcal with `scripts/field-fix-apply.js` if needed.

@@ -3143,3 +3143,12 @@ Costed per KG. Verified live, archived, used in 2 recipes.
 
 ### 2026-10-08 — 102037 Salt spec held (probably 106157 RM Salt Table Tub); recorded on the issues list
 New file found at folder check 57; its code 102037 matches no live item but its supplier (JJ Food Service Ltd) is the supplier of 106157. Not applied; see SPEC-ISSUES-TO-REVIEW.md.
+
+
+### 2026-10-08 — 107049 RM Miso Caramel uploaded (stray name in one sheet's code cell; energy inconsistent on the spec)
+File `107049 Miso Caramel Sauce  RM Spec- V2 (11.12.2024).xlsx` (saved again 2026-10-08 16:25; product "SAU7046 Miso Caramel", supplier Beacon Foods Ltd, live item "RM Miso Caramel", £6.02/KG). It was refused earlier because the Nutrition sheet's Product Code cell holds the product name "SAU7046 Miso Caramel" instead of a code, while the other 11 sheets read 107049.
+User confirmed it is 107049, extracted with `--confirm-cross-sheet-mismatch`. ENERGY INCONSISTENT ON THE SPEC: 1624.61 kJ is about 388 kcal and the macros give about 384 kcal, but the spec says 348.91 kcal; the user chose to write it AS THE SPEC STATES (kJ 1624.61, kcal 348.91), so the live kcal is probably ~39 kcal low. To correct later: kcal 388 (kJ / 4.184).
+Every field confirmed by click: fat 8.54, sat 6.68, carb 74.23, sugars 69.62, fibre 0, protein 2.47, salt 2.2. ALLERGENS: Soya ticked (Yes, "Soya used within the Miso Paste"); Sulphur dioxide NOT ticked: the row answers Yes but the supplier comment says "<10ppm Sulphur Dioxide present within the Sugar and Cornflour; theoretical level in finished product <10ppm" (below the declaration threshold), user's choice.
+Allergen note written: "Sulphur dioxide: <10ppm present within the Sugar and Cornflour, theoretical level in finished product <10ppm (supplier), not ticked. Handled on site: milk, honey, waxed fruit, fruit, yeast, maize, cocoa, mustard; gluten handled on site <20ppm. Nut and sesame free site.".
+Pack Size 500 + g (cell "500gram", which the extractor could not split; set in the JSON); Pack Format "500g clear food grade PET/PE-EVOH-PE heat sealed co-extruded multi-layered bag"; Storage "Chilled 0-5°C" (spec "Chilled 0'C - 5'C"); Shelf Life "Date of production + 60 days / Minimum life on delivery: production + 45 days including day of delivery";
+ingredients exactly as in the declaration box (with its percentages, whitespace normalised). Name accepted (live name unchanged). Costed per KG. Verified live, archived, used in 1 recipe.
