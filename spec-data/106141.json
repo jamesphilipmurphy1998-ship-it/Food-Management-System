@@ -1,0 +1,30 @@
+{
+  "status": "ok",
+  "sourceFile": "C:\\Users\\JamesMurphy\\OneDrive - Wasabi\\WASUK - Food Team - NPD\\New Wasabi System Development\\FMS System\\3. Supporting Docs\\Ingredient Specs\\106141 (106420) Beansprouts - RM Spec - V4 (22.1.2025).xlsx",
+  "appliedAt": "2026-10-08T08:21:39.977Z",
+  "name": "RM Beansprouts",
+  "code": "106141",
+  "altCode": "106420",
+  "nutrition": {
+    "kj": 133,
+    "kcal": 32,
+    "fat": 0.5,
+    "sat": 0.1,
+    "carb": 4,
+    "sugar": 2.2,
+    "protein": 2,
+    "salt": 0.01
+  },
+  "allergens": [],
+  "packSize": "350 g",
+  "packSizeValue": 350,
+  "packSizeUnit": "g",
+  "packFormat": "FOOD GRADE/CONTACT PRIMARY LDPE 4 pack inner dimensions = L24 W22 H4 (cm). 5G HEAT SEALED",
+  "storageConditions": "Between 2°c and 5°c",
+  "shelfLife": "5 days D+2 into customer (3 days)",
+  "ingredientsList": "Beansprouts",
+  "allergenNotes": null,
+  "unitWeightG": null,
+  "errors": [],
+  "warnings": []
+}

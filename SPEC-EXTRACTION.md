@@ -2963,3 +2963,11 @@ File `107559 RM Edamame Hummus Spec 0.5kg (v1 Jun,26).xlsx`; the spec's Product 
 carb 7.2, sugars 2.7, fibre 4.6, protein 8.4, salt 0.7; allergens: Soya only (the seed and soya rows say cross-contamination Y but both are ingredients; seed is not an EU-14 allergen); Pack Size 0.5 + kg (cell "8 x 0.5Kg");
 Pack Format "8 x 0.5kg, heat sealed, gas flushed bag yellow" (count wording added from the Pack Size cell, user's choice); Storage "Store chilled"; Shelf Life "P+9 days, D+7 days" as extracted; ingredients from the declaration box;
 no Allergen note. Costed per KG, so no EACH-weight question. Verified live, archived, used in 2 recipes.
+
+
+### 2026-10-08 — 106141 RM Beansprouts uploaded (spec has no Fibre row)
+File `106141 (106420) Beansprouts - RM Spec - V4 (22.1.2025).xlsx`. The extractor first refused it: the nutrition sheet has no Fibre row at all (it lists polyunsaturates, monounsaturates, starch and sodium but never fibre). User: leave Fibre as it is (live 0),
+so it was extracted with `--allow-blank-nutrition fibre`; Fibre is not written and not in the archive (reapply leaves it alone). Every field confirmed by click: 133 kJ / 32 kcal, fat 0.5, sat 0.1, carb 4, sugars 2.2, protein 2, salt 0.01 (sodium row reads 0.005);
+no allergens ticked (only Vegetable = Yes, "Beansprouts"); the Sulphites row (No) has the supplier comment "Please see attached allergen" with no attachment: user chose NO note; Pack Size 350 + g (cell "350g");
+Pack Format "FOOD GRADE/CONTACT PRIMARY LDPE 4 pack inner dimensions = L24 W22 H4 (cm). 5G HEAT SEALED" (tidied of stray tabs/spaces; spec row 4-a); Storage "Between 2°c and 5°c" and Shelf Life "5 days D+2 into customer (3 days)" as extracted; ingredients "Beansprouts".
+Costed per KG so no EACH question. Verified live, archived, used in 9 recipes. Next in the queue: 106568 Red Jalapeno Sriracha Mayo, then 106615 Portobello Mushroom.
