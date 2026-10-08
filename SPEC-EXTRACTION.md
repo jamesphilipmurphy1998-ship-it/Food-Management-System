@@ -3000,3 +3000,11 @@ Every field confirmed by click: 1356 kJ / 324 kcal, fat 5.81, sat 0.813, carb 69
 Pack Size 1 + kg (cell "1 KG"); Pack Format "1kg Ziplock and heat sealed Plastic Pouch"; Storage "Cool (5 to 25°C), dry (<50% RH), away from direct heat or light" (tidied from "Cool (5 to 25oC) dry (<50% RH) and away from direct heat or light");
 Shelf Life "24 Months from DOM" as extracted; ingredients "Carolina Reaper Chilli (Capsicum Chinense)". Name mismatch confirmed (spec "Carolina Reaper Chilli Powder" vs live "Chilli Powder - California Reaper", live name unchanged).
 Costed per KG, £82.40. Verified live, archived. Used in 108 recipes. NOTE: the extractor now prints every allergen "NA" comment as a warning, which is very noisy on specs like this; consider hiding plain "NA" comments (not changed).
+
+
+### 2026-10-08 — 106610 Ramen Broth Vegatable with Boosted Unami uploaded
+File `106610 (106706) - UK12797 Umami Vegan Ramen Paste - RM Spec V6 (27.02.2026).xlsx` (spec title "UMAMI VEGAN RAMEN BROTH", code 106610, alt 106706 = recipe "CPU RM Vegan Ramen stock", whose cost 8.94196 equals the live item's).
+Extracted cleanly with warnings. kcal sanity warning (180.6 vs macro sum 148): the kJ agrees (766.4 / 4.184 = 183); user confirmed as stated. Every field confirmed by click: 766.4 kJ / 180.6 kcal, fat 0.4, sat 0.1, carb 27.9, sugars 13.8, fibre 1.3, protein 8.2, salt 17.4;
+no allergens ticked (no EU-14 row Yes; vegetable/fruit/seed/yeast/maize rows Yes with "Refer to section 3"; nuts/peanuts/sesame No with comment "Not used on site", user chose NO note); Pack Size 4 + kg (cell "4kg");
+Pack Format "4kg pail with lid" (weight wording added, user's choice; spec says "Pail, lid"); Storage "Ambient"; Shelf Life "365 Days (12 Months), min 273 days to customer"; ingredients from the declaration box with stray spaces tidied (double spaces and spaces before commas) and shown in full before confirming.
+Name mismatch confirmed (spec "UMAMI VEGAN RAMEN BROTH" vs live "Ramen Broth Vegatable with Boosted Unami", live name unchanged). Costed per KG. Verified live, archived, used in 22 recipes.

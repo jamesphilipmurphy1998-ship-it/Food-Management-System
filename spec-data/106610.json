@@ -1,0 +1,31 @@
+{
+  "status": "ok",
+  "sourceFile": "C:\\Users\\JamesMurphy\\OneDrive - Wasabi\\WASUK - Food Team - NPD\\New Wasabi System Development\\FMS System\\3. Supporting Docs\\Ingredient Specs\\106610 (106706) - UK12797 Umami Vegan Ramen Paste - RM Spec V6 (27.02.2026).xlsx",
+  "appliedAt": "2026-10-08T08:53:13.137Z",
+  "name": "Ramen Broth Vegatable with Boosted Unami",
+  "code": "106610",
+  "altCode": "106706",
+  "nutrition": {
+    "kj": 766.4,
+    "kcal": 180.6,
+    "fat": 0.4,
+    "sat": 0.1,
+    "carb": 27.9,
+    "sugar": 13.8,
+    "protein": 8.2,
+    "fibre": 1.3,
+    "salt": 17.4
+  },
+  "allergens": [],
+  "packSize": "4 kg",
+  "packSizeValue": 4,
+  "packSizeUnit": "kg",
+  "packFormat": "4kg pail with lid",
+  "storageConditions": "Ambient",
+  "shelfLife": "365 Days (12 Months), min 273 days to customer",
+  "ingredientsList": "Stock Mix (Sugar, Yeast Extract, Salt, Dried Glucose Syrup, Garlic Powder, Onion Powder, Mushroom Extract, Modified Maize Starch, Carrot Extract, Ginger, Rapeseed Oil), Water, Vegetable Stock (Salt, Flavourings, Maltodextrin, Onion Powder, Tomato Powder, Carrot Extract Powder, Sugar, Yeast Extract, Thyme, Garlic Powder, Rapeseed Oil, Rosemary, Oregano, White Pepper), Ginger Puree, Yeast Extract, Oriental Style Seasoning (Dried Glucose Syrup, Salt, Yeast Extract, Sugar, Flavouring, Garlic Powder, Onion Powder, Coconut Flavour, Chilli Powder, Lemongrass Flavour, Ginger, Coriander, Turmeric, Black Pepper, Coriander Seed Oil).",
+  "allergenNotes": null,
+  "unitWeightG": null,
+  "errors": [],
+  "warnings": []
+}
