@@ -312,3 +312,11 @@ The spec's sulphites row reads "product may contain naturally ocurring SO2 (not 
 A fresh extraction ticks nothing for it, so a re-run shows a difference from live. The user's latest rule (cross-contamination / used on site / below ppm = No + a note, never a tick) does not cleanly cover this case:
 it is the product itself that may naturally contain SO2 and no level is stated, so it cannot be shown to be under the 10ppm threshold.
 Decision 2026-10-07: leave the tick as it is and list it here. To resolve later: ask the supplier for a tested SO2 level, or decide whether to untick it and keep the wording in Allergen notes (the box is not deployed yet).
+
+
+## 2026-10-08 — 106439 Broccoli Floret: spec is 30mmx60mm, live item is "RM Broccoli Floret 35x45MM" (HELD by the user, come back later; nothing written)
+`106439 Broccoli Floret 30mmx60mm RM Spec V1 11.06.2026.xlsx` (folder check 37). Same code 106439 but the cut size differs from the live item name (35x45MM), so it may be a different product/spec.
+Extracted (not applied; user confirmed nutrition, Pack Size and Pack Format as read, then chose to hold on the name): 146 kJ / 34 kcal, fat 0.6, sat 0.15, carb 3.2, sugars 1.9, fibre 4, protein 4.3, salt 0.0225;
+no allergens (celery and sulphites rows carry the supplier comment "Handle in the Factory. Allergen cross contamination is controlled through allergen handling procedurs and annual testing", answered No);
+Pack Size 500 g (cell "500g"); Pack Format "Blue Food Grade Bag"; Storage "Chilled (0 - 5 C)"; Shelf Life "Date of Production + 4 days, Delivery + 3 days"; ingredients "Broccoli florets (100%)" (declaration box empty, taken from the ingredient table).
+To resume: decide whether this spec belongs to the existing 106439 (and whether the live name/size should change), then confirm storage, shelf life, ingredients and any allergen note by click and apply.
