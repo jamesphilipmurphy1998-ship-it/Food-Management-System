@@ -386,3 +386,7 @@ The user chose to leave Salt as it is (0) and flag it; every other value was upl
 appearance/flavour/aroma/texture criteria and sign-off only. It contains NO nutrition, allergens, ingredients list, pack size or shelf life; its 5 pictures are product photos (box front "English Tea Shop Organic Lemongrass, Citrus & Ginger, 20 tea bag sachets", loose tea, size/appearance), none of them a label with data.
 So `spec-extract.py` correctly refuses it (no Ingredient & Recipe / Nutrition / Intolerance sheets) and nothing can be written without guessing. Live item: category Other, cost 0.1156 EACH (supplier UCC COFFEE UK LIMITED), no nutrition. To resolve: ask the supplier for the full technical specification (nutrition, allergens, ingredients, shelf life), then process it like any new spec;
 it is costed per EACH so the "is one EACH one tea bag?" weight question will apply. The sibling 107254 RM English Tea and 107252 RM Twinings Pure Green Tea still have no spec at all.
+
+
+## 2026-10-08 — RESOLVED: tea bags 107252, 107253, 107254 need no spec
+The user decided these three tea bags are complete with no nutrition values (like Water): the "no spec found" entry for 107252 and the "Quality Attribute Sheet only" entry for 107253 above are closed; 107254 never needed one. Nothing changed on the live items.

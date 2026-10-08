@@ -3116,3 +3116,9 @@ NOTE: this is the first spec where "handled on same line / full clean down" answ
 ### 2026-10-08 — 107253 tea file is a Quality Attribute Sheet only (nothing uploaded)
 `107253 Lemongrass Citrus and Ginger Tea QAS.xlsx`: a Raw Material Quality Attribute Sheet (appearance, flavour, aroma, texture, sign-off), not a nutrition spec; no nutrition, allergens, ingredients, pack size or shelf life, and its 5 pictures are product photos. Refused by the extractor; nothing written; recorded in SPEC-ISSUES-TO-REVIEW.md.
 Also worth knowing for the future: a file named "...QAS" is a quality sheet, not the technical specification we need.
+
+
+### 2026-10-08 — RULE: the three tea bags are COMPLETE with no nutrition values (user decision, like Water)
+User: mark 107253 as completed, and the other teas will have no nutrition values either. Treated as finished, not missing, and EXCLUDED from the "still needs a spec" lists (with Water 103004). Nothing on the live items was changed (nutrition stays blank).
+Tea bags: 107252 - RM Twinings Pure Green Tea (0.16158 EACH, supplier UCC COFFEE UK LIMITED); 107253 - RM English Tea Lemongrass Citrus & Ginger Organic Tea (0.1156 EACH, supplier UCC COFFEE UK LIMITED); 107254 - RM English Tea (0.11903 EACH, supplier UCC COFFEE UK LIMITED).
+The tea with a real spec stays as uploaded: 107427 Matcha Green Tea Powder. When regenerating the lists, exclude codes 103004, 107252, 107253, 107254. They are costed per EACH; the EACH weight question (is one EACH one tea bag?) is not asked for them unless the user raises it.
