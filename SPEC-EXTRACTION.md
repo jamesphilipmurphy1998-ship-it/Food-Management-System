@@ -2990,3 +2990,13 @@ Every field confirmed by click: 57 kJ / 14 kcal, fat 0.1, sat 0.0, carb 0.4, sug
 Pack Format "Blue Liner" (the only text in spec row 4-a); Storage "Keep Frozen -18 or colder" and Shelf Life "24 months, 12 months minimum on delivery" as extracted; ingredients "Portabello Mushroom" (the spec's spelling).
 Name mismatch confirmed (spec "IQF Portobello Mushroom" vs live "IQF Sliced Portobello Mushroom"). Costed per KG. "Once opened: until end of life if stored correctly" is on the spec but has no field. Verified live, archived, used in 22 recipes.
 Queue after the 2026-10-08 folder check is now empty except the held 106439 Broccoli (on the issues list).
+
+
+### 2026-10-08 — 104630 Chilli Powder - California Reaper uploaded (no Fibre row, Salt "No Data" derived from sodium)
+File `104630 Carolina Reaper Chilli Powder V5 101024.xlsx` (spec code cell 104630, alt 105085 = the recipe). The extractor first refused it: no Fibre row at all, and Salt reads "No Data". User: Fibre stays as it is (live 0), extracted with `--allow-blank-nutrition fibre,salt`;
+Salt derived by the user's choice from the spec's own Sodium 91 mg per 100g: 0.091 g x 2.5 = 0.2275 g (the `--derive-salt-from-sodium` flag does NOT handle a "No Data" cell, so the value was set in the extraction JSON after the user approved it).
+kcal sanity warning (324 vs macro sum 374) explained by the missing fibre; the kJ agrees (1356 / 4.184 = 324); source on the spec is US FDC reference data (theoretical).
+Every field confirmed by click: 1356 kJ / 324 kcal, fat 5.81, sat 0.813, carb 69.86, sugars 41.06, protein 10.58, salt 0.2275 (derived); no allergens ticked (every row No with comment "NA"; Fruit = Yes "Main Ingredient", not an EU-14 allergen), no note;
+Pack Size 1 + kg (cell "1 KG"); Pack Format "1kg Ziplock and heat sealed Plastic Pouch"; Storage "Cool (5 to 25°C), dry (<50% RH), away from direct heat or light" (tidied from "Cool (5 to 25oC) dry (<50% RH) and away from direct heat or light");
+Shelf Life "24 Months from DOM" as extracted; ingredients "Carolina Reaper Chilli (Capsicum Chinense)". Name mismatch confirmed (spec "Carolina Reaper Chilli Powder" vs live "Chilli Powder - California Reaper", live name unchanged).
+Costed per KG, £82.40. Verified live, archived. Used in 108 recipes. NOTE: the extractor now prints every allergen "NA" comment as a warning, which is very noisy on specs like this; consider hiding plain "NA" comments (not changed).

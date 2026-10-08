@@ -1,0 +1,30 @@
+{
+  "status": "ok",
+  "sourceFile": "C:\\Users\\JamesMurphy\\OneDrive - Wasabi\\WASUK - Food Team - NPD\\New Wasabi System Development\\FMS System\\3. Supporting Docs\\Ingredient Specs\\104630 Carolina Reaper Chilli Powder V5 101024.xlsx",
+  "appliedAt": "2026-10-08T08:48:19.595Z",
+  "name": "Chilli Powder - California Reaper",
+  "code": "104630",
+  "altCode": "105085",
+  "nutrition": {
+    "kj": 1356,
+    "kcal": 324,
+    "fat": 5.81,
+    "sat": 0.813,
+    "carb": 69.86,
+    "sugar": 41.06,
+    "protein": 10.58,
+    "salt": 0.2275
+  },
+  "allergens": [],
+  "packSize": "1 kg",
+  "packSizeValue": 1,
+  "packSizeUnit": "kg",
+  "packFormat": "1kg Ziplock and heat sealed Plastic Pouch",
+  "storageConditions": "Cool (5 to 25°C), dry (<50% RH), away from direct heat or light",
+  "shelfLife": "24 Months from DOM",
+  "ingredientsList": "Carolina Reaper Chilli (Capsicum Chinense)",
+  "allergenNotes": null,
+  "unitWeightG": null,
+  "errors": [],
+  "warnings": []
+}
