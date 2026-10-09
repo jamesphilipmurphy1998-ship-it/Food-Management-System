@@ -2949,10 +2949,21 @@
   function renderAllergenCheckboxes(selected) {
     var c = document.getElementById("new-ing-allergens");
     if (!c) return;
+    // A ticked allergen gets a pale red label (same red as the additive bubbles); untick restores grey.
     c.innerHTML = Data.EU_ALLERGENS.map(function (a) {
-      return '<label style="display:inline-flex;align-items:center;gap:4px;font-size:12px;padding:4px 8px;background:var(--nc-gray-50);border-radius:4px;cursor:pointer">' +
+      return '<label style="display:inline-flex;align-items:center;gap:4px;font-size:12px;padding:4px 8px;background:var(--nc-gray-50);border:1px solid transparent;border-radius:4px;cursor:pointer">' +
         '<input type="checkbox" value="' + a + '" ' + (selected.indexOf(a) !== -1 ? "checked" : "") + "> " + a + "</label>";
     }).join("");
+    function paint(lab) {
+      var on = lab.querySelector("input").checked;
+      lab.style.background = on ? "#fde8e8" : "";
+      lab.style.borderColor = on ? "#f2b8b5" : "transparent";
+      lab.style.color = on ? "#b42318" : "";
+    }
+    c.querySelectorAll("label").forEach(function (lab) {
+      paint(lab);
+      lab.querySelector("input").addEventListener("change", function () { paint(lab); });
+    });
   }
 
   // Opened from a project folder page: the new ingredient is also filed in that folder (through
@@ -4299,7 +4310,9 @@
     }
     var rows = combined.map(function (x) { return x.html; });
     if (body) body.innerHTML = rows.join("");
-    if (countLabel) countLabel.textContent = (filteredIng.length + singleIngRecipes.length) + " ingredient" + (filteredIng.length + singleIngRecipes.length !== 1 ? "s" : "");
+    var shownCount = filteredIng.length + singleIngRecipes.length;
+    var fullCount = ingredients.length + recipes.filter(isSingleIngredientRecipe).length;
+    if (countLabel) countLabel.textContent = (shownCount === fullCount ? shownCount : shownCount + " of " + fullCount) + " ingredient" + (fullCount !== 1 ? "s" : "");
     if (emptyEl) emptyEl.style.display = (filteredIng.length + singleIngRecipes.length) === 0 ? "block" : "none";
     ["name", "supplier"].forEach(function (col) {
       var arrowEl = document.getElementById("ingredient-sort-arrow-" + col);
@@ -7632,9 +7645,12 @@
     renderRecipesList();
     var ingredients = Ingredients.getIngredients();
     var recipes = Recipes.getRecipes();
-    document.getElementById("ing-count").textContent = ingredients.length;
+    // Full Ingredient Centre total: ingredient records plus single-ingredient wrapper recipes,
+    // regardless of the list filters (same total the list shows with every box ticked).
+    var ingCentreTotal = ingredients.length + recipes.filter(isSingleIngredientRecipe).length;
+    document.getElementById("ing-count").textContent = ingCentreTotal;
     document.getElementById("rec-count").textContent = recipes.length;
-    document.getElementById("dash-ing-count").textContent = ingredients.length;
+    document.getElementById("dash-ing-count").textContent = ingCentreTotal;
     document.getElementById("dash-rec-count").textContent = recipes.length;
     var hfssCount = recipes.filter(function (r) { return HFSS.calcHFSS(r, ingredients).isHFSS; }).length;
     document.getElementById("dash-hfss-count").textContent = hfssCount;
