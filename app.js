@@ -7149,6 +7149,23 @@
     table.innerHTML = html;
   }
 
+  // "top" = the recipe's own lines; "full" = every base ingredient in the whole recipe.
+  var labelListingMode = "top";
+  window.toggleDeclExpand = function (el) {
+    var next = el && el.nextElementSibling;
+    if (!next) return;
+    var open = next.style.display !== "none";
+    next.style.display = open ? "none" : "inline";
+    el.style.fontWeight = open ? "" : "600";
+    el.style.textDecoration = open ? "underline dotted" : "none";
+    el.style.color = open ? "#1d6fd6" : "#6b7280";
+  };
+  window.setLabelListingMode = function (mode) {
+    labelListingMode = mode === "full" ? "full" : "top";
+    var r = Recipes.getRecipes().find(function (rec) { return rec.id === currentRecipeId; });
+    if (r) renderLabel(Recipes.calcRecipeNutrition(r, Ingredients.getIngredients()), r);
+  };
+
   function renderLabel(n, recipe) {
     var fmt = document.getElementById("label-format").value;
     var serving = recipe.serving || 100;
@@ -7186,18 +7203,25 @@
     var sorted = (recipe.ingredients || []).slice().sort(function (a, b) { return recipeLineWeightForTotal(b) - recipeLineWeightForTotal(a); });
     var recipes = Recipes.getRecipes();
     var parts = sorted.map(function (ri) {
-      var name; var allergens = [];
+      var name; var allergens = []; var isPkgLine = false;
       if (ri.subRecipeId) {
         var subRec = recipes.find(function (r) { return r.id === ri.subRecipeId; });
         if (!subRec) return "";
         name = subRec.name.split(",")[0];
         allergens = getAllergensFromRecipeItem(ri, ingredients, recipes);
+        if (isSingleIngredientRecipe(subRec)) {
+          var baseOfSub = ingredients.find(function (i) { return i.id === subRec.ingredients[0].ingredientId; });
+          isPkgLine = !!(baseOfSub && isPackagingItem(baseOfSub));
+        }
       } else {
         var ing = ingredients.find(function (i) { return i.id === ri.ingredientId; });
         if (!ing) return "";
         name = ing.name.split(",")[0];
         allergens = ing.allergens || [];
+        isPkgLine = isPackagingItem(ing);
       }
+      // Packaging is listed on its own "Packaging:" line without a percentage.
+      if (isPkgLine) return { pkg: true, text: name };
       allergens.forEach(function (a) {
         a.split(" ").forEach(function (w) {
           var rx = new RegExp("\\b" + w + "\\b", "gi");
@@ -7206,13 +7230,58 @@
       });
       var qtyG = recipeLineWeightForTotal(ri);
       var pct = totalWeight > 0 ? Data.round(qtyG / totalWeight * 100) : 0;
-      return name + " (" + pct + "%)";
-    });
+      return { pkg: false, text: name + " (" + pct + "%)" };
+    }).filter(function (p) { return p && p.text; });
+    var foodParts = parts.filter(function (p) { return !p.pkg; }).map(function (p) { return p.text; });
+    var pkgParts = parts.filter(function (p) { return p.pkg; }).map(function (p) { return p.text; });
     var allergenList = [];
     recipe.ingredients.forEach(function (ri) {
       getAllergensFromRecipeItem(ri, ingredients, recipes).forEach(function (a) { if (allergenList.indexOf(a) === -1) allergenList.push(a); });
     });
-    var decl = "<strong>Ingredients:</strong> " + parts.join(", ") + ".";
+    if (labelListingMode === "full") {
+      // Full listing: every base ingredient anywhere in the recipe, duplicates merged, largest first.
+      var leaves = {};
+      (function walk(rec, fraction, seen) {
+        if (seen.indexOf(rec.id) !== -1) return;
+        seen = seen.concat([rec.id]);
+        var lines = rec.ingredients || [];
+        var tot = lines.reduce(function (s, l) { return s + recipeLineWeightForTotal(l); }, 0);
+        lines.forEach(function (l) {
+          var share = tot > 0 ? fraction * recipeLineWeightForTotal(l) / tot : 0;
+          if (l.subRecipeId) {
+            var sub = recipes.find(function (r) { return r.id === l.subRecipeId; });
+            if (sub) walk(sub, share, seen);
+          } else if (l.ingredientId) {
+            var li = ingredients.find(function (i) { return i.id === l.ingredientId; });
+            if (!li || isPackagingItem(li)) return;
+            if (!leaves[li.id]) leaves[li.id] = { ing: li, pct: 0 };
+            leaves[li.id].pct += share * 100;
+          }
+        });
+      })(recipe, 1, []);
+      foodParts = Object.keys(leaves).map(function (k) { return leaves[k]; })
+        .sort(function (a, b) { return b.pct - a.pct; })
+        .map(function (x) {
+          var nm = x.ing.name.split(",")[0];
+          (x.ing.allergens || []).forEach(function (a) {
+            a.split(" ").forEach(function (w) {
+              var rx = new RegExp("\\b" + w + "\\b", "gi");
+              if (nm.match(rx)) nm = nm.replace(rx, "<b>" + w.toUpperCase() + "</b>");
+            });
+          });
+          var label = nm + " (" + Data.round(x.pct) + "%)";
+          var decl2 = String(x.ing.ingredientsList || "").replace(/\s+/g, " ").trim();
+          if (!decl2) return label;
+          // Has its own declaration: shown blue; click to expand/collapse it in place.
+          return '<span onclick="toggleDeclExpand(this)" style="color:#1d6fd6;cursor:pointer;text-decoration:underline dotted" title="Click to show / hide this ingredient\'s own ingredients">' + label + '</span>' +
+            '<span style="display:none"> (' + escapeHtml(decl2.replace(/\.$/, "")) + ')</span>';
+        });
+    }
+    var modeSelect = '<select onchange="setLabelListingMode(this.value)" style="font-size:11px;margin-left:6px;padding:1px 4px;border:1px solid var(--nc-gray-300);border-radius:4px;background:var(--nc-gray-50);cursor:pointer" title="Switch between the top-level ingredient line and every ingredient in the whole recipe">' +
+      '<option value="top"' + (labelListingMode === "full" ? "" : " selected") + '>Top level</option>' +
+      '<option value="full"' + (labelListingMode === "full" ? " selected" : "") + '>Full listing</option></select>';
+    var decl = "<strong>Ingredients:</strong>" + modeSelect + " " + foodParts.join(", ") + ".";
+    if (pkgParts.length) decl += "<br><br><strong>Packaging:</strong> " + pkgParts.join(", ") + ".";
     if (allergenList.length) decl += "<br><br><strong>Allergens:</strong> Contains <b>" + allergenList.join(", ").toUpperCase() + "</b>.";
     document.getElementById("ingredient-declaration").innerHTML = decl;
   }
