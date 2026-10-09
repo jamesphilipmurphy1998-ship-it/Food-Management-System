@@ -10,6 +10,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<RecipeLineEntity> RecipeLines => Set<RecipeLineEntity>();
     public DbSet<ExportTemplateEntity> ExportTemplates => Set<ExportTemplateEntity>();
     public DbSet<ProjectFolderEntity> ProjectFolders => Set<ProjectFolderEntity>();
+    public DbSet<AdditiveEntity> Additives => Set<AdditiveEntity>();
     public DbSet<NutriUserEntity> Users => Set<NutriUserEntity>();
     public DbSet<ComparisonSaveEntity> ComparisonSaves => Set<ComparisonSaveEntity>();
     public DbSet<NotificationEntity> Notifications => Set<NotificationEntity>();
@@ -141,6 +142,20 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             e.Property(x => x.Preview).HasColumnName("preview");
             e.Property(x => x.CreatedAt).HasColumnName("created_at");
             e.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+        });
+
+        modelBuilder.Entity<AdditiveEntity>(e =>
+        {
+            e.ToTable("additive_policy");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.ENumber).HasColumnName("e_number").IsRequired();
+            e.Property(x => x.Name).HasColumnName("name").IsRequired();
+            e.Property(x => x.FunctionText).HasColumnName("function_text");
+            e.Property(x => x.Grading).HasColumnName("grading").IsRequired();
+            e.Property(x => x.Notes).HasColumnName("notes");
+            e.Property(x => x.DeclaredAs).HasColumnName("declared_as");
+            e.Property(x => x.SortOrder).HasColumnName("sort_order");
         });
 
         modelBuilder.Entity<ProjectFolderEntity>(e =>

@@ -1323,6 +1323,38 @@ app.MapDelete("/api/export-templates/{id}", async (AppDbContext db, string id) =
     return Results.NoContent();
 });
 
+// ─── Additives Policy traffic-light list — uploaded from Excel, replaced as a whole ───
+app.MapGet("/api/additives", async (AppDbContext db) =>
+{
+    var rows = await db.Additives.AsNoTracking().OrderBy(a => a.SortOrder).ToListAsync();
+    return Results.Ok(rows.Select(a => new { eNumber = a.ENumber, name = a.Name, function = a.FunctionText, grading = a.Grading, notes = a.Notes, declaredAs = a.DeclaredAs }));
+});
+
+app.MapPut("/api/additives", async (AppDbContext db, List<AdditiveUploadRow> rows) =>
+{
+    if (rows == null || rows.Count == 0) return Results.BadRequest(new { error = "No additive rows supplied; the existing list was not changed." });
+    var clean = new List<AdditiveEntity>();
+    var order = 0;
+    foreach (var r in rows)
+    {
+        var e = (r.ENumber ?? "").Trim();
+        var n = (r.Name ?? "").Trim();
+        if (e.Length == 0 && n.Length == 0) continue;
+        var g = (r.Grading ?? "").Trim();
+        g = g.Equals("green", StringComparison.OrdinalIgnoreCase) ? "Green"
+          : g.Equals("amber", StringComparison.OrdinalIgnoreCase) ? "Amber"
+          : g.Equals("red", StringComparison.OrdinalIgnoreCase) ? "Red" : "";
+        clean.Add(new AdditiveEntity { ENumber = e, Name = n, FunctionText = r.Function, Grading = g, Notes = r.Notes, DeclaredAs = r.DeclaredAs, SortOrder = order++ });
+    }
+    // All-or-nothing: the old list is only removed in the same transaction that adds the new one.
+    await using var tx = await db.Database.BeginTransactionAsync();
+    db.Additives.RemoveRange(db.Additives);
+    db.Additives.AddRange(clean);
+    await db.SaveChangesAsync();
+    await tx.CommitAsync();
+    return Results.Ok(new { count = clean.Count });
+});
+
 // ─── Project folders (Projects page tree) — shared across all users ───
 app.MapGet("/api/project-folders", async (AppDbContext db) =>
 {

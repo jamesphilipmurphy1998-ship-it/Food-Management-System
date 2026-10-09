@@ -20,6 +20,7 @@
   <nav class="topbar-nav">
     <button class="active" onclick="switchView('dashboard')">Dashboard</button>
     <button onclick="switchView('projects')">Projects</button>
+    <button onclick="switchView('additive-policy')">Additive Policy</button>
     <button onclick="openWasabiAppsHome()">Return to Wasabi Functions</button>
     <button type="button" class="topbar-nav-loading-test" onclick="testSushiLoading()">Loading test</button>
     <button type="button" id="nav-user-settings-btn" onclick="switchView('user-settings')" style="display:none">User Settings</button>
@@ -398,7 +399,7 @@
       <div class="page-header">
         <h1 id="project-recipes-title">Recipes</h1>
         <div class="actions">
-          <button type="button" class="btn" onclick="openNewIngredientModal()">
+          <button type="button" class="btn" onclick="openNewIngredientModalForProject()">
             <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2a1 1 0 011 1v4h4a1 1 0 110 2H9v4a1 1 0 11-2 0V9H3a1 1 0 010-2h4V3a1 1 0 011-1z"/></svg>
             New Ingredient
           </button>
@@ -467,8 +468,40 @@
           <svg width="48" height="48" viewBox="0 0 48 48" fill="currentColor"><path d="M10 6h28a2 2 0 012 2v32a2 2 0 01-2 2H10a2 2 0 01-2-2V8a2 2 0 012-2zm2 6v4h24v-4H12zm0 8v2h16v-2H12zm0 6v2h24v-2H12z"/></svg>
           <h3>No recipes in this project</h3>
           <p>Create a recipe or ingredient with the buttons above. New recipes are auto-tagged with this project. Or tag existing recipes in Recipe Centre → Edit name &amp; code → Project folder.</p>
-          <button class="btn" onclick="openNewIngredientModal()">Create Ingredient</button>
+          <button class="btn" onclick="openNewIngredientModalForProject()">Create Ingredient</button>
           <button class="btn btn-primary" onclick="openNewRecipeModalForProject()" style="margin-left:8px">Create Recipe</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════ ADDITIVE POLICY ═══════ -->
+    <div class="view" id="view-additive-policy">
+      <div class="page-header">
+        <h1>Additive Policy</h1>
+        <div class="actions">
+          <button class="btn" onclick="chooseAdditiveFile()" title="Replace the list from the Additives Policy Excel">Upload additive list</button>
+        </div>
+      </div>
+      <p style="color:var(--nc-gray-500);margin-bottom:16px">Copy of the Wasabi Additives Policy (TECH-PROCESS-40). Ingredients whose declaration contains one of these are flagged green, amber or red. Upload a new Excel to replace the list.</p>
+      <div class="ingredient-search-row" style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+        <div class="search-bar" style="margin-bottom:0;flex:1;min-width:200px">
+          <input type="text" id="additive-policy-search" placeholder="Search E-number, name, function or comment..." oninput="renderAdditivePolicyPage()">
+        </div>
+        <select class="form-select" id="additive-policy-grade" onchange="renderAdditivePolicyPage()" style="width:auto;min-width:140px">
+          <option value="all">All gradings</option>
+          <option value="Red">Red</option>
+          <option value="Amber">Amber</option>
+          <option value="Green">Green</option>
+          <option value="">Ungraded</option>
+        </select>
+      </div>
+      <div class="card" style="padding:0">
+        <div class="card-header" style="margin-bottom:0"><span style="font-size:12px;color:var(--nc-gray-400)" id="additive-policy-count">0 additives</span></div>
+        <div style="overflow:auto;max-height:min(70vh,700px)">
+          <table class="data-table">
+            <thead><tr><th>E-number</th><th>Additive name</th><th>Function</th><th>Grading</th><th>Grading &amp; comments</th><th>Declared as</th></tr></thead>
+            <tbody id="additive-policy-body"></tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -478,7 +511,8 @@
       <div class="page-header">
         <h1>Ingredient Centre</h1>
         <div class="actions">
-          <button class="btn" disabled>Placeholder 1</button>
+          <button class="btn" onclick="chooseAdditiveFile()" title="Upload the Additives Policy Excel (E-number, name, grading) to flag ingredients green, amber or red">Upload additive list</button>
+          <input type="file" id="additive-file-input" accept=".xlsx,.xls" style="display:none" onchange="handleAdditiveFile(this)">
           <button class="btn" disabled>Placeholder 2</button>
           <button class="btn btn-primary" onclick="openNewIngredientModal()">
             <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2a1 1 0 011 1v4h4a1 1 0 110 2H9v4a1 1 0 11-2 0V9H3a1 1 0 010-2h4V3a1 1 0 011-1z"/></svg>
@@ -506,6 +540,15 @@
           <option value="ingredients">Ingredients only</option>
           <option value="packaging">Packaging only</option>
           <option value="other">Other</option>
+        </select>
+        <select class="form-select" id="ingredient-additive-filter" onchange="setIngredientFilter()" style="width:auto;min-width:160px" title="Filter by additive traffic light (from the ingredient declaration)">
+          <option value="all">Additives: all</option>
+          <option value="any">Any additive flag</option>
+          <option value="red">Has red</option>
+          <option value="amber">Has amber</option>
+          <option value="green">Has green</option>
+          <option value="ungraded">Has ungraded</option>
+          <option value="none">No additive flags</option>
         </select>
         <label class="form-label" style="display:flex;align-items:center;gap:6px;margin:0;cursor:pointer;font-size:13px;white-space:nowrap">
           <input type="checkbox" id="ingredient-include-delisted" onchange="setIngredientFilter()">
@@ -680,6 +723,7 @@
         <button class="tab-btn" onclick="switchRecipeTab('label')">Label</button>
         <button class="tab-btn" onclick="switchRecipeTab('hfss')">HFSS Score</button>
         <button class="tab-btn" onclick="switchRecipeTab('allergens')">Allergens</button>
+        <button class="tab-btn" onclick="switchRecipeTab('additives')">Additives</button>
         <button class="tab-btn" onclick="switchRecipeTab('costing')">Costing</button>
         <button class="tab-btn" onclick="switchRecipeTab('photography')">Photography</button>
       </div>
@@ -873,6 +917,21 @@
           <div class="card-header"><h2>Allergen Matrix by Ingredient</h2></div>
           <div style="overflow-x:auto">
             <table class="data-table" id="allergen-matrix"></table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Additives -->
+      <div class="tab-pane" id="tab-additives">
+        <div class="card">
+          <div class="card-header"><h2>Additive Summary</h2></div>
+          <p style="font-size:12px;color:var(--nc-gray-500);margin-bottom:10px">Every additive from the Additive Policy found in the ingredient declarations of this recipe, including those inside sub-recipes. Hover a bubble for the additive name.</p>
+          <div style="display:flex;flex-wrap:wrap;gap:6px" id="additive-summary"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h2>Additives by Ingredient</h2></div>
+          <div style="overflow-x:auto">
+            <table class="data-table" id="additive-matrix"></table>
           </div>
         </div>
       </div>
@@ -1247,11 +1306,13 @@
     <div class="form-group"><label class="form-label">Shelf Life</label><input class="form-input" type="text" id="new-ing-shelf-life" placeholder="e.g. 6 months (4.5 months minimum on delivery)"></div>
     <div class="form-group">
       <label class="form-label">Ingredients (legal ingredient declaration)</label>
-      <textarea class="form-input" id="new-ing-ingredients-list" rows="3" placeholder="e.g. Rapeseed Oil, Water, Spirit Vinegar, Sugar, Salt, Modified Starch..."></textarea>
+      <textarea class="form-input" id="new-ing-ingredients-list" rows="3" oninput="renderAdditiveFlags()"placeholder="e.g. Rapeseed Oil, Water, Spirit Vinegar, Sugar, Salt, Modified Starch..."></textarea>
       <p style="font-size:11px;color:var(--nc-gray-400);margin:2px 0 0">The full ingredient composition list, as it would appear on a label. Copy from the supplier spec's Legal Ingredient Declaration field.</p>
     </div>
     <p style="font-size:11px;color:var(--nc-gray-400);margin:8px 0 4px;font-weight:600">ALLERGENS (select all that apply)</p>
     <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px" id="new-ing-allergens"></div>
+    <p style="font-size:11px;color:var(--nc-gray-400);margin:8px 0 4px;font-weight:600">ADDITIVE FLAGS (from the ingredient declaration; hover for the name)</p>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px" id="new-ing-additive-flags"></div>
     <div class="form-group">
       <label class="form-label" style="display:flex;align-items:center;gap:6px">
         <input type="checkbox" id="new-ing-fvn"> Fruit, Vegetable or Nut (FVN eligible for HFSS)
@@ -1931,7 +1992,7 @@
 <script src="hfss.js?v=20260930-perf-fixes"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="app.js?v=20261009-search-tiers"></script>
+<script src="app.js?v=20261009-allergen-depth2"></script>
 <script src="excel-import.js?v=20260929-no-fvn-guessing"></script>
 <script src="reports.js?v=20260923-cache-buster"></script>
 </body>

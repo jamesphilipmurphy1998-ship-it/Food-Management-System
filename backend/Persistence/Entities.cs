@@ -109,6 +109,24 @@ public sealed class RecipeLineEntity
 /// unchanged mechanism, folders just now form a tree instead of a flat list. Locked folders
 /// (the fixed Technical/Food Team/Restaurant/Grocery structure) can't be renamed or deleted from
 /// the UI, so the hierarchy the business actually asked for can't be accidentally torn down.</summary>
+/// <summary>One row of the uploaded Additives Policy (TECH-PROCESS-40) traffic-light list. The
+/// whole table is replaced on each upload; ingredients are flagged in the page by matching their
+/// declaration text against these rows, so nothing on the ingredient itself is stored or changed.
+/// Grading is "Green", "Amber", "Red" or "" (ungraded).</summary>
+public sealed class AdditiveEntity
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString("N");
+    public string ENumber { get; set; } = "";
+    public string Name { get; set; } = "";
+    public string? FunctionText { get; set; }
+    public string Grading { get; set; } = "";
+    public string? Notes { get; set; }
+    /// <summary>The exact name an ingredient declaration uses for this additive (the sheet's
+    /// "declared by E number or Name" column, e.g. "Carminic Acid"). Empty when only the E-number is used.</summary>
+    public string? DeclaredAs { get; set; }
+    public int SortOrder { get; set; }
+}
+
 public sealed class ProjectFolderEntity
 {
     public string Id { get; set; } = "";

@@ -200,6 +200,16 @@ public sealed class RecipeStructureImportResult
     public int SingleComponentCreated { get; set; }
 }
 
+public sealed class AdditiveUploadRow
+{
+    public string? ENumber { get; set; }
+    public string? Name { get; set; }
+    public string? Function { get; set; }
+    public string? Grading { get; set; }
+    public string? Notes { get; set; }
+    public string? DeclaredAs { get; set; }
+}
+
 public sealed class ProjectFolderCreateRequest
 {
     public string Name { get; set; } = "";

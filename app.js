@@ -563,6 +563,7 @@
     if (name === "export-templates") loadExcelSavesIntoCache(function () { renderExportTemplates(); });
     if (name === "recipes") window.renderRecipesList();
     if (name === "project-recipes") window.renderProjectRecipesList();
+    if (name === "additive-policy") window.renderAdditivePolicyPage();
     if (name === "comparisons") filterComparisonSearch();
     if (name === "comparison-saves") {
       loadComparisonSaves(renderComparisonSaves);
@@ -1330,9 +1331,9 @@
     }
 
     var allergenSet = {};
+    var allRecipesForAllergens = Recipes.getRecipes();
     (r.ingredients || []).forEach(function (ri) {
-      var ing = ri.ingredientId ? ingredients.find(function (i) { return i.id === ri.ingredientId; }) : null;
-      (ing && ing.allergens || []).forEach(function (a) { allergenSet[a] = true; });
+      getAllergensFromRecipeItem(ri, ingredients, allRecipesForAllergens).forEach(function (a) { allergenSet[a] = true; });
     });
     var allergenList = Object.keys(allergenSet);
 
@@ -1812,7 +1813,7 @@
   function persistLastView(name) {
     if (!name || name === "login") return;
     try {
-      localStorage.setItem(LAST_VIEW_KEY, JSON.stringify({ view: name, recipeId: name === "recipe-detail" ? currentRecipeId : null }));
+      localStorage.setItem(LAST_VIEW_KEY, JSON.stringify({ view: name, recipeId: name === "recipe-detail" ? currentRecipeId : null, projectSlug: window.currentProjectSlug || "", projectLabel: window.currentProjectLabel || "" }));
     } catch (e) { /* ignore (e.g. private browsing) */ }
   }
   function restoreLastView() {
@@ -1824,6 +1825,12 @@
       if (stillExists) { openRecipe(saved.recipeId); return; }
       switchView("recipes");
       return;
+    }
+    if (saved.view === "project-recipes") {
+      // The folder (slug) is not kept across a refresh, so restore it or the list renders empty.
+      if (!saved.projectSlug) { switchView("projects"); return; }
+      window.currentProjectSlug = saved.projectSlug;
+      window.currentProjectLabel = saved.projectLabel || saved.projectSlug;
     }
     switchView(saved.view);
   }
@@ -2743,6 +2750,202 @@
     if (typeof showToast === "function") showToast("Project deleted");
   }
 
+  // ─── Additives Policy traffic lights ───
+  // The list (uploaded from the TECH-PROCESS-40 Excel) lives on the server. An ingredient is flagged
+  // when its legal ingredient declaration contains a listed E-number or additive name. Nothing is
+  // stored on the ingredient: flags are worked out from the declaration text each time.
+  var additivePolicyRows = [];
+  var additiveMatchers = [];
+  var additiveFlagCache = {};
+  var ADDITIVE_COLOURS = {
+    Red: { bg: "#fde8e8", fg: "#b42318", bd: "#f2b8b5" },
+    Amber: { bg: "#fff3d6", fg: "#9a6700", bd: "#f0d08a" },
+    Green: { bg: "#e3f4e6", fg: "#1f7a33", bd: "#a9d9b2" },
+    "": { bg: "#eceff1", fg: "#546e7a", bd: "#cfd8dc" }
+  };
+  var ROMAN_SUB = /^(i{1,3}|iv|v|vi{1,3}|ix|x)$/;
+
+  // "E 101 (i)" / "E101i" / "e160b" -> { base: "101", sub: "i" } (sub only for roman numerals)
+  function parseENumber(s) {
+    var m = /^\s*E\s?-?(\d{3,4}[a-z]?)\s*(?:\(\s*([a-z]{1,4})\s*\))?\s*$/i.exec(String(s || ""));
+    if (!m) return null;
+    var base = m[1].toLowerCase(), sub = (m[2] || "").toLowerCase();
+    if (!sub) {
+      var tail = /^(\d{3,4})(i{1,3}|iv|v|vi{1,3}|ix|x)$/.exec(base);
+      if (tail) { base = tail[1]; sub = tail[2]; }
+    }
+    return { base: base, sub: sub };
+  }
+
+  function buildAdditiveMatchers(rows) {
+    additiveFlagCache = {};
+    additiveMatchers = rows.map(function (r) {
+      var en = parseENumber(r.eNumber);
+      // Names are matched only through the sheet's own "declared as" column (exact wording used in
+      // declarations); matching the long descriptive names caused false flags (e.g. "seaweed").
+      var declared = String(r.declaredAs || "").replace(/\s+/g, " ").trim().toLowerCase();
+      var aliases = (declared.length >= 5 && declared !== "n/a" && !/^e[\s-]?\d/.test(declared)) ? [declared.replace(/\(.*?\)/g, " ").replace(/\s+/g, " ").trim()] : [];
+      var re = aliases.length ? new RegExp("(^|[^a-z0-9])(" + aliases.map(function (a) { return a.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }).join("|") + ")(?![a-z0-9])", "i") : null;
+      return { row: r, en: en, re: re };
+    });
+  }
+
+  function additiveEDisplay(row) {
+    var en = parseENumber(row.eNumber);
+    return en ? "E" + en.base + (en.sub ? "(" + en.sub + ")" : "") : String(row.eNumber || "").replace(/\s+/g, "");
+  }
+
+  function additiveFlagsForText(text) {
+    var t = String(text || "").trim();
+    if (!t || !additiveMatchers.length) return [];
+    if (additiveFlagCache[t]) return additiveFlagCache[t];
+    var found = [];
+    var seenE = [];
+    var rx = /\bE\s?-?(\d{3,4}[a-z]?)\s*(?:\(\s*([a-z]{1,4})\s*\))?/gi, m;
+    while ((m = rx.exec(t))) {
+      var o = parseENumber("E" + m[1] + (m[2] ? "(" + m[2] + ")" : ""));
+      if (o) seenE.push(o);
+    }
+    var low = t.toLowerCase();
+    additiveMatchers.forEach(function (am) {
+      var hit = false;
+      if (am.en) {
+        hit = seenE.some(function (d) {
+          if (d.base !== am.en.base) return false;
+          return !am.en.sub || !d.sub || am.en.sub === d.sub;
+        });
+      }
+      if (!hit && am.re && am.re.test(low)) hit = true;
+      if (hit) found.push({ e: additiveEDisplay(am.row), name: am.row.name || "", grading: am.row.grading || "", notes: am.row.notes || "" });
+    });
+    // One bubble per E-number and grading: several sub-rows of the same E-number with the same
+    // colour (E450 i-vii) are merged and their names listed on hover.
+    var merged = [], byKey = {};
+    found.forEach(function (f) {
+      var k = f.e.replace(/\(.*\)$/, "") + "|" + f.grading;
+      if (!byKey[k]) { byKey[k] = { e: f.e, name: f.name, grading: f.grading, notes: f.notes, _n: 1 }; merged.push(byKey[k]); }
+      else {
+        var b = byKey[k];
+        b._n++;
+        b.e = f.e.replace(/\(.*\)$/, "");
+        if (b.name.indexOf(f.name) === -1) b.name += "; " + f.name;
+      }
+    });
+    additiveFlagCache[t] = merged;
+    return merged;
+  }
+
+  function additiveFlagsForIngredient(ing) {
+    return ing ? additiveFlagsForText(ing.ingredientsList) : [];
+  }
+
+  function additiveBubbleHtml(f) {
+    var c = ADDITIVE_COLOURS[f.grading] || ADDITIVE_COLOURS[""];
+    var tip = (f.name || "").replace(/\s+/g, " ").trim() + " — " + (f.grading || "ungraded") + (f.notes ? " — " + String(f.notes).replace(/\s+/g, " ").trim() : "");
+    return '<span title="' + escapeHtml(tip) + '" style="display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;border:1px solid ' + c.bd + ';background:' + c.bg + ';color:' + c.fg + ';cursor:help">' + escapeHtml(f.e) + (f.grading ? "" : " (ungraded)") + "</span>";
+  }
+
+  function renderAdditiveFlags() {
+    var box = document.getElementById("new-ing-additive-flags");
+    var src = document.getElementById("new-ing-ingredients-list");
+    if (!box) return;
+    var flags = additiveFlagsForText(src ? src.value : "");
+    if (!additiveMatchers.length) box.innerHTML = '<span style="font-size:12px;color:var(--nc-gray-400)">No additive list uploaded yet (Ingredient Centre &rarr; Upload additive list).</span>';
+    else box.innerHTML = flags.length ? flags.map(additiveBubbleHtml).join(" ") : '<span style="font-size:12px;color:var(--nc-gray-400)">None found in the declaration.</span>';
+  }
+  window.renderAdditiveFlags = renderAdditiveFlags;
+
+  async function loadAdditivePolicy() {
+    try {
+      var r = await fetch(window.location.origin + "/api/additives", { credentials: "same-origin" });
+      additivePolicyRows = r.ok ? await r.json() : [];
+    } catch (e) { additivePolicyRows = []; }
+    buildAdditiveMatchers(additivePolicyRows);
+    renderAdditiveFlags();
+  }
+
+  function renderAdditivePolicyPage() {
+    var body = document.getElementById("additive-policy-body");
+    if (!body) return;
+    var q = ((document.getElementById("additive-policy-search") || {}).value || "").toLowerCase().trim();
+    var g = (document.getElementById("additive-policy-grade") || {}).value;
+    var rows = additivePolicyRows.filter(function (r) {
+      if (g && g !== "all" && (r.grading || "") !== g) return false;
+      if (g === "" && (r.grading || "") !== "") return false;
+      return !q || [r.eNumber, r.name, r.function, r.notes, r.declaredAs].join(" ").toLowerCase().indexOf(q) !== -1;
+    });
+    var cell = function (s) { return escapeHtml(String(s || "")).replace(/\n/g, "<br>"); };
+    body.innerHTML = rows.length ? rows.map(function (r) {
+      var c = ADDITIVE_COLOURS[r.grading] || ADDITIVE_COLOURS[""];
+      return "<tr><td class=\"bold\">" + cell(r.eNumber) + "</td><td>" + cell(r.name) + "</td><td>" + cell(r.function) + "</td>" +
+        "<td><span style=\"font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;border:1px solid " + c.bd + ";background:" + c.bg + ";color:" + c.fg + "\">" + (r.grading || "Ungraded") + "</span></td>" +
+        "<td>" + cell(r.notes) + "</td><td>" + cell(r.declaredAs && r.declaredAs.toLowerCase() !== "n/a" ? r.declaredAs : "") + "</td></tr>";
+    }).join("") : "<tr><td colspan=\"6\" style=\"color:var(--nc-gray-400)\">" + (additivePolicyRows.length ? "No matches." : "No additive list uploaded yet. Use Upload additive list.") + "</td></tr>";
+    var cnt = document.getElementById("additive-policy-count");
+    if (cnt) cnt.textContent = rows.length + " of " + additivePolicyRows.length + " additives";
+  }
+  window.renderAdditivePolicyPage = renderAdditivePolicyPage;
+
+  function additiveFilterMatches(ing, filterVal) {
+    if (!filterVal || filterVal === "all") return true;
+    var flags = additiveFlagsForIngredient(ing);
+    if (filterVal === "any") return flags.length > 0;
+    if (filterVal === "none") return flags.length === 0;
+    var want = filterVal === "ungraded" ? "" : filterVal.charAt(0).toUpperCase() + filterVal.slice(1);
+    return flags.some(function (f) { return f.grading === want; });
+  }
+
+  function chooseAdditiveFile() {
+    var el = document.getElementById("additive-file-input");
+    if (el) { el.value = ""; el.click(); }
+  }
+  window.chooseAdditiveFile = chooseAdditiveFile;
+
+  function handleAdditiveFile(input) {
+    var file = input && input.files && input.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function (ev) {
+      try {
+        var wb = XLSX.read(new Uint8Array(ev.target.result), { type: "array" });
+        var rows = null;
+        for (var s = 0; s < wb.SheetNames.length && !rows; s++) {
+          var aoa = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[s]], { header: 1, raw: false, defval: "" });
+          for (var h = 0; h < Math.min(aoa.length, 30); h++) {
+            var heads = aoa[h].map(function (c) { return String(c || "").toLowerCase().trim(); });
+            var ci = heads.findIndex(function (x) { return /^e[\s-]?number/.test(x); });
+            var gi = heads.findIndex(function (x) { return /^grading/.test(x) && x.indexOf("comment") === -1; });
+            if (ci === -1 || gi === -1) continue;
+            var ni = heads.findIndex(function (x) { return /^additive name/.test(x) || x === "name"; });
+            var fi = heads.findIndex(function (x) { return x === "function"; });
+            var ki = heads.findIndex(function (x) { return x.indexOf("comment") !== -1; });
+            var di = heads.findIndex(function (x) { return x.indexOf("declared by") !== -1; });
+            rows = [];
+            for (var r = h + 1; r < aoa.length; r++) {
+              var row = aoa[r];
+              var e = String(row[ci] || "").replace(/\s+/g, " ").trim();
+              if (!/^E\s?-?\d{3,4}[a-z]?\s*(\(\s*[a-z]{1,4}\s*\))?$/i.test(e)) continue;
+              rows.push({ eNumber: e, name: ni >= 0 ? String(row[ni] || "").trim() : "", function: fi >= 0 ? String(row[fi] || "").replace(/\s+/g, " ").trim() : "", grading: String(row[gi] || "").trim(), notes: ki >= 0 ? String(row[ki] || "").trim() : "", declaredAs: di >= 0 ? String(row[di] || "").replace(/\s+/g, " ").trim() : "" });
+            }
+            break;
+          }
+        }
+        if (!rows || !rows.length) { showToast("No additive rows found (need columns 'E-number' and 'Grading')"); return; }
+        var cnt = { red: 0, amber: 0, green: 0, ungraded: 0 };
+        rows.forEach(function (x) { var g = x.grading.toLowerCase(); if (g === "red" || g === "amber" || g === "green") cnt[g]++; else cnt.ungraded++; });
+        var msg = "Replace the additive list with " + rows.length + " rows from \"" + file.name + "\"?\n\nRed " + cnt.red + ", Amber " + cnt.amber + ", Green " + cnt.green + ", ungraded " + cnt.ungraded + ".\n\nThe existing list (" + additivePolicyRows.length + " rows) is replaced.";
+        if (!confirm(msg)) return;
+        fetch(window.location.origin + "/api/additives", { method: "PUT", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body: JSON.stringify(rows) })
+          .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+          .then(function (res) { showToast("Additive list uploaded (" + res.count + " rows)"); return loadAdditivePolicy(); })
+          .then(function () { renderIngredientsTable(); renderAdditivePolicyPage(); })
+          .catch(function (err) { showToast("Upload failed: " + err.message + " (the existing list was not changed)"); });
+      } catch (err) { showToast("Could not read that file: " + err.message); }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+  window.handleAdditiveFile = handleAdditiveFile;
+
   function renderAllergenCheckboxes(selected) {
     var c = document.getElementById("new-ing-allergens");
     if (!c) return;
@@ -2752,7 +2955,16 @@
     }).join("");
   }
 
+  // Opened from a project folder page: the new ingredient is also filed in that folder (through
+  // a one-line wrapper recipe, which is how folders hold ingredients) as well as the Ingredient Centre.
+  function openNewIngredientModalForProject() {
+    openNewIngredientModal();
+    window.newIngredientProjectSlug = window.currentProjectSlug || "";
+  }
+  window.openNewIngredientModalForProject = openNewIngredientModalForProject;
+
   function openNewIngredientModal() {
+    window.newIngredientProjectSlug = "";
     editIngredientId = null;
     ["new-ing-name", "new-ing-code", "new-ing-secondary-code", "new-ing-kj", "new-ing-kcal", "new-ing-fat", "new-ing-sat", "new-ing-carb", "new-ing-sugar", "new-ing-fibre", "new-ing-protein", "new-ing-salt", "new-ing-cost", "new-ing-supplier", "new-ing-description-tags", "new-ing-density", "new-ing-unit-weight", "new-ing-pack-size", "new-ing-pack-format", "new-ing-storage-conditions", "new-ing-shelf-life"].forEach(function (id) {
       var el = document.getElementById(id);
@@ -2772,6 +2984,7 @@
     var approvedEl = document.getElementById("new-ing-approved");
     if (approvedEl) approvedEl.checked = false;
     renderAllergenCheckboxes([]);
+    renderAdditiveFlags();
     var titleEl = document.getElementById("modal-ingredient-title-text");
     if (titleEl) titleEl.textContent = "New Ingredient";
     var vhList = document.getElementById("ingredient-version-history-list");
@@ -2856,6 +3069,7 @@
     var approvedEl = document.getElementById("new-ing-approved");
     if (approvedEl) approvedEl.checked = !!data.approved;
     renderAllergenCheckboxes(data.allergens || []);
+    renderAdditiveFlags();
     syncIngredientDensityField();
   }
 
@@ -3150,7 +3364,28 @@
         versionComment = comment.trim();
       }
     }
+    var folderSlug = (!editIngredientId && window.newIngredientProjectSlug) || "";
+    if (folderSlug) data.id = Data.genId();
     Ingredients.saveIngredient(data);
+    if (folderSlug) {
+      var wrapper = {
+        id: Data.genId(),
+        name: data.name,
+        code: data.code || "",
+        desc: "Created in a project folder — single-ingredient (links to base)",
+        type: "food",
+        recipeType: "subRecipe",
+        serving: 100,
+        costUOM: data.costUOM || "KG",
+        ingredients: [{ ingredientId: data.id, qty: 1, uom: data.costUOM || "KG", fvnOverride: null, scrapPct: 0 }],
+        descriptionTags: [],
+        created: new Date().toISOString(),
+        approved: false
+      };
+      setRecipeProjectInTags(wrapper, folderSlug);
+      Recipes.saveRecipe(wrapper);
+      window.newIngredientProjectSlug = "";
+    }
     if (versionComment) attachLatestVersionComment(editIngredientId, versionComment);
     renderAll();
     closeModal("modal-ingredient");
@@ -4023,7 +4258,13 @@
     if (typeFilterVal === "packaging") filteredIng = filteredIng.filter(isPackagingItem);
     if (typeFilterVal === "other") filteredIng = filteredIng.filter(function (i) { return (i.cat || "").trim() === "Other" && !isPackagingItem(i); });
     if (!includeDelistedIngredients()) filteredIng = filteredIng.filter(function (i) { return !isDelisted(i.name); });
+    var additiveFilterVal = (document.getElementById("ingredient-additive-filter") && document.getElementById("ingredient-additive-filter").value) || "all";
+    if (additiveFilterVal !== "all") filteredIng = filteredIng.filter(function (i) { return additiveFilterMatches(i, additiveFilterVal); });
     var singleIngRecipes = recipes.filter(isSingleIngredientRecipe);
+    if (additiveFilterVal !== "all") singleIngRecipes = singleIngRecipes.filter(function (r) {
+      var baseIng = ingredients.find(function (i) { return i.id === (r.ingredients || [])[0].ingredientId; });
+      return additiveFilterMatches(baseIng, additiveFilterVal);
+    });
     if (filterVal !== "all") singleIngRecipes = singleIngRecipes.filter(function (r) { return statusOf(r) === filterVal; });
     if (typeFilterVal === "ingredients") singleIngRecipes = singleIngRecipes.filter(function (r) {
       var baseIng = ingredients.find(function (i) { return i.id === (r.ingredients || [])[0].ingredientId; });
@@ -5861,7 +6102,8 @@
         return baseIng && isPackagingItem(baseIng);
       });
     } else {
-      filtered = filtered.filter(function (r) { return !isSingleIngredientRecipe(r); });
+      // "All kinds" keeps ingredient wrappers in the folder; the recipe-kind filters leave them out.
+      if (typeFilterVal !== "all") filtered = filtered.filter(function (r) { return !isSingleIngredientRecipe(r); });
       if (typeFilterVal === "finishedProduct") filtered = filtered.filter(function (r) { return (r.recipeType || "finishedProduct") === "finishedProduct"; });
       if (typeFilterVal === "subRecipe") filtered = filtered.filter(function (r) { return (r.recipeType || "finishedProduct") === "subRecipe"; });
     }
@@ -6779,6 +7021,7 @@
     renderLabel(n, r);
     renderHFSS(r);
     renderAllergens(r);
+    renderAdditives(r);
     renderNutritionByIngredient(r);
     renderCosting(r);
   }
@@ -6935,10 +7178,7 @@
         var subRec = recipes.find(function (r) { return r.id === ri.subRecipeId; });
         if (!subRec) return "";
         name = subRec.name.split(",")[0];
-        (subRec.ingredients || []).forEach(function (sri) {
-          var sing = sri.ingredientId ? ingredients.find(function (i) { return i.id === sri.ingredientId; }) : null;
-          if (sing) (sing.allergens || []).forEach(function (a) { if (allergens.indexOf(a) === -1) allergens.push(a); });
-        });
+        allergens = getAllergensFromRecipeItem(ri, ingredients, recipes);
       } else {
         var ing = ingredients.find(function (i) { return i.id === ri.ingredientId; });
         if (!ing) return "";
@@ -6957,16 +7197,7 @@
     });
     var allergenList = [];
     recipe.ingredients.forEach(function (ri) {
-      if (ri.subRecipeId) {
-        var subRec = recipes.find(function (r) { return r.id === ri.subRecipeId; });
-        if (subRec) (subRec.ingredients || []).forEach(function (sri) {
-          var sing = sri.ingredientId ? ingredients.find(function (i) { return i.id === sri.ingredientId; }) : null;
-          if (sing) (sing.allergens || []).forEach(function (a) { if (allergenList.indexOf(a) === -1) allergenList.push(a); });
-        });
-      } else {
-        var ing = ingredients.find(function (i) { return i.id === ri.ingredientId; });
-        if (ing) (ing.allergens || []).forEach(function (a) { if (allergenList.indexOf(a) === -1) allergenList.push(a); });
-      }
+      getAllergensFromRecipeItem(ri, ingredients, recipes).forEach(function (a) { if (allergenList.indexOf(a) === -1) allergenList.push(a); });
     });
     var decl = "<strong>Ingredients:</strong> " + parts.join(", ") + ".";
     if (allergenList.length) decl += "<br><br><strong>Allergens:</strong> Contains <b>" + allergenList.join(", ").toUpperCase() + "</b>.";
@@ -7010,13 +7241,16 @@
     document.getElementById("nutri-score-info").textContent = "This recipe scores Nutri-Score " + ns.letter + " (total nutrient profile points: " + h.total + ")";
   }
 
-  function getAllergensFromRecipeItem(ri, ingredients, recipes) {
+  function getAllergensFromRecipeItem(ri, ingredients, recipes, seen) {
     var present = [];
     if (ri.subRecipeId) {
+      // Walks every sub-recipe level (it used to stop after one), guarded against loops.
+      seen = seen || [];
+      if (seen.indexOf(ri.subRecipeId) !== -1) return present;
+      seen = seen.concat([ri.subRecipeId]);
       var subRec = recipes.find(function (r) { return r.id === ri.subRecipeId; });
       if (subRec) (subRec.ingredients || []).forEach(function (sri) {
-        var sing = sri.ingredientId ? ingredients.find(function (i) { return i.id === sri.ingredientId; }) : null;
-        if (sing) (sing.allergens || []).forEach(function (a) { if (present.indexOf(a) === -1) present.push(a); });
+        getAllergensFromRecipeItem(sri, ingredients, recipes, seen).forEach(function (a) { if (present.indexOf(a) === -1) present.push(a); });
       });
     } else {
       var ing = ingredients.find(function (i) { return i.id === ri.ingredientId; });
@@ -7063,6 +7297,54 @@
     });
     html += "</tbody>";
     table.innerHTML = html;
+  }
+
+  // Additives flow upwards: every ingredient with a flag is listed against the recipe, however
+  // deep the sub-recipe it sits in (path shows the route). Guarded against sub-recipe loops.
+  function collectRecipeAdditives(recipe, ingredients, recipes, path, seen, out) {
+    if (seen.indexOf(recipe.id) !== -1) return;
+    seen = seen.concat([recipe.id]);
+    (recipe.ingredients || []).forEach(function (ri) {
+      if (ri.subRecipeId) {
+        var sub = recipes.find(function (r) { return r.id === ri.subRecipeId; });
+        if (sub) collectRecipeAdditives(sub, ingredients, recipes, path.concat([sub.name]), seen, out);
+      } else if (ri.ingredientId) {
+        var ing = ingredients.find(function (i) { return i.id === ri.ingredientId; });
+        if (!ing) return;
+        var flags = additiveFlagsForIngredient(ing);
+        if (flags.length) out.push({ name: ing.name, code: ing.code || "", path: path, flags: flags });
+      }
+    });
+  }
+
+  function renderAdditives(recipe) {
+    var sumEl = document.getElementById("additive-summary");
+    var table = document.getElementById("additive-matrix");
+    if (!sumEl || !table) return;
+    if (!additiveMatchers.length) {
+      sumEl.innerHTML = '<span style="font-size:12px;color:var(--nc-gray-400)">No additive list uploaded yet (Additive Policy page &rarr; Upload additive list).</span>';
+      table.innerHTML = "";
+      return;
+    }
+    var rows = [];
+    collectRecipeAdditives(recipe, Ingredients.getIngredients(), Recipes.getRecipes(), [], [], rows);
+    var merged = [], byKey = {};
+    rows.forEach(function (r) {
+      r.flags.forEach(function (f) {
+        var k = f.e + "|" + f.grading;
+        if (!byKey[k]) { byKey[k] = { e: f.e, name: f.name, grading: f.grading, notes: f.notes }; merged.push(byKey[k]); }
+      });
+    });
+    var order = { Red: 0, Amber: 1, Green: 2, "": 3 };
+    merged.sort(function (a, b) { return (order[a.grading] - order[b.grading]) || a.e.localeCompare(b.e, undefined, { numeric: true }); });
+    sumEl.innerHTML = merged.length ? merged.map(additiveBubbleHtml).join(" ") : '<span style="font-size:12px;color:var(--nc-gray-400)">No additives from the policy found in this recipe.</span>';
+    var html = "<thead><tr><th>Ingredient</th><th>Via</th><th>Additives</th></tr></thead><tbody>";
+    rows.forEach(function (r) {
+      html += "<tr><td style=\"font-size:12px\">" + escapeHtml(r.name) + (r.code ? " <span style=\"color:var(--nc-gray-400)\">" + escapeHtml(r.code) + "</span>" : "") + "</td>" +
+        "<td style=\"font-size:12px;color:var(--nc-gray-500)\">" + (r.path.length ? escapeHtml(r.path.join(" › ")) : "direct") + "</td>" +
+        "<td>" + r.flags.map(additiveBubbleHtml).join(" ") + "</td></tr>";
+    });
+    table.innerHTML = html + "</tbody>";
   }
 
   function renderCosting(recipe) {
@@ -8715,6 +8997,7 @@ desc: "Imported from " + (fname || "spreadsheet"),
     // opened) so the recipe-edit "Project" dropdown has real options from the start, not an
     // empty list until someone happens to visit Projects first.
     loadProjectFolders().then(function () { if (typeof populateProjectSelects === "function") populateProjectSelects(); });
+    loadAdditivePolicy().then(function () { renderIngredientsTable(); });
     bindExportExcelDropzone();
     // Only meaningful under NUTRICOST_AUTH_MODE=local (the homepage-JWT mode has no such
     // endpoint and this 404s harmlessly) — shows "User Settings" once we know who's signed in.
