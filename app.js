@@ -204,7 +204,10 @@
     var lastIdx = -1;
     for (var i = 0; i < words.length; i++) {
       var idx = t.indexOf(words[i], lastIdx + 1);
-      if (idx === -1) return { match: true, score: 0 };
+      // 0.5, not 0: every caller starts its best-match reduce from { match:false, score:0 } and keeps the
+      // earlier entry on a tie, so a score of 0 made an out-of-order match ("spring onion" vs "Onion Spring")
+      // vanish. 0.5 still ranks below an in-order (1) and exact-phrase (2) match.
+      if (idx === -1) return { match: true, score: 0.5 };
       lastIdx = idx;
     }
     return { match: true, score: 1 };
@@ -5905,6 +5908,7 @@
     }
     var ingMatches = ingredients.filter(function (i) { return !isDelisted(i.name) && statusMatches(i) && ingKindMatches(i) && ingScore(i).match; }).sort(function (a, b) { return ingScore(b).score - ingScore(a).score; }).slice(0, 6);
     var subMatches = [];
+    var subScoreById = {};
     if (r && subKindMatches()) {
       // Sub-recipes must be addable to ANY recipe, not just "finished products" — nesting a
       // sub-recipe inside another sub-recipe is completely normal (e.g. LR MIX inside HR FRIED
@@ -5921,13 +5925,14 @@
         if ((rec.recipeType || "finishedProduct") !== "subRecipe" || rec.id === currentRecipeId || isDelisted(rec.name) || !statusMatches(rec)) return false;
         return subScore(rec).match;
       }).sort(function (a, b) { return subScore(b).score - subScore(a).score; }).slice(0, 4);
+      subMatches.forEach(function (rec) { subScoreById[rec.id] = subScore(rec).score; });
     }
     var allMatches = ingMatches.length + subMatches.length;
     if (allMatches === 0) { dd.innerHTML = "<div style=\"padding:10px;color:var(--nc-gray-400);font-size:13px\">No matches</div>"; dd.classList.add("open"); return; }
     function statusBadgeFor(item) {
       return statusBadgeHtml(item, "font-size:9px");
     }
-    var html = subMatches.map(function (rec) {
+    var subHtmlList = subMatches.map(function (rec) {
       var codePart = (rec.code && rec.code.trim()) ? rec.code : "";
       var recUom = recipeOwnUom(rec, ingredients);
       var costPerUom = getSubRecipeCostPerUom(rec, ingredients, recUom);
@@ -5941,8 +5946,8 @@
         "<span class=\"idi-status\">" + statusBadgeFor(rec) + "</span>" +
         "<span class=\"idi-type\">" + typeBadge + "</span>" +
         "</div>";
-    }).join("");
-    html += ingMatches.map(function (i) {
+    });
+    var ingHtmlList = ingMatches.map(function (i) {
       var codePart = (i.code && i.code.trim()) ? i.code : "";
       var costUom = (i.costUOM || i.costUom || "KG").toString().toUpperCase();
       var costPart = i.cost > 0 ? "£" + Number(i.cost).toFixed(3) + "/" + costUom : "—";
@@ -5958,7 +5963,14 @@
         "<span class=\"idi-status\">" + statusBadgeFor(i) + "</span>" +
         "<span class=\"idi-type\">" + typeBadge + "</span>" +
         "</div>";
-    }).join("");
+    });
+    // One list, best match first across sub-recipes AND ingredients (exact phrase, then words in order, then
+    // words in a different order). Array.sort is stable, so on equal scores sub-recipes stay ahead of ingredients as before.
+    var ddRows = [];
+    subHtmlList.forEach(function (h, idx) { ddRows.push({ s: subScoreById[subMatches[idx].id] || 0, h: h }); });
+    ingHtmlList.forEach(function (h, idx) { ddRows.push({ s: ingScore(ingMatches[idx]).score, h: h }); });
+    ddRows.sort(function (a, b) { return b.s - a.s; });
+    var html = ddRows.map(function (x) { return x.h; }).join("");
     dd.innerHTML = html;
     dd.classList.add("open");
   }
