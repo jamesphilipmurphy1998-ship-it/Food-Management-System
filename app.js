@@ -213,6 +213,11 @@
     return { match: true, score: 1 };
   }
 
+  /** Field priority for ranking: a match in the name/code (tier 2) outranks a match only in tags, category or supplier (tier 1).
+   * Lower-tier matches are still returned, just lower in the list. Within a tier the usual order applies
+   * (exact phrase 2, words in order 1, words in another order 0.5). */
+  function tierScore(r, tier) { return r && r.match ? { match: true, score: tier * 10 + r.score } : r; }
+
   function searchTextMatches(text, q) {
     return searchWordsMatch(text, q).match;
   }
@@ -3574,7 +3579,7 @@
       var catR = searchWordsMatch(i.cat, q);
       var supR = searchWordsMatch(i.supplier, q);
       var tagsR = searchWordsMatch((i.descriptionTags || []).join(" "), q);
-      var best = [nameR, codeR, altR, catR, supR, tagsR].reduce(function (a, b) { return a.score >= b.score ? a : b; }, { match: false, score: 0 });
+      var best = [tierScore(nameR, 2), tierScore(codeR, 2), tierScore(altR, 2), tierScore(catR, 1), tierScore(supR, 1), tierScore(tagsR, 1)].reduce(function (a, b) { return a.score >= b.score ? a : b; }, { match: false, score: 0 });
       return best;
     }
     var ingMatches = filtered.filter(function (i) { return ingScore(i).match; }).sort(function (a, b) { return ingScore(b).score - ingScore(a).score; });
@@ -3582,7 +3587,7 @@
       var nameR = searchWordsMatch(r.name, q);
       var codeR = searchWordsMatch(r.code, q);
       var tagsR = searchWordsMatch((r.descriptionTags || []).join(" "), q);
-      var best = [nameR, codeR, tagsR].reduce(function (a, b) { return a.score >= b.score ? a : b; }, { match: false, score: 0 });
+      var best = [tierScore(nameR, 2), tierScore(codeR, 2), tierScore(tagsR, 1)].reduce(function (a, b) { return a.score >= b.score ? a : b; }, { match: false, score: 0 });
       return best;
     }
     var recMatches = singleIngRecipes.filter(function (r) { return recScore(r).match; }).sort(function (a, b) { return recScore(b).score - recScore(a).score; });
@@ -5533,7 +5538,7 @@
       var nameR = searchWordsMatch(r.name, q);
       var codeR = searchWordsMatch(r.code, q);
       var tagsR = searchWordsMatch((r.descriptionTags || []).join(" "), q);
-      return [nameR, codeR, tagsR].reduce(function (a, b) { return a.score >= b.score ? a : b; }, { match: false, score: 0 });
+      return [tierScore(nameR, 2), tierScore(codeR, 2), tierScore(tagsR, 1)].reduce(function (a, b) { return a.score >= b.score ? a : b; }, { match: false, score: 0 });
     }
     // Score each recipe once (not once per filter check AND again per sort comparison, which
     // re-ran recipeScore() roughly n*log(n) extra times for every keystroke against up to ~1,100
@@ -5902,8 +5907,8 @@
       return typeFilter === "all" || typeFilter === "sub";
     }
     function ingScore(i) {
-      var arr = [searchWordsMatch(i.name, q), searchWordsMatch(i.code, q), searchWordsMatch((i.descriptionTags || []).join(" "), q), searchWordsMatch(i.cat, q), searchWordsMatch(i.supplier, q)];
-      (i.altCodes || []).forEach(function (c) { arr.push(searchWordsMatch(c, q)); });
+      var arr = [tierScore(searchWordsMatch(i.name, q), 2), tierScore(searchWordsMatch(i.code, q), 2), tierScore(searchWordsMatch((i.descriptionTags || []).join(" "), q), 1), tierScore(searchWordsMatch(i.cat, q), 1), tierScore(searchWordsMatch(i.supplier, q), 1)];
+      (i.altCodes || []).forEach(function (c) { arr.push(tierScore(searchWordsMatch(c, q), 2)); });
       return arr.reduce(function (a, b) { return a.score >= b.score ? a : b; }, { match: false, score: 0 });
     }
     var ingMatches = ingredients.filter(function (i) { return !isDelisted(i.name) && statusMatches(i) && ingKindMatches(i) && ingScore(i).match; }).sort(function (a, b) { return ingScore(b).score - ingScore(a).score; }).slice(0, 6);
@@ -5919,7 +5924,7 @@
       function subScore(rec) {
         var nameR = searchWordsMatch(rec.name, q);
         var codeR = searchWordsMatch(rec.code, q);
-        return nameR.score >= codeR.score ? nameR : codeR;
+        return tierScore(nameR.score >= codeR.score ? nameR : codeR, 2);
       }
       subMatches = recipes.filter(function (rec) {
         if ((rec.recipeType || "finishedProduct") !== "subRecipe" || rec.id === currentRecipeId || isDelisted(rec.name) || !statusMatches(rec)) return false;
