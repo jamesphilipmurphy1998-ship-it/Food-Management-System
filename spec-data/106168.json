@@ -15,9 +15,7 @@
     "protein": 1.1,
     "salt": 13
   },
-  "allergens": [
-    "Cereals containing gluten"
-  ],
+  "allergens": [],
   "packSize": "20 kg",
   "packFormat": "This Product is supplied in 18 litre food grade tamper evident PP tubs.",
   "storageConditions": "Will keep for 6 months if stored unopened under cool and dry conditions.",
@@ -26,5 +24,6 @@
   "errors": [],
   "warnings": [],
   "packSizeValue": 20,
-  "packSizeUnit": "kg"
+  "packSizeUnit": "kg",
+  "allergenNotes": "Barley: Barley Malt Extract in recipe. Gluten level: Barley malt extract. <20ppm gluten. Suitable for coeliacs, as per Regulation (EU) No. 828/ 2014 (supplier spec); gluten not ticked."
 }

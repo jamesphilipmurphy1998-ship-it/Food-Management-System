@@ -17,8 +17,7 @@
     "salt": 0.88
   },
   "allergens": [
-    "Cereals containing gluten",
-    "Soya"
+    "Cereals containing gluten"
   ],
   "packSize": "60gx100pcs",
   "packFormat": "Blue plastic bag",
@@ -26,5 +25,6 @@
   "shelfLife": "18 months / minimum shelf life on delivery: 90 days",
   "ingredientsList": "Pumpkin (flesh and skin) (53%), Breadcrumbs (Wheat Flour, Yeast, Salt, Glucose, Colour (Paprika Extract), Water), Water, Potato Powder, Wheat Flour, Cane Sugar, Salt, Wheat Starch, Thickening Agent (Xanthan Gum)",
   "errors": [],
-  "warnings": []
+  "warnings": [],
+  "allergenNotes": "Soya: Fully Refined Soybean oil -processing aid (not regarded as an allergen in UK and EU) (supplier spec); Soya not ticked."
 }

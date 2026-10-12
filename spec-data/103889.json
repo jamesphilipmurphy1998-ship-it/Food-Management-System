@@ -16,9 +16,7 @@
     "fibre": 0.8,
     "salt": 1.1
   },
-  "allergens": [
-    "Cereals containing gluten"
-  ],
+  "allergens": [],
   "packSize": "500 kg",
   "packFormat": "Pallecon Liner made from LLDPE film in light blue, with a blue DN50 fill gland with cap and a blue LLDPE DN50 butterfly valve with cap",
   "storageConditions": "Ambient",
@@ -27,5 +25,6 @@
   "warnings": [],
   "shelfLife": "6 months (4.5 months minimum on delivery)",
   "packSizeValue": 500,
-  "packSizeUnit": "kg"
+  "packSizeUnit": "kg",
+  "allergenNotes": "Barley: Malt vinegar made from barley. Levels of gluten <20ppm (supplier spec); gluten not ticked."
 }

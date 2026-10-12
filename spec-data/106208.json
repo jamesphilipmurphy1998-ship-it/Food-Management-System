@@ -16,9 +16,7 @@
     "fibre": 0,
     "salt": 0.0175
   },
-  "allergens": [
-    "Sulphur dioxide"
-  ],
+  "allergens": [],
   "packSize": "10 kg",
   "packFormat": "Blue Food Grade Bag",
   "storageConditions": "Chilled ( 1 - 5 C)",
@@ -27,5 +25,6 @@
   "warnings": [],
   "shelfLife": "DOP (Date of Production) + 02 days",
   "packSizeValue": 10,
-  "packSizeUnit": "kg"
+  "packSizeUnit": "kg",
+  "allergenNotes": "Sulphites: spec row = Yes, comment 'Sodium Metabisulphite - Anti-Oxidant'; supplier states the level is below the declarable level and no declaration is needed (confirmed by the user 2026-10-12); Sulphur dioxide not ticked."
 }
