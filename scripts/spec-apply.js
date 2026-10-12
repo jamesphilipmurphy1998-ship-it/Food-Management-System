@@ -24,6 +24,8 @@ const { execSync } = require("child_process");
 
 const API_BASE = process.env.NUTRICOST_API_BASE || "http://192.168.0.50:5001";
 const COOKIE_JAR = process.env.COOKIE_JAR || "/tmp/qa_cookies.txt";
+const specSource = require("./lib/spec-source.js");
+const SPEC_FOLDER = process.env.SPEC_FOLDER || "C:\\Users\\JamesMurphy\\OneDrive - Wasabi\\WASUK - Food Team - NPD\\New Wasabi System Development\\FMS System\\3. Supporting Docs\\Ingredient Specs";
 
 const extractionPath = process.argv[2];
 const apply = process.argv.includes("--apply");
@@ -239,6 +241,16 @@ if (!apply) {
   process.exit(0);
 }
 
+// SPEC SOURCE GUARD (rule 2026-10-12: the spec file name must always be recorded, see SPEC-EXTRACTION.md). Nothing is written
+// unless the extraction names a REAL spec file that exists in the Ingredient Specs folder; "baseline snapshot", Temp copies and
+// paths are refused. --allow-unlisted-source exists only for a file a person has confirmed is legitimately outside the folder.
+const specFileName = extraction.sourceFile ? path.basename(String(extraction.sourceFile).replace(/\\/g, "/")) : "";
+if (!process.argv.includes("--allow-unlisted-source") && (!specSource.isRealSpecFileName(specFileName) || !fs.existsSync(path.join(SPEC_FOLDER, specFileName)))) {
+  console.log(`\nREFUSED (nothing written): the extraction's sourceFile ${JSON.stringify(extraction.sourceFile || null)} is not a real spec file in ${SPEC_FOLDER}.`);
+  console.log("The spec file name must be recorded on every upload. Fix sourceFile in the extraction JSON, or pass --allow-unlisted-source after a person has confirmed the file.");
+  process.exit(1);
+}
+
 const updated = Object.assign({}, matched);
 const intendedNutrition = {};
 nutritionFields.forEach((f) => { if (extraction.nutrition[f] != null) { updated[f] = extraction.nutrition[f]; intendedNutrition[f] = extraction.nutrition[f]; } });
@@ -292,12 +304,10 @@ if (mismatches.length === 0) {
   // change happened. The comment attaches to whatever version the PUT's snapshot diff produced
   // (see backend Program.cs's single-item PUT endpoint) -- if the fields didn't actually change,
   // no new version was created and this comment call is a harmless no-op against the prior one.
-  const sourceBaseName = extraction.sourceFile ? extraction.sourceFile.split(/[\\/]/).pop() : "unknown spec file";
-  const commentBody = { comment: `Spec upload: ${sourceBaseName}` };
-  const commentTmp = extractionPath + ".comment-body.json";
-  fs.writeFileSync(commentTmp, JSON.stringify(commentBody));
-  execSync(`curl -s -b "${COOKIE_JAR}" -X POST "${API_BASE}/api/ingredients/${matched.id}/latest-version-comment" -H "content-type: application/json" --data @"${commentTmp}"`);
-  fs.unlinkSync(commentTmp);
+  // (2026-10-12) The old code posted this comment without checking it, overwrote the previous version's comment when no new
+  // version was created, and never verified it. ensureSpecSourceOrExit adds the file name without overwriting anything,
+  // re-reads the versions to verify it, and fails loudly (non-zero exit) if it is not there.
+  specSource.ensureSpecSourceOrExit({ apiBase: API_BASE, cookieJar: COOKIE_JAR, id: matched.id, code: matched.code, specFile: specFileName, label: "Spec upload" });
 
   // Archive the extracted data (not the source spec file) keyed by code, so that if the DB is
   // ever wiped and reimported from a new cost/code feed, this already-human-confirmed data can

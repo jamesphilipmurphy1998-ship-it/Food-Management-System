@@ -7,6 +7,7 @@ const { execSync } = require("child_process");
 
 const API_BASE = "http://192.168.0.50:5001";
 const COOKIE_JAR = process.env.COOKIE_JAR || "/tmp/qa_cookies.txt";
+const specSource = require("./lib/spec-source.js");
 
 function curlGet(url) {
   const out = execSync(`curl -s -b "${COOKIE_JAR}" "${url}"`, { maxBuffer: 50 * 1024 * 1024 });
@@ -54,6 +55,9 @@ for (const item of plan) {
   }
   okCount++;
   console.log(`OK ${item.code}: packSize ${JSON.stringify(item.old_packSize)} -> ${JSON.stringify(item.new_packSize)}`);
+  // (2026-10-12) a new version without the spec file name hid the Source line; carry the last recorded spec file forward and verify.
+  const srcRes = specSource.ensureSpecSourceOrExit({ apiBase: API_BASE, cookieJar: COOKIE_JAR, id: matched.id, code: item.code });
+  if (!srcRes.ok) failures.push({ code: item.code, reason: "spec source not recorded: " + srcRes.reason });
 }
 
 console.log(`\n${okCount} succeeded, ${failCount} failed/skipped.`);

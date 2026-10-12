@@ -14,6 +14,7 @@ const { execSync } = require("child_process");
 
 const API_BASE = process.env.NUTRICOST_API_BASE || "http://192.168.0.50:5001";
 const COOKIE_JAR = process.env.COOKIE_JAR || "/tmp/qa_cookies.txt";
+const specSource = require("./lib/spec-source.js");
 const apply = process.argv.includes("--apply");
 
 function curlGet(url) {
@@ -57,7 +58,12 @@ let ok = 0; const failed = [];
 for (const p of plan) {
   const live = before.find((i) => i.id === p.id);
   const status = curlPut(`${API_BASE}/api/ingredients/${p.id}`, { ...live, packSizeValue: p.value, packSizeUnit: p.unit });
-  if (status === "200") ok++; else failed.push({ code: p.code, status });
+  if (status === "200") {
+    ok++;
+    // (2026-10-12) carry the last recorded spec file name forward onto any new version and verify it.
+    const srcRes = specSource.ensureSpecSourceOrExit({ apiBase: API_BASE, cookieJar: COOKIE_JAR, id: p.id, code: p.code });
+    if (!srcRes.ok) failed.push({ code: p.code, status: "spec source not recorded: " + srcRes.reason });
+  } else failed.push({ code: p.code, status });
 }
 console.log(`written: ${ok} | failed: ${failed.length} ${failed.length ? JSON.stringify(failed) : ""}`);
 

@@ -15,6 +15,7 @@ const { execSync } = require("child_process");
 
 const API_BASE = process.env.NUTRICOST_API_BASE || "http://192.168.0.50:5001";
 const COOKIE_JAR = process.env.COOKIE_JAR || "/tmp/qa_cookies.txt";
+const specSource = require("./lib/spec-source.js");
 const planPath = process.argv[2];
 const apply = process.argv.includes("--apply");
 if (!planPath) { console.log("usage: node scripts/field-fix-apply.js <plan.json> [--apply]"); process.exit(1); }
@@ -52,7 +53,13 @@ for (const { item, live } of targets) {
   const status = curlPut(`${API_BASE}/api/ingredients/${live.id}`, updated);
   console.log(`\nPUT ${item.code}: status ${status}`);
   if (status !== "200") { console.log("Write did not return 200 -- treat as failed."); process.exit(1); }
-  if (item.comment) curlPostJson(`${API_BASE}/api/ingredients/${live.id}/latest-version-comment`, { comment: item.comment });
+  // (2026-10-12) The "why" note used to OVERWRITE the latest version's comment (and the spec file name with it). It is now added
+  // without overwriting, then the last recorded spec file name is carried forward and verified.
+  if (item.comment) {
+    const noteRes = specSource.appendNote({ apiBase: API_BASE, cookieJar: COOKIE_JAR, id: live.id, note: item.comment });
+    if (!noteRes.ok) { console.log(`  NOTE NOT RECORDED for ${item.code}: ${noteRes.reason}`); process.exitCode = 1; }
+  }
+  specSource.ensureSpecSourceOrExit({ apiBase: API_BASE, cookieJar: COOKIE_JAR, id: live.id, code: item.code });
 }
 
 console.log("\n--- Verification (fresh re-fetch) ---");

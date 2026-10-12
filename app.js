@@ -563,7 +563,7 @@
     if (name === "export-templates") loadExcelSavesIntoCache(function () { renderExportTemplates(); });
     if (name === "recipes") window.renderRecipesList();
     if (name === "project-recipes") window.renderProjectRecipesList();
-    if (name === "additive-policy") window.renderAdditivePolicyPage();
+    if (name === "additive-policy") { window.renderAdditivePolicyPage(); loadAdditivePolicy(); }
     if (name === "comparisons") filterComparisonSearch();
     if (name === "comparison-saves") {
       loadComparisonSaves(renderComparisonSaves);
@@ -2858,10 +2858,18 @@
   async function loadAdditivePolicy() {
     try {
       var r = await fetch(window.location.origin + "/api/additives", { credentials: "same-origin" });
-      additivePolicyRows = r.ok ? await r.json() : [];
-    } catch (e) { additivePolicyRows = []; }
+      // A failed load keeps whatever list the page already has instead of blanking it.
+      if (r.ok) additivePolicyRows = await r.json();
+    } catch (e) { /* keep the current list */ }
     buildAdditiveMatchers(additivePolicyRows);
+    // The page can reopen on the Additive Policy / a recipe before this load finishes (restored
+    // after a refresh), so redraw everything that depends on the list once it has arrived.
     renderAdditiveFlags();
+    renderAdditivePolicyPage();
+    try {
+      var cur = currentRecipeId ? Recipes.getRecipes().find(function (rec) { return rec.id === currentRecipeId; }) : null;
+      if (cur) renderAdditives(cur);
+    } catch (e) { /* recipe screen not ready */ }
   }
 
   function renderAdditivePolicyPage() {
@@ -3110,10 +3118,20 @@
     }
   }
 
+  // The most recent version that carries a comment (the spec file name). A later save with no
+  // comment (pack-size scripts, a manual edit) must not hide it, so this looks back through the
+  // history; when the comment is not on the newest version it is labelled with its version number.
   function latestIngredientVersionComment() {
     if (!ingredientVersionsCache || ingredientVersionsCache.length === 0) return null;
-    var latest = ingredientVersionsCache.reduce(function (m, v) { return v.versionNumber > m.versionNumber ? v : m; });
-    return latest.comment || null;
+    var sorted = ingredientVersionsCache.slice().sort(function (a, b) { return b.versionNumber - a.versionNumber; });
+    var newest = sorted[0].versionNumber;
+    // Prefer the most recent comment that NAMES A SPEC FILE (.xlsx / .xls): a later note such as
+    // "Weight per each set from Pack Size" must not push the spec name off the Source line. Only when
+    // no version names a spec file does it fall back to the most recent comment of any kind.
+    var withComment = sorted.find(function (v) { return v.comment && /\.xlsx?\b/i.test(String(v.comment)); }) ||
+      sorted.find(function (v) { return v.comment && String(v.comment).trim(); });
+    if (!withComment) return null;
+    return withComment.versionNumber === newest ? withComment.comment : "(v" + withComment.versionNumber + ") " + withComment.comment;
   }
 
   function selectIngredientVersion(value) {
@@ -7341,6 +7359,13 @@
     return present;
   }
 
+  window.openAllergenMatrixItem = function (kind, id) {
+    if (kind === "ing") { editIngredient(id); return; }
+    openRecipe(id);
+    if (currentRecipeId === id) switchRecipeTab("allergens");
+    else recipeLeavePendingAction = function () { openRecipe(id); switchRecipeTab("allergens"); };
+  };
+
   function renderAllergens(recipe) {
     var ingredients = Ingredients.getIngredients();
     var recipes = Recipes.getRecipes();
@@ -7370,7 +7395,16 @@
         itemAllergens = ing.allergens || [];
       }
       var ingBadge = getRecipeLineBadge(ri, ingredients, recipes);
-      html += "<tr><td style=\"font-size:12px\">" + ingBadge + name + "</td>";
+      // Clicking a row opens that item: a base ingredient (or single-ingredient wrapper) opens the
+      // ingredient window, a real sub-recipe opens its own recipe on the Allergens tab.
+      var target = ing ? { kind: "ing", id: ing.id } : null;
+      if (!target && ri.subRecipeId) {
+        var tsub = recipes.find(function (r) { return r.id === ri.subRecipeId; });
+        if (tsub && isSingleIngredientRecipe(tsub)) target = { kind: "ing", id: tsub.ingredients[0].ingredientId };
+        else if (tsub) target = { kind: "rec", id: tsub.id };
+      }
+      var rowAttrs = target ? " class=\"row-clickable\" style=\"cursor:pointer\" title=\"Open " + escapeHtml(name).replace(/\"/g, "&quot;") + "\" onclick=\"openAllergenMatrixItem('" + target.kind + "','" + String(target.id).replace(/'/g, "\\'") + "')\"" : "";
+      html += "<tr" + rowAttrs + "><td style=\"font-size:12px\">" + ingBadge + name + "</td>";
       Data.EU_ALLERGENS.forEach(function (a) {
         var has = itemAllergens.indexOf(a) !== -1;
         html += '<td style="text-align:center;font-size:14px">' + (has ? '<span style="color:var(--nc-red)">●</span>' : '<span style="color:var(--nc-gray-200)">○</span>') + "</td>";

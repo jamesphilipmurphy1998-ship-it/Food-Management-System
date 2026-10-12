@@ -23,6 +23,7 @@ const { execSync } = require("child_process");
 
 const API_BASE = process.env.NUTRICOST_API_BASE || "http://192.168.0.50:5001";
 const COOKIE_JAR = process.env.COOKIE_JAR || "/tmp/qa_cookies.txt";
+const specSource = require("./lib/spec-source.js");
 const SPEC_DATA_DIR = path.join(__dirname, "..", "spec-data");
 const apply = process.argv.includes("--apply");
 
@@ -124,16 +125,17 @@ archiveFiles.forEach((file) => {
   results.applied++;
 
   // Record why, same as spec-apply.js -- auto-filled, never typed by hand.
-  const sourceBaseName = archive.sourceFile ? archive.sourceFile.split(/[\\/]/).pop() : "unknown spec file";
-  const commentBody = { comment: `Reapplied from spec-data archive: ${sourceBaseName}` };
-  const commentTmp = path.join(SPEC_DATA_DIR, `.${archive.code}.comment-body.json`);
-  fs.writeFileSync(commentTmp, JSON.stringify(commentBody));
-  execSync(`curl -s -b "${COOKIE_JAR}" -X POST "${API_BASE}/api/ingredients/${matched.id}/latest-version-comment" -H "content-type: application/json" --data @"${commentTmp}"`);
-  fs.unlinkSync(commentTmp);
+  // (2026-10-12) Same fix as spec-apply.js: the file name is added without overwriting, verified by re-reading, and a failure is
+  // loud (non-zero exit). When the archive's sourceFile is not a real file name (e.g. "baseline snapshot"), the last spec file
+  // already recorded on an earlier version is carried forward; if there is none, this reports SOURCE NOT RECORDED.
+  const archiveFileName = archive.sourceFile ? path.basename(String(archive.sourceFile).replace(/\\/g, "/")) : "";
+  const reapplySrc = specSource.ensureSpecSourceOrExit({ apiBase: API_BASE, cookieJar: COOKIE_JAR, id: matched.id, code: archive.code, specFile: archiveFileName, label: "Reapplied from spec-data archive" });
+  if (!reapplySrc.ok) results.sourceMissing = (results.sourceMissing || 0) + 1;
 });
 
 console.log(`\n--- Summary ---`);
 console.log(`Archives: ${archiveFiles.length}, matched by code: ${results.matched}, already up to date: ${results.unchanged}, ${apply ? "applied" : "would apply"}: ${apply ? results.applied : (results.matched - results.unchanged)}, failed writes: ${results.failed}`);
+if (results.sourceMissing) console.log(`SOURCE NOT RECORDED on ${results.sourceMissing} ingredient(s) -- see the lines above; the exit code is non-zero.`);
 if (results.unmatched.length > 0) {
   console.log(`\nUNMATCHED (${results.unmatched.length}) -- no live ingredient has this code, needs manual review:`);
   results.unmatched.forEach((u) => console.log(`  ${u.code}  ${u.name}  (${u.file})`));
