@@ -21,6 +21,8 @@ const apply = process.argv.includes("--apply");
 if (!planPath) { console.log("usage: node scripts/field-fix-apply.js <plan.json> [--apply]"); process.exit(1); }
 const plan = JSON.parse(fs.readFileSync(planPath, "utf8"));
 
+// Same value, for single values AND lists (the allergen ticks): compared as JSON, so [] equals [] and order matters.
+function sameValue(x, y) { return JSON.stringify(x) === JSON.stringify(y); }
 function curlGet(url) { return JSON.parse(execSync(`curl -s -b "${COOKIE_JAR}" "${url}"`, { maxBuffer: 50 * 1024 * 1024 }).toString()); }
 function curlPut(url, body) {
   const tmp = "field-fix.put-body.json"; fs.writeFileSync(tmp, JSON.stringify(body));
@@ -39,7 +41,7 @@ for (const item of plan) {
   const live = before.find((i) => (i.code || "").trim().toUpperCase() === item.code.trim().toUpperCase());
   if (!live) { console.log(`REFUSED ${item.code}: no live ingredient with that code`); process.exit(1); }
   for (const [f, c] of Object.entries(item.changes)) {
-    if (live[f] !== c.old) { console.log(`REFUSED ${item.code}: live ${f} is ${JSON.stringify(live[f])}, plan expected ${JSON.stringify(c.old)} -- it changed since the plan was made`); process.exit(1); }
+    if (!sameValue(live[f], c.old)) { console.log(`REFUSED ${item.code}: live ${f} is ${JSON.stringify(live[f])}, plan expected ${JSON.stringify(c.old)} -- it changed since the plan was made`); process.exit(1); }
   }
   targets.push({ item, live });
   console.log(`${item.code} "${live.name}":`);
@@ -69,7 +71,7 @@ let bad = 0;
 for (const { item, live } of targets) {
   const a = after.find((i) => i.id === live.id);
   for (const [f, c] of Object.entries(item.changes)) {
-    if (a[f] !== c.new) { bad++; console.log(`  MISMATCH ${item.code} ${f}: live ${JSON.stringify(a[f])}, intended ${JSON.stringify(c.new)}`); }
+    if (!sameValue(a[f], c.new)) { bad++; console.log(`  MISMATCH ${item.code} ${f}: live ${JSON.stringify(a[f])}, intended ${JSON.stringify(c.new)}`); }
   }
   const changedOther = Object.keys(live).filter((k) => k !== "updatedAt" && !(k in item.changes) && JSON.stringify(a[k]) !== JSON.stringify(live[k]));
   if (changedOther.length) { bad++; console.log(`  ${item.code}: UNINTENDED change in ${changedOther.join(", ")}`); }
