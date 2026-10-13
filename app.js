@@ -6184,8 +6184,9 @@
       (i.altCodes || []).forEach(function (c) { arr.push(tierScore(searchWordsMatch(c, q), 2)); });
       return arr.reduce(function (a, b) { return a.score >= b.score ? a : b; }, { match: false, score: 0 });
     }
-    var ingMatches = ingredients.filter(function (i) { return !isDelisted(i.name) && statusMatches(i) && ingKindMatches(i) && ingScore(i).match; }).sort(function (a, b) { return ingScore(b).score - ingScore(a).score; }).slice(0, 6);
-    var subMatches = [];
+    var ingAll = ingredients.filter(function (i) { return !isDelisted(i.name) && statusMatches(i) && ingKindMatches(i) && ingScore(i).match; }).sort(function (a, b) { return ingScore(b).score - ingScore(a).score; });  // no small cap: the box shows 6 rows and scrolls through every match (ceiling below only protects very short searches)
+    var SEARCH_CEILING = 150, ingMatches = ingAll.slice(0, SEARCH_CEILING);
+    var subMatches = [], subAll = [];
     var subScoreById = {};
     if (r && subKindMatches()) {
       // Sub-recipes must be addable to ANY recipe, not just "finished products" — nesting a
@@ -6199,10 +6200,11 @@
         var codeR = searchWordsMatch(rec.code, q);
         return tierScore(nameR.score >= codeR.score ? nameR : codeR, 2);
       }
-      subMatches = recipes.filter(function (rec) {
+      subAll = recipes.filter(function (rec) {
         if ((rec.recipeType || "finishedProduct") !== "subRecipe" || rec.id === currentRecipeId || isDelisted(rec.name) || !statusMatches(rec)) return false;
         return subScore(rec).match;
-      }).sort(function (a, b) { return subScore(b).score - subScore(a).score; }).slice(0, 4);
+      }).sort(function (a, b) { return subScore(b).score - subScore(a).score; });
+      subMatches = subAll.slice(0, SEARCH_CEILING);
       subMatches.forEach(function (rec) { subScoreById[rec.id] = subScore(rec).score; });
     }
     var allMatches = ingMatches.length + subMatches.length;
@@ -6249,6 +6251,7 @@
     ingHtmlList.forEach(function (h, idx) { ddRows.push({ s: ingScore(ingMatches[idx]).score, h: h }); });
     ddRows.sort(function (a, b) { return b.s - a.s; });
     var html = ddRows.map(function (x) { return x.h; }).join("");
+    if (ingAll.length > SEARCH_CEILING || subAll.length > SEARCH_CEILING) html += "<div style=\"padding:8px 12px;color:var(--nc-gray-400);font-size:12px\">Showing the first " + SEARCH_CEILING + " of each kind - type more letters to narrow the list</div>";
     dd.innerHTML = html;
     dd.classList.add("open");
   }
@@ -6393,6 +6396,109 @@
     renderRecipeIngredients();
     recalcCurrentRecipe();
   }
+
+  /** Batch Size: DISPLAY ONLY. Qty stays the recipe; this just shows each line scaled to a typed batch weight (g). Not saved. */
+  var batchSizeTargets = {};
+  function scaleRecipeToBatch(val) {
+    var target = parseFloat(val);
+    if (target > 0) batchSizeTargets[currentRecipeId] = target; else delete batchSizeTargets[currentRecipeId];
+    renderRecipeIngredients();
+  }
+  window.scaleRecipeToBatch = scaleRecipeToBatch;
+  /** Download the Ingredients table exactly as shown (read from the rendered table) as an .xlsx file. Read-only: changes nothing. */
+  // SheetJS community edition cannot write cell styles, so the styled fork is loaded on demand just for this export (and the global XLSX is put back).
+  function loadStyledXlsx() {
+    return new Promise(function (resolve) {
+      if (window.XLSX && window.XLSX.__styled) return resolve(window.XLSX);
+      var prev = window.XLSX, sc = document.createElement("script");
+      sc.src = "https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js";
+      sc.onload = function () { var st = window.XLSX; if (st) st.__styled = true; window.XLSX = prev; resolve(st || null); };
+      sc.onerror = function () { window.XLSX = prev; resolve(null); };
+      document.head.appendChild(sc);
+    });
+  }
+
+  function downloadRecipeIngredientsExcel() {
+    loadStyledXlsx().then(function (styled) { buildRecipeIngredientsExcel(styled); });
+  }
+
+  function buildRecipeIngredientsExcel(styled) {
+    var X = styled || XLSX;
+    var r = Recipes.getRecipes().find(function (rec) { return rec.id === currentRecipeId; });
+    var table = document.getElementById("recipe-ingredients-table");
+    if (!r || !table || typeof X === "undefined") { alert("Excel export is not available right now."); return; }
+    var num = function (t) { var m = String(t).replace(/,/g, "").match(/-?\d+(\.\d+)?/); return m ? parseFloat(m[0]) : ""; };
+    // Visible columns A-J are exactly the on-screen table's columns (units are shown through number formats so cells stay numeric).
+    // Column K "Weight (g)" is a HIDDEN helper holding the real line weights; Batch Size and % Recipe are formulas off it and the
+    // batch-size input cell B4, so typing a new batch in B4 rescales every line in Excel.
+    var head = ["Code", "Ingredient", "Qty", "QTY per BUOM", "Batch Size", "% Recipe", "Scrap %", "Cost per UOM (£)", "Line Cost", "FVN", "Weight (g)"];
+    var FIRST = 7; // first ingredient row (1-based): rows 1-4 header block, row 5 blank, row 6 column headings
+    var lines = [], totalRow = null;
+    Array.prototype.forEach.call(table.querySelectorAll("tbody tr"), function (tr) {
+      var td = tr.children;
+      if (tr.classList.contains("recipe-totals-row")) {
+        totalRow = { qty: num(td[1].textContent), unit: /EACH/i.test(td[1].textContent) ? "EACH" : "g", costPer: num(td[6].textContent.split("/")[0]), lineCost: num(td[7].textContent.split("/")[0]) };
+        return;
+      }
+      if (td.length < 9) return;
+      var nm = td[1].cloneNode(true); Array.prototype.forEach.call(nm.querySelectorAll("span"), function (s) { s.remove(); });
+      var qi = td[2].querySelector("input"), qs = td[2].querySelector("select");
+      var buom = td[3].textContent.trim().split(/\s+/);
+      var si = td[6].querySelector("input");
+      var wg = parseFloat(td[4].getAttribute("data-g"));
+      lines.push({
+        code: td[0].textContent.trim(), name: nm.textContent.trim(),
+        qty: qi ? parseFloat(qi.value) : num(td[2].textContent),
+        unit: qs ? qs.value : td[2].textContent.trim().split(/\s+/).pop(),
+        buomQty: num(buom[0]), buom: buom[1] || "", weight: isNaN(wg) ? "" : wg,
+        scrap: si ? parseFloat(si.value) || 0 : num(td[6].textContent),
+        cost: num(td[7].textContent.split("/")[0]), lineCost: num(td[8].textContent.split("/")[0])
+      });
+    });
+    var sumW = lines.reduce(function (s, l) { return s + (l.weight === "" ? 0 : l.weight); }, 0);
+    var batch = batchSizeTargets[r.id] > 0 ? batchSizeTargets[r.id] : Data.round(sumW);
+    var aoa = [["Recipe", r.name || ""], ["Code", r.code || ""], ["Status", r.approved ? "Approved" : "In development"], ["Batch size (g)", batch, "<- type a batch weight here: Batch Size and % Recipe recalculate"], [], head];
+    lines.forEach(function (l) { aoa.push([l.code, l.name, l.qty, l.buomQty, "", "", l.scrap, l.cost, l.lineCost, "", l.weight]); });
+    var LAST = FIRST + lines.length - 1, TOT = LAST + 1;
+    aoa.push(["Total", "", totalRow ? totalRow.qty : "", "", "", "", "", totalRow ? totalRow.costPer : "", totalRow ? totalRow.lineCost : "", "", ""]);
+    var ws = X.utils.aoa_to_sheet(aoa);
+    var wRange = "K$" + FIRST + ":K$" + LAST;
+    var fmt = function (cell, f) { if (cell) cell.z = f; };
+    lines.forEach(function (l, i) {
+      var row = FIRST + i;
+      fmt(ws["C" + row], "General\" " + String(l.unit).replace(/"/g, "") + "\"");
+      fmt(ws["D" + row], "0.000\" " + String(l.buom).replace(/"/g, "") + "\"");
+      if (l.weight === "") return; // no gram weight (e.g. EACH with no unit weight): no batch figure, as on screen
+      ws["E" + row] = { t: "n", f: "IF(SUM(" + wRange + ")=0,0,K" + row + "/SUM(" + wRange + ")*$B$4)", v: sumW > 0 ? l.weight / sumW * batch : 0, z: "0.0\"g\"" };
+      ws["F" + row] = { t: "n", f: "IF(SUM(" + wRange + ")=0,0,K" + row + "/SUM(" + wRange + ")*100)", v: sumW > 0 ? l.weight / sumW * 100 : 0, z: "0.0\"%\"" };
+    });
+    ws["E" + TOT] = { t: "n", f: "SUM(E" + FIRST + ":E" + LAST + ")", v: sumW > 0 ? batch : 0, z: "0.0\"g\"" };
+    ws["F" + TOT] = { t: "n", f: "SUM(F" + FIRST + ":F" + LAST + ")", v: sumW > 0 ? 100 : 0, z: "0.0\"%\"" };
+    ws["K" + TOT] = { t: "n", f: "SUM(K" + FIRST + ":K" + LAST + ")", v: sumW };
+    if (ws["C" + TOT]) fmt(ws["C" + TOT], "General\" " + (totalRow ? totalRow.unit : "g") + "\"");
+    if (styled) {
+      var thin = { style: "thin", color: { rgb: "000000" } }, med = { style: "medium", color: { rgb: "000000" } };
+      var box = { top: thin, bottom: thin, left: thin, right: thin };
+      var put = function (addr, st) { if (!ws[addr]) ws[addr] = { t: "s", v: "" }; ws[addr].s = st; };
+      for (var rr = 1; rr <= 4; rr++) ["A", "B"].forEach(function (c) { put(c + rr, { border: box, alignment: { vertical: "center" } }); });
+      ws["B1"].s = { font: { bold: true }, border: box };
+      put("B4", { fill: { patternType: "solid", fgColor: { rgb: "C4D79B" } }, border: { top: med, bottom: med, left: med, right: med }, alignment: { horizontal: "center" } });
+      "ABCDEFGHI".split("").forEach(function (c) {
+        put(c + "6", { fill: { patternType: "solid", fgColor: { rgb: "92D050" } }, border: box });
+        for (var r2 = FIRST; r2 <= TOT; r2++) {
+          var st = { border: box };
+          if (c === "A" || c === "B" || c === "C" || c === "D") st.alignment = { horizontal: "center" };
+          put(c + r2, Object.assign({}, ws[c + r2] && ws[c + r2].s || {}, st));
+        }
+      });
+    }
+    ws["!cols"] = [{ wch: 20 }, { wch: 34 }, { wch: 12 }, { wch: 16 }, { wch: 13 }, { wch: 10 }, { wch: 9 }, { wch: 15 }, { wch: 12 }, { wch: 7 }, { wch: 11, hidden: true }];
+    var wb = X.utils.book_new();
+    X.utils.book_append_sheet(wb, ws, "Ingredients");
+    var safe = function (s) { return String(s || "").replace(/[^A-Za-z0-9 _-]+/g, "").trim().replace(/\s+/g, "_"); };
+    X.writeFile(wb, (safe(r.code) ? safe(r.code) + "_" : "") + (safe(r.name) || "recipe") + "_ingredients.xlsx");
+  }
+  window.downloadRecipeIngredientsExcel = downloadRecipeIngredientsExcel;
 
   function updateSubRecipeQty(subRecipeId, val) {
     var recipes = Recipes.getRecipes();
@@ -6563,6 +6669,8 @@
     empty.style.display = "none";
     var totalCost = 0;
     var totalTallyCost = 0;
+    var batchTarget = batchSizeTargets[r.id];
+    var batchFactor = (batchTarget > 0 && totalW > 0) ? batchTarget / totalW : 1;
     var rowsHtml = r.ingredients.map(function (ri) {
       var lineUom = ri.uom || "G";
       var uomSel = (Data.UOM_OPTIONS || ["G", "KG", "L", "ML", "M", "EACH"]).map(function (u) { return '<option value="' + u + '"' + (lineUom === u ? " selected" : "") + ">" + u + "</option>"; }).join("");
@@ -6617,6 +6725,7 @@
             ? "<span style=\"font-family:var(--nc-mono);font-size:12px\">" + ri.qty + " " + lineUom + "</span>"
             : "<div style=\"display:flex;gap:4px;align-items:center\"><input class=\"form-input\" type=\"number\" value=\"" + ri.qty + "\" min=\"0\" step=\"any\" style=\"width:70px;padding:4px 8px\" onchange=\"updateSubRecipeQty('" + ri.subRecipeId.replace(/'/g, "\\'") + "', this.value)\" oncontextmenu=\"" + rowCtx + "\"><select class=\"form-select\" style=\"width:56px;padding:4px 4px;font-size:11px\" onchange=\"updateSubRecipeUom('" + ri.subRecipeId.replace(/'/g, "\\'") + "', this.value)\" oncontextmenu=\"" + rowCtx + "\">" + uomSel + "</select></div>") + "</td>" +
           "<td oncontextmenu=\"" + rowCtx + "\" class=\"num\" style=\"font-family:var(--nc-mono);font-size:12px\">" + (qtyPerBuom > 0 ? qtyPerBuom.toFixed(3) + " " + subRecipeUom : "0") + (lineUom === "EACH" && qtyGForPct > 0 ? "<br><span style=\"color:var(--nc-gray-400);font-size:11px\">(" + Data.round(qtyGForPct) + "g)</span>" : "") + "</td>" +
+        "<td oncontextmenu=\"" + rowCtx + "\" class=\"num\" data-g=\"" + qtyGForPct + "\" style=\"font-family:var(--nc-mono);font-size:12px\">" + (qtyGForPct > 0 ? Data.round(qtyGForPct * batchFactor) + "g" : "<span style=\"color:var(--nc-gray-300)\">—</span>") + "</td>" +
           "<td oncontextmenu=\"" + rowCtx + "\" class=\"num\">" + pct + "%</td>" +
           "<td onclick=\"event.stopPropagation()\" oncontextmenu=\"" + rowCtx + "\" class=\"num\">" + (locked
             ? "<span style=\"font-family:var(--nc-mono);font-size:12px\">" + lineScrapPct + "%</span>"
@@ -6652,6 +6761,7 @@
           ? "<span style=\"font-family:var(--nc-mono);font-size:12px\">" + ri.qty + " " + lineUom + "</span>"
           : "<div style=\"display:flex;gap:4px;align-items:center\"><input class=\"form-input\" type=\"number\" value=\"" + ri.qty + "\" min=\"0\" step=\"any\" style=\"width:70px;padding:4px 8px\" onchange=\"updateIngredientQty('" + ri.ingredientId + "', this.value)\" oncontextmenu=\"" + ingCtx + "\"><select class=\"form-select\" style=\"width:56px;padding:4px 4px;font-size:11px\" onchange=\"updateIngredientUom('" + ri.ingredientId + "', this.value)\" oncontextmenu=\"" + ingCtx + "\">" + uomSel + "</select></div>") + "</td>" +
         "<td oncontextmenu=\"" + ingCtx + "\" class=\"num\" style=\"font-family:var(--nc-mono);font-size:12px\">" + (qtyPerBuom > 0 ? qtyPerBuom.toFixed(3) + " " + costUOM : "0") + (lineUom === "EACH" && qtyGForPct > 0 ? "<br><span style=\"color:var(--nc-gray-400);font-size:11px\">(" + Data.round(qtyGForPct) + "g)</span>" : "") + "</td>" +
+        "<td oncontextmenu=\"" + ingCtx + "\" class=\"num\" data-g=\"" + qtyGForPct + "\" style=\"font-family:var(--nc-mono);font-size:12px\">" + (qtyGForPct > 0 ? Data.round(qtyGForPct * batchFactor) + "g" : "<span style=\"color:var(--nc-gray-300)\">—</span>") + "</td>" +
         "<td oncontextmenu=\"" + ingCtx + "\" class=\"num\">" + pct + "%</td>" +
         "<td onclick=\"event.stopPropagation()\" oncontextmenu=\"" + ingCtx + "\" class=\"num\">" + (locked
           ? "<span style=\"font-family:var(--nc-mono);font-size:12px\">" + lineScrapPct + "%</span>"
@@ -6677,6 +6787,7 @@
       "<td colspan=\"2\">Total</td>" +
       "<td class=\"num\" style=\"font-family:var(--nc-mono)\">" + totalDisplay + "</td>" +
       "<td class=\"num\" style=\"font-family:var(--nc-mono);font-size:12px;color:var(--nc-gray-600)\" title=\"Total recipe weight\">" + totalWeightCellText + "</td>" +
+      "<td class=\"num\" onclick=\"event.stopPropagation()\">" + (totalW > 0 ? "<input type=\"number\" class=\"form-input\" min=\"0\" step=\"any\" value=\"" + Data.round(totalW * batchFactor) + "\" style=\"width:80px;padding:4px 6px\" title=\"Type a batch weight (g) to see each line scaled to it. Display only: the Qty column and the recipe are not changed.\" onchange=\"scaleRecipeToBatch(this.value)\">g" : "") + "</td>" +
       "<td class=\"num\">100%</td>" +
       "<td></td>" +
       "<td class=\"num\" style=\"font-family:var(--nc-mono);font-size:12px\">£" + totalCostPerUom.toFixed(3) +

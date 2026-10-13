@@ -1125,6 +1125,8 @@ body.login-page-active .main-area #view-login .card {
   display: none;
 }
 .ingredient-dropdown.open { display: block; }
+/* recipe ingredient search: exactly 6 rows (37px each) visible, scroll for the rest */
+#recipe-ing-dropdown { max-height: 224px; overflow-y: auto; }
 .ingredient-dropdown-item {
   padding: 8px 12px;
   font-size: 13px;

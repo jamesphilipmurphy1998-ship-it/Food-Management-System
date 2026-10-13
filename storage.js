@@ -278,6 +278,15 @@ window.NutriCalcStorage = (function () {
         if (!ing) return ri;
         var costUom = (ing.costUOM || ing.costUom || ing.CostUom || ing.CostUOM || "").toString().trim().toUpperCase();
         if (!costUom) return ri;
+        // Same rule as app.js when a recipe is opened: a line whose unit can be CONVERTED to the cost unit (weight/volume
+        // against weight/volume, e.g. 5 G for a KG-costed item) keeps its own unit and number: the cost and weight maths convert it.
+        // Relabelling it here without converting turned 5 G into 5 KG (1000x) and the next save wrote that to the database.
+        // Only a line with no unit, or one that cannot convert (e.g. grams for an EACH or metre item), is forced as before.
+        var lineUom = (ri.uom || "").toString().trim().toUpperCase();
+        function uomFam(u) { return (u === "L" || u === "ML") ? "volume" : u === "EACH" ? "each" : u === "M" ? "m" : "weight"; }
+        var lf = uomFam(lineUom), cf = uomFam(costUom);
+        var convertible = lf === cf || (lf !== "each" && lf !== "m" && cf !== "each" && cf !== "m");
+        if (lineUom && convertible) return ri;
         return { ...ri, uom: costUom };
       });
       return { ...r, ingredients: lines };
