@@ -1,0 +1,30 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/102037 Salt - Wasabi RM Spec Branches V1 29.04.2021.xlsx",
+  "appliedAt": "2026-10-14T12:00:57.418Z",
+  "name": "RM Salt Tub",
+  "code": "107346",
+  "altCode": null,
+  "nutrition": {
+    "kj": 0,
+    "kcal": 0,
+    "fat": 0,
+    "sat": 0,
+    "carb": 0,
+    "sugar": 0,
+    "protein": 0,
+    "salt": 99.9
+  },
+  "allergens": [],
+  "packSize": "6 kg",
+  "packSizeValue": 6,
+  "packSizeUnit": "kg",
+  "packFormat": null,
+  "storageConditions": "store in a cool dry place",
+  "shelfLife": null,
+  "ingredientsList": "salt, anti-caking agent: Sodium Ferrocyanide",
+  "allergenNotes": null,
+  "unitWeightG": null,
+  "errors": [],
+  "warnings": []
+}

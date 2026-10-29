@@ -5769,7 +5769,9 @@
     Recipes.saveRecipe(dup);
     closeModal("modal-duplicate-recipe");
     renderAll();
-    openRecipe(dup.id);
+    // isBack=true: opening the copy must not push the original onto the Back stack (Back would land on the original
+    // recipe, showing its old quantities); Back returns to the page the original was opened from.
+    openRecipe(dup.id, null, true);
     showToast("Recipe duplicated");
   }
 
@@ -6782,6 +6784,8 @@
     // built — this is what belongs under Line Cost, distinct from totalCostPerUom above (cost
     // per 1 unit of the recipe's own UOM, which only equals the line-cost sum when the recipe's
     // total output happens to be exactly 1 of that unit).
+    var recCode = (r.code || "").toString().trim().toUpperCase();
+    var noSystemCost = !r.approved && (!recCode || recCode === "NEW");
     var totalWeightCellText = totalW > 0 ? Data.round(totalW) + "g" : "";
     var totalRow = "<tr class=\"recipe-totals-row\" style=\"font-weight:700;background:var(--nc-gray-50);border-top:2px solid var(--nc-gray-300)\">" +
       "<td colspan=\"2\">Total</td>" +
@@ -6790,8 +6794,11 @@
       "<td class=\"num\" onclick=\"event.stopPropagation()\">" + (totalW > 0 ? "<input type=\"number\" class=\"form-input\" min=\"0\" step=\"any\" value=\"" + Data.round(totalW * batchFactor) + "\" style=\"width:80px;padding:4px 6px\" title=\"Type a batch weight (g) to see each line scaled to it. Display only: the Qty column and the recipe are not changed.\" onchange=\"scaleRecipeToBatch(this.value)\">g" : "") + "</td>" +
       "<td class=\"num\">100%</td>" +
       "<td></td>" +
-      "<td class=\"num\" style=\"font-family:var(--nc-mono);font-size:12px\">£" + totalCostPerUom.toFixed(3) +
-      (totalLiveTally > 0 ? "<span style=\"color:var(--nc-gray-400);font-size:11px\"> / £" + totalLiveTally.toFixed(3) + "</span>" : "") + "</td>" +
+      // A recipe still in development with no real code (e.g. a fresh duplicate, code NEW) has no system cost in the
+      // system — only the live tally is shown, not a "used" figure.
+      "<td class=\"num\" style=\"font-family:var(--nc-mono);font-size:12px\">" + (noSystemCost
+        ? (totalLiveTally > 0 ? "<span style=\"color:var(--nc-gray-400)\" title=\"Tally only: no system cost until this recipe has a code and is approved\">£" + totalLiveTally.toFixed(3) + "</span>" : "")
+        : "£" + totalCostPerUom.toFixed(3) + (totalLiveTally > 0 ? "<span style=\"color:var(--nc-gray-400);font-size:11px\"> / £" + totalLiveTally.toFixed(3) + "</span>" : "")) + "</td>" +
       "<td class=\"num\" style=\"font-family:var(--nc-mono);font-size:12px\">£" + totalCost.toFixed(3) +
       (totalTallyCost > 0 ? "<span style=\"color:var(--nc-gray-400);font-size:11px\"> / £" + totalTallyCost.toFixed(3) + "</span>" : "") + "</td>" +
       "<td></td><td></td></tr>";
@@ -7148,7 +7155,9 @@
       { name: "  of which sugars", per100: Data.round(n.sugar) + "g", perServing: Data.round(n.sugar * servScale) + "g", ri: Data.round(n.sugar / Data.RI.sugars * 100) + "%" },
       { name: "Fibre", per100: Data.round(n.fibre) + "g", perServing: Data.round(n.fibre * servScale) + "g", ri: Data.round(n.fibre / Data.RI.fibre * 100) + "%", bold: true },
       { name: "Protein", per100: Data.round(n.protein) + "g", perServing: Data.round(n.protein * servScale) + "g", ri: Data.round(n.protein / Data.RI.protein * 100) + "%", bold: true },
-      { name: "Salt", per100: Data.round(n.salt, 2) + "g", perServing: Data.round(n.salt * servScale, 2) + "g", ri: Data.round(n.salt / Data.RI.salt * 100) + "%", bold: true }
+      { name: "Salt", per100: Data.round(n.salt, 2) + "g", perServing: Data.round(n.salt * servScale, 2) + "g", ri: Data.round(n.salt / Data.RI.salt * 100) + "%", bold: true },
+      // Sodium is not stored; it is worked out from salt (sodium = salt / 2.5), the standard UK/EU conversion. No %RI is defined for it.
+      { name: "  Sodium (from salt)", per100: Math.round(n.salt / 2.5 * 1000) + "mg", perServing: Math.round(n.salt * servScale / 2.5 * 1000) + "mg", ri: "—" }
     ];
     document.getElementById("nutrition-table-body").innerHTML = nutrients.map(function (nut) {
       return "<tr><td class=\"" + (nut.bold ? "bold" : "") + "\">" + nut.name + "</td><td class=\"num\">" + nut.per100 + "</td><td class=\"num\">" + nut.perServing + "</td><td class=\"num\">" + nut.ri + "</td></tr>";

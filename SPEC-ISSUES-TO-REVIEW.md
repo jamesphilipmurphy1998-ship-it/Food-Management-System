@@ -407,3 +407,8 @@ The user was asked the four confirmation questions (code, nutrition, Pack Size, 
 
 ## 2026-10-08 — RESOLVED (with a caveat): 107049 Miso Caramel uploaded
 The cross-sheet code mismatch was confirmed by the user and the spec uploaded (see SPEC-EXTRACTION.md). CAVEAT still open: the spec's energy is inconsistent (1624.61 kJ vs 348.91 kcal; kJ implies ~388 kcal, macros ~384 kcal). Written as the spec states at the user's choice; ask the supplier (Beacon Foods Ltd) and correct kcal with `scripts/field-fix-apply.js` if needed.
+
+## 2026-10-13 — RESOLVED: 102037 Salt spec uploaded to 106157 RM Salt Table Tub (user confirmed the code and each field); see SPEC-EXTRACTION.md. The 106157 "no spec found" entry is closed.
+
+## 2026-10-14 — REVISIT ONE DAY: 106187 Chicken breast spec uploaded on the user's say-so, but the product match is not proven
+The held spec `106187_2 (105005)Chicken Breast 200-240g Calibrated RM Spec V2 24.10.24.xlsx` was written to 106187 "RM Chicken breast calibrated 210-250g - Ex Inner" at the user's request (every field confirmed by click, name mismatch confirmed). Still open: (1) the spec says 200-240g and "Fresh Chicken Breast", the live ingredient says 210-250g "Ex Inner" - find or request the real 210-250g spec and re-upload if it differs; (2) the spec's own code cells read 102041 (alt 105005), not 106187; (3) Pack Size 5 kg comes from the cell "2x5kg". Written: nutrition 464 kJ / 110 kcal, fat 1.8, sat 0.5, carb 0, sugars 0, fibre 0, protein 23.3, salt 0.132; Pack Size 5 kg; Pack Format Plastic tray sealed with plastic film; Storage 0-4°C; Shelf Life 13 days from production, delivery + 4 days; Ingredients 100% Chicken Breast; no allergens ("Animal derivatives = Y, Chicken" is the product itself, not ticked).

@@ -1,0 +1,31 @@
+{
+  "status": "ok",
+  "sourceFile": "C:/Users/JamesMurphy/OneDrive - Wasabi/WASUK - Food Team - NPD/New Wasabi System Development/FMS System/3. Supporting Docs/Ingredient Specs/106187_2 (105005)Chicken Breast 200-240g Calibrated RM Spec V2 24.10.24.xlsx",
+  "appliedAt": "2026-10-14T12:14:16.846Z",
+  "name": "RM Chicken breast calibrated 210-250g - Ex Inner",
+  "code": "106187",
+  "altCode": null,
+  "nutrition": {
+    "kj": 464,
+    "kcal": 110,
+    "fat": 1.8,
+    "sat": 0.5,
+    "carb": 0,
+    "sugar": 0,
+    "protein": 23.3,
+    "fibre": 0,
+    "salt": 0.132
+  },
+  "allergens": [],
+  "packSize": "5 kg",
+  "packSizeValue": 5,
+  "packSizeUnit": "kg",
+  "packFormat": "Plastic tray sealed with plastic film",
+  "storageConditions": "0-4°C",
+  "shelfLife": "13 days from production, delivery + 4 days",
+  "ingredientsList": "100% Chicken Breast",
+  "allergenNotes": null,
+  "unitWeightG": null,
+  "errors": [],
+  "warnings": []
+}

@@ -111,6 +111,12 @@ window.NutriCalcStorage = (function () {
   var pendingIngredientSaves = new Map();
   var recipeFlushQueued = false;
   var ingredientFlushQueued = false;
+  // A brand-new record is POSTed once; until that POST answers, the diff baseline has no copy of it, so any edit made in the
+  // meantime used to look "new" again and fire a second POST (rejected as a duplicate id) while the first POST's answer then
+  // overwrote the edit with the empty record. Edits made while the create is in flight are held here and sent as a normal
+  // update once the create has answered.
+  var creatingRecipes = new Set(), deferredRecipeSaves = new Map();
+  var creatingIngredients = new Set(), deferredIngredientSaves = new Map();
 
   // Diffing has to compare against an INDEPENDENT copy of "what the server last confirmed",
   // not against ingredientsCache/recipesCache directly — ingredients.js/recipes.js load their
@@ -149,21 +155,27 @@ window.NutriCalcStorage = (function () {
   }
 
   function queueRecipeSave(record, old) {
+    if (creatingRecipes.has(record.id)) { deferredRecipeSaves.set(record.id, record); return; }
     pendingRecipeSaves.set(record.id, { record: record, baseUpdatedAt: old ? old.updatedAt : null, isNew: !old });
     if (recipeFlushQueued) return;
     recipeFlushQueued = true;
     setTimeout(flushRecipeSaves, 0);
   }
   function queueIngredientSave(record, old) {
+    if (creatingIngredients.has(record.id)) { deferredIngredientSaves.set(record.id, record); return; }
     pendingIngredientSaves.set(record.id, { record: record, baseUpdatedAt: old ? old.updatedAt : null, isNew: !old });
     if (ingredientFlushQueued) return;
     ingredientFlushQueued = true;
     setTimeout(flushIngredientSaves, 0);
   }
 
-  function applySavedRecord(cacheArr, snapshotMap, record) {
+  function applySavedRecord(cacheArr, snapshotMap, record, keepLocalEdits) {
     var idx = cacheArr.findIndex(function (r) { return r.id === record.id; });
-    if (idx >= 0) cacheArr[idx] = record; else cacheArr.push(record);
+    if (idx >= 0 && keepLocalEdits) {
+      // Successful save: the server's answer must NOT replace what is in memory, or anything typed while the request was in
+      // flight is silently lost. Only the new concurrency stamp is taken; the baseline is what the server now holds.
+      cacheArr[idx].updatedAt = record.updatedAt;
+    } else if (idx >= 0) cacheArr[idx] = record; else cacheArr.push(record);
     snapshotMap.set(record.id, snapshotRecord(record));
   }
 
@@ -183,8 +195,9 @@ window.NutriCalcStorage = (function () {
       var record = Object.assign({}, entry.record, { updatedAt: entry.baseUpdatedAt });
       var path = entry.isNew ? "/recipes" : "/recipes/" + encodeURIComponent(record.id);
       var method = entry.isNew ? "POST" : "PUT";
+      if (entry.isNew) creatingRecipes.add(record.id);
       return apiRequestAsync(method, path, record).then(function (saved) {
-        if (saved) applySavedRecord(recipesCache, lastSyncedRecipesById, saved);
+        if (saved) applySavedRecord(recipesCache, lastSyncedRecipesById, saved, true);
       }).catch(function (err) {
         if (err && err.status === 409 && err.body) {
           applySavedRecord(recipesCache, lastSyncedRecipesById, err.body);
@@ -192,6 +205,11 @@ window.NutriCalcStorage = (function () {
         }
         // Other errors: local cache already reflects the attempted edit; best-effort, no retry
         // loop, same tolerance as the rest of this module.
+      }).then(function () {
+        if (!entry.isNew) return;
+        creatingRecipes.delete(record.id);
+        var later = deferredRecipeSaves.get(record.id);
+        if (later) { deferredRecipeSaves.delete(record.id); queueRecipeSave(later, lastSyncedRecipesById.get(later.id)); }
       });
     })).then(function () {
       localSetRecipes(recipesCache);
@@ -208,13 +226,19 @@ window.NutriCalcStorage = (function () {
       var record = Object.assign({}, entry.record, { updatedAt: entry.baseUpdatedAt });
       var path = entry.isNew ? "/ingredients" : "/ingredients/" + encodeURIComponent(record.id);
       var method = entry.isNew ? "POST" : "PUT";
+      if (entry.isNew) creatingIngredients.add(record.id);
       return apiRequestAsync(method, path, record).then(function (saved) {
-        if (saved) applySavedRecord(ingredientsCache, lastSyncedIngredientsById, saved);
+        if (saved) applySavedRecord(ingredientsCache, lastSyncedIngredientsById, saved, true);
       }).catch(function (err) {
         if (err && err.status === 409 && err.body) {
           applySavedRecord(ingredientsCache, lastSyncedIngredientsById, err.body);
           notifyConflict("ingredient", err.body.name);
         }
+      }).then(function () {
+        if (!entry.isNew) return;
+        creatingIngredients.delete(record.id);
+        var later = deferredIngredientSaves.get(record.id);
+        if (later) { deferredIngredientSaves.delete(record.id); queueIngredientSave(later, lastSyncedIngredientsById.get(later.id)); }
       });
     })).then(function () {
       localSetIngredients(ingredientsCache);

@@ -194,6 +194,10 @@ static bool VerifyPassword(string password, string stored)
     catch { return false; }
 }
 
+// Postgres keeps timestamps to the microsecond but a freshly created/saved entity is returned with .NET's 100ns ticks, so a client
+// holding that returned value never matched the stored one exactly and its next save was wrongly rejected as a conflict (silently
+// reverting the edit). Two stamps within a millisecond are the same version.
+static bool SameStamp(DateTimeOffset a, DateTimeOffset b) => Math.Abs((a - b).Ticks) < TimeSpan.TicksPerMillisecond;
 static bool LooksLikeEmail(string? s) => !string.IsNullOrWhiteSpace(s) && s.Contains('@') && s.Contains('.');
 
 // Lets the homepage (or approval app) send a user to /login?next=<url> and land back where they
@@ -830,7 +834,7 @@ app.MapPut("/api/ingredients/{id}", async (AppDbContext db, HttpContext ctx, str
 {
     var entity = await db.Ingredients.FirstOrDefaultAsync(x => x.Id == id);
     if (entity == null) return Results.NotFound();
-    if (ingredient.UpdatedAt.HasValue && ingredient.UpdatedAt.Value != entity.UpdatedAt)
+    if (ingredient.UpdatedAt.HasValue && !SameStamp(ingredient.UpdatedAt.Value, entity.UpdatedAt))
     {
         return Results.Conflict(entity.ToModel());
     }
@@ -1106,7 +1110,7 @@ app.MapPut("/api/recipes/{id}", async (AppDbContext db, HttpContext ctx, string 
 {
     var entity = await db.Recipes.Include(r => r.Lines).FirstOrDefaultAsync(r => r.Id == id);
     if (entity == null) return Results.NotFound();
-    if (recipe.UpdatedAt.HasValue && recipe.UpdatedAt.Value != entity.UpdatedAt)
+    if (recipe.UpdatedAt.HasValue && !SameStamp(recipe.UpdatedAt.Value, entity.UpdatedAt))
     {
         return Results.Conflict(entity.ToModel());
     }
