@@ -138,23 +138,24 @@
     <div class="sidebar-divider"></div>
     <div class="sidebar-section">
       <div class="sidebar-section-title">Data</div>
-      <button class="sidebar-item" onclick="switchView('export-templates')" data-view="export-templates">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M2 1h12a1 1 0 011 1v12a1 1 0 01-1 1H2a1 1 0 01-1-1V2a1 1 0 011-1zm1 3v2h8V4H3zm0 4v1h5V8H3zm0 3v1h8v-1H3z" opacity=".8"/></svg>
-        Export Templates
-      </button>
-      <button class="sidebar-item" onclick="exportAllData()">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1l4 4h-3v5H7V5H4l4-4zM2 12h12v2H2v-2z" opacity=".8"/></svg>
-        Export All (JSON)
-      </button>
       <button class="sidebar-item" onclick="openExcelImport()" style="color:var(--nc-green)">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M2 2h5l1 1H14a1 1 0 011 1v9a1 1 0 01-1 1H2a1 1 0 01-1-1V3a1 1 0 011-1zm3.5 4L3 9.5h2V12h1V9.5h2L5.5 6zm5 0L8 9.5h2V12h1V9.5h2L10.5 6z" opacity="0.9"/></svg>
         Import Excel / CSV
       </button>
-      <label for="importFile" class="sidebar-item" style="cursor:pointer;display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:none;background:transparent;font:inherit;color:inherit">
+      <button class="sidebar-item" onclick="exportIngredientDataExcel()" title="Download every ingredient's nutrition, allergens and spec details as an Excel file keyed by code (a restore file)">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1l4 4h-3v5H7V5H4l4-4zM2 12h12v2H2v-2z" opacity=".8"/></svg>
+        Export Ingredient Data (Excel)
+      </button>
+      <label for="ingredientDataFile" class="sidebar-item" style="cursor:pointer;display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:none;background:transparent;font:inherit;color:inherit" title="Upload an Ingredient Data Excel file: matched to the ingredients already on the site by code; only fills in, never creates or deletes">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 10L4 6h3V1h2v5h3l-4 4zM2 12h12v2H2v-2z" opacity=".8"/></svg>
-        Import Data (JSON)
+        Import Ingredient Data (Excel)
       </label>
-      <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+      <input type="file" id="ingredientDataFile" accept=".xlsx,.xls" style="display:none" onchange="importIngredientDataExcel(event)">
+      <label for="devItemsFile" class="sidebar-item" style="cursor:pointer;display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:none;background:transparent;font:inherit;color:inherit" title="Upload an Ingredient Data export: re-creates the no-code (development) ingredients and recipes on its 'No Code Items' tab">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 10L4 6h3V1h2v5h3l-4 4zM2 12h12v2H2v-2z" opacity=".8"/></svg>
+        Import Development Codes &amp; Recipes
+      </label>
+      <input type="file" id="devItemsFile" accept=".xlsx,.xls" style="display:none" onchange="importDevelopmentItems(event)">
       <button class="sidebar-item" onclick="openConfigureIngredients()" title="Manage ingredient library settings and duplicates">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M6.5 1h3l.5 2H14v3l-2 .5v3L14 10v3H10l-.5 2h-3L6 13H2v-3l2-.5v-3L2 6V3h4l.5-2zM8 6a2 2 0 100 4 2 2 0 000-4z" opacity=".85"/></svg>
         Configure Ingredients
@@ -763,6 +764,7 @@
           <table class="data-table" id="recipe-ingredients-table">
             <thead>
               <tr>
+                <th style="width:20px"></th>
                 <th style="width:90px">Code</th>
                 <th>Ingredient</th>
                 <th style="width:120px">Qty</th>
@@ -772,7 +774,7 @@
                 <th style="width:70px" title="% of input weight lost in prep (e.g. chopping/trimming) for single-ingredient sub-recipes. Affects cost only.">Scrap %</th>
                 <th style="width:90px">Cost per UOM (£)</th>
                 <th style="width:80px">Line Cost</th>
-                <th style="width:70px">FVN</th>
+                <th style="width:80px" title="Cost of this line at the Batch Size shown (Line Cost scaled to the batch)">Batch cost</th>
                 <th style="width:50px"></th>
               </tr>
             </thead>
@@ -982,7 +984,11 @@
             </div>
           </div>
           <div class="form-group" style="max-width:calc(33.33% - 8px);margin-bottom:16px">
-            <label class="form-label">Annual Volume (units)</label>
+            <label class="form-label" style="display:flex;align-items:center;gap:8px"><span id="cost-volume-label">Annual Volume (units)</span>
+              <select id="cost-volume-period" class="form-select" style="width:auto;padding:2px 6px;font-size:11px" onchange="recalcMargins()" title="Enter the volume as units per year or units per week">
+                <option value="annual" selected>Annual</option>
+                <option value="weekly">Weekly</option>
+              </select></label>
             <input class="form-input" type="number" id="cost-annual-volume" step="any" min="0" value="" placeholder="e.g. 50000" oninput="recalcMargins()">
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px" id="margin-results">
@@ -995,7 +1001,7 @@
               <div class="stat-value" style="font-size:20px;color:#065F46" id="margin-pct">—</div>
             </div>
             <div class="stat-card" style="border-color:var(--nc-green);background:var(--nc-green-light)">
-              <div class="stat-label" style="color:#059669">Annual Profit / Year</div>
+              <div class="stat-label" style="color:#059669" id="margin-annual-profit-label">Annual Profit / Year</div>
               <div class="stat-value" style="font-size:20px;color:#065F46" id="margin-annual-profit">—</div>
             </div>
             <div class="stat-card" style="border-color:var(--nc-amber);background:var(--nc-amber-light)">
@@ -1986,10 +1992,10 @@
 <script src="storage.js?v=20261015-inflight-fix"></script>
 <script src="ingredients.js?v=20260929-real-delete-all"></script>
 <script src="recipes.js?v=20260930-perf-fixes"></script>
-<script src="hfss.js?v=20260930-perf-fixes"></script>
+<script src="hfss.js?v=20261029-fibre-toggle"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="app.js?v=20261014-sodium-row"></script>
+<script src="app.js?v=20261029-dev-import"></script>
 <script src="excel-import.js?v=20260929-no-fvn-guessing"></script>
 <script src="reports.js?v=20260923-cache-buster"></script>
 </body>

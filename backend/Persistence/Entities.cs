@@ -78,6 +78,7 @@ public sealed class RecipeEntity
     public decimal YieldPct { get; set; } = 100;
     public decimal OwnCost { get; set; } = 0;
     public decimal SheetCost { get; set; } = 0;
+    public bool HfssFibreOn { get; set; }
     public decimal UnitWeightG { get; set; }
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
     public bool PendingApproval { get; set; }

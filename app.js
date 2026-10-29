@@ -6407,6 +6407,62 @@
     renderRecipeIngredients();
   }
   window.scaleRecipeToBatch = scaleRecipeToBatch;
+  // Drag-to-reorder of the ingredient lines (unapproved recipes only): same idea as the comparison page. The new order is an
+  // ordinary edit: it stays local until Save, shows in Undo, and is what Save writes.
+  var recipeLineDragFrom = null;
+  function recipeLineClearIndicators() {
+    var tb = document.getElementById("recipe-ingredients-body");
+    if (tb) tb.querySelectorAll("tr").forEach(function (row) { row.style.borderTop = ""; row.style.borderBottom = ""; });
+  }
+  function recipeLineDragStart(e, idx) {
+    recipeLineDragFrom = idx;
+    var tr = e.currentTarget.closest ? e.currentTarget.closest("tr") : null;
+    if (tr) tr.style.opacity = "0.4";
+    e.dataTransfer.effectAllowed = "move";
+    try { e.dataTransfer.setData("text/plain", String(idx)); } catch (err) {}
+  }
+  function recipeLineDragOver(e, idx) {
+    if (recipeLineDragFrom === null) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    var tr = e.currentTarget, rect = tr.getBoundingClientRect();
+    var before = (e.clientY - rect.top) < rect.height / 2;
+    recipeLineClearIndicators();
+    var line = "3px solid var(--nc-primary, #2e7d32)";
+    if (before) tr.style.borderTop = line; else tr.style.borderBottom = line;
+    tr.dataset.insertBefore = before ? "1" : "0";
+  }
+  function recipeLineDrop(e, targetIdx) {
+    e.preventDefault();
+    var before = e.currentTarget.dataset.insertBefore !== "0";
+    recipeLineClearIndicators();
+    var fromIdx = recipeLineDragFrom; recipeLineDragFrom = null;
+    if (fromIdx === null) return;
+    var recipes = Recipes.getRecipes();
+    var r = recipes.find(function (rec) { return rec.id === currentRecipeId; });
+    if (!r || r.approved) return;
+    var insertIdx = before ? targetIdx : targetIdx + 1;
+    if (fromIdx === insertIdx || fromIdx === insertIdx - 1) return;
+    snapshotRecipeForUndo(r);
+    var moved = r.ingredients.splice(fromIdx, 1)[0];
+    if (fromIdx < insertIdx) insertIdx--;
+    r.ingredients.splice(insertIdx, 0, moved);
+    addRecipeVersionBeforeSave(r);
+    var idx = recipes.findIndex(function (rec) { return rec.id === currentRecipeId; });
+    if (idx >= 0) { recipes[idx] = r; Recipes.setRecipes(recipes); }
+    renderRecipeIngredients();
+  }
+  function recipeLineDragEnd(e) {
+    var tr = e.currentTarget.closest ? e.currentTarget.closest("tr") : null;
+    if (tr) tr.style.opacity = "";
+    recipeLineClearIndicators();
+    recipeLineDragFrom = null;
+  }
+  window.recipeLineDragStart = recipeLineDragStart;
+  window.recipeLineDragOver = recipeLineDragOver;
+  window.recipeLineDrop = recipeLineDrop;
+  window.recipeLineDragEnd = recipeLineDragEnd;
+
   /** Download the Ingredients table exactly as shown (read from the rendered table) as an .xlsx file. Read-only: changes nothing. */
   // SheetJS community edition cannot write cell styles, so the styled fork is loaded on demand just for this export (and the global XLSX is put back).
   function loadStyledXlsx() {
@@ -6433,13 +6489,13 @@
     // Visible columns A-J are exactly the on-screen table's columns (units are shown through number formats so cells stay numeric).
     // Column K "Weight (g)" is a HIDDEN helper holding the real line weights; Batch Size and % Recipe are formulas off it and the
     // batch-size input cell B4, so typing a new batch in B4 rescales every line in Excel.
-    var head = ["Code", "Ingredient", "Qty", "QTY per BUOM", "Batch Size", "% Recipe", "Scrap %", "Cost per UOM (£)", "Line Cost", "FVN", "Weight (g)"];
+    var head = ["Code", "Ingredient", "Qty", "QTY per BUOM", "Batch Size", "% Recipe", "Scrap %", "Cost per UOM (£)", "Line Cost", "Batch Cost", "Weight (g)"];
     var FIRST = 7; // first ingredient row (1-based): rows 1-4 header block, row 5 blank, row 6 column headings
     var lines = [], totalRow = null;
     Array.prototype.forEach.call(table.querySelectorAll("tbody tr"), function (tr) {
-      var td = tr.children;
+      var td = tr.classList.contains("recipe-totals-row") ? tr.children : Array.prototype.slice.call(tr.children, 1); // line rows start with the drag-handle cell
       if (tr.classList.contains("recipe-totals-row")) {
-        totalRow = { qty: num(td[1].textContent), unit: /EACH/i.test(td[1].textContent) ? "EACH" : "g", costPer: num(td[6].textContent.split("/")[0]), lineCost: num(td[7].textContent.split("/")[0]) };
+        totalRow = { qty: num(td[1].textContent), unit: /EACH/i.test(td[1].textContent) ? "EACH" : "g", costPer: num(td[6].textContent.split("/")[0]), lineCost: num(td[7].textContent.split("/")[0]), batchCost: num(td[8].textContent) };
         return;
       }
       if (td.length < 9) return;
@@ -6454,7 +6510,7 @@
         unit: qs ? qs.value : td[2].textContent.trim().split(/\s+/).pop(),
         buomQty: num(buom[0]), buom: buom[1] || "", weight: isNaN(wg) ? "" : wg,
         scrap: si ? parseFloat(si.value) || 0 : num(td[6].textContent),
-        cost: num(td[7].textContent.split("/")[0]), lineCost: num(td[8].textContent.split("/")[0])
+        cost: num(td[7].textContent.split("/")[0]), lineCost: num(td[8].textContent.split("/")[0]), batchCost: num(td[9].textContent)
       });
     });
     var sumW = lines.reduce(function (s, l) { return s + (l.weight === "" ? 0 : l.weight); }, 0);
@@ -6477,6 +6533,12 @@
     ws["E" + TOT] = { t: "n", f: "SUM(E" + FIRST + ":E" + LAST + ")", v: sumW > 0 ? batch : 0, z: "0.0\"g\"" };
     ws["F" + TOT] = { t: "n", f: "SUM(F" + FIRST + ":F" + LAST + ")", v: sumW > 0 ? 100 : 0, z: "0.0\"%\"" };
     ws["K" + TOT] = { t: "n", f: "SUM(K" + FIRST + ":K" + LAST + ")", v: sumW };
+    // Batch Cost = Line Cost scaled to the batch in B4 (same factor as Batch Size), tallied in the Total row
+    lines.forEach(function (l, i) {
+      var row = FIRST + i;
+      ws["J" + row] = { t: "n", f: "IF(SUM(" + wRange + ")=0,I" + row + ",I" + row + "*$B$4/SUM(" + wRange + "))", v: l.batchCost === "" ? 0 : l.batchCost, z: "0.000" };
+    });
+    ws["J" + TOT] = { t: "n", f: "SUM(J" + FIRST + ":J" + LAST + ")", v: totalRow && totalRow.batchCost !== "" ? totalRow.batchCost : 0, z: "0.000" };
     if (ws["C" + TOT]) fmt(ws["C" + TOT], "General\" " + (totalRow ? totalRow.unit : "g") + "\"");
     if (styled) {
       var thin = { style: "thin", color: { rgb: "000000" } }, med = { style: "medium", color: { rgb: "000000" } };
@@ -6485,7 +6547,7 @@
       for (var rr = 1; rr <= 4; rr++) ["A", "B"].forEach(function (c) { put(c + rr, { border: box, alignment: { vertical: "center" } }); });
       ws["B1"].s = { font: { bold: true }, border: box };
       put("B4", { fill: { patternType: "solid", fgColor: { rgb: "C4D79B" } }, border: { top: med, bottom: med, left: med, right: med }, alignment: { horizontal: "center" } });
-      "ABCDEFGHI".split("").forEach(function (c) {
+      "ABCDEFGHIJ".split("").forEach(function (c) {
         put(c + "6", { fill: { patternType: "solid", fgColor: { rgb: "92D050" } }, border: box });
         for (var r2 = FIRST; r2 <= TOT; r2++) {
           var st = { border: box };
@@ -6671,9 +6733,11 @@
     empty.style.display = "none";
     var totalCost = 0;
     var totalTallyCost = 0;
+    var totalBatchCost = 0; // sum of each line's cost scaled to the Batch Size shown
     var batchTarget = batchSizeTargets[r.id];
     var batchFactor = (batchTarget > 0 && totalW > 0) ? batchTarget / totalW : 1;
-    var rowsHtml = r.ingredients.map(function (ri) {
+    var rowsHtml = r.ingredients.map(function (ri, rowIdx) {
+      var rowDropAttrs = locked ? "" : " ondragover=\"recipeLineDragOver(event," + rowIdx + ")\" ondrop=\"recipeLineDrop(event," + rowIdx + ")\"";
       var lineUom = ri.uom || "G";
       var uomSel = (Data.UOM_OPTIONS || ["G", "KG", "L", "ML", "M", "EACH"]).map(function (u) { return '<option value="' + u + '"' + (lineUom === u ? " selected" : "") + ">" + u + "</option>"; }).join("");
       var qtyGForPct = recipeLineWeightForTotal(ri);
@@ -6691,6 +6755,7 @@
         var qtyPerBuom = costBase;
         var lineCost = subCostPerUom * costBase * lineScrapMultiplier;
         totalCost += lineCost;
+        totalBatchCost += lineCost * batchFactor;
         var isSingle = isSingleIngredientRecipe(subRec);
         // Cost is a property of the ingredient/item, not this recipe — edit it in the
         // Ingredient Centre (or that single-ingredient item's own view), not here.
@@ -6704,7 +6769,9 @@
         // Grey figure is a freshly recomputed live tally, purely for eyeballing accuracy
         // against the dark figure (the one actually used everywhere else) — never used itself.
         var liveTallyForCheck = getSubRecipeCostPerUom(subRec, ingredients, subRecipeUom, null, true);
-        if (liveTallyForCheck > 0) {
+        var subCode = (subRec.code || "").toString().trim().toUpperCase();
+        var subNoSystemCost = !subRec.approved && (!subCode || subCode === "NEW");
+        if (liveTallyForCheck > 0 && !subNoSystemCost) {
           costPerUomDisplay += "<span style=\"color:var(--nc-gray-400);font-size:11px\"> / £" + liveTallyForCheck.toFixed(3) + "</span>";
         }
         totalTallyCost += liveTallyForCheck * costBase * lineScrapMultiplier;
@@ -6721,7 +6788,8 @@
         var subBadge = getRecipeLineBadge(ri, ingredients, recipes);
         // Only the code/name cells navigate — clicking elsewhere in the row (qty, scrap, etc.)
         // must never jump away while someone's trying to edit those fields.
-        return "<tr oncontextmenu=\"" + rowCtx + "\">" +
+        return "<tr oncontextmenu=\"" + rowCtx + "\"" + rowDropAttrs + ">" +
+          "<td" + (locked ? " style=\"color:var(--nc-gray-200);text-align:center;width:20px;user-select:none\"" : " draggable=\"true\" ondragstart=\"recipeLineDragStart(event," + rowIdx + ")\" ondragend=\"recipeLineDragEnd(event)\" style=\"cursor:grab;color:var(--nc-gray-300);text-align:center;width:20px;user-select:none\" title=\"Drag to reorder\"") + ">&#8942;&#8942;</td>" +
           "<td class=\"recipe-line-nav\" onclick=\"" + rowClick + "\" oncontextmenu=\"" + rowCtx + "\" style=\"font-size:12px;color:var(--nc-gray-600);font-family:var(--nc-mono)\">" + codePart + "</td><td class=\"recipe-line-nav bold\" onclick=\"" + rowClick + "\" oncontextmenu=\"" + rowCtx + "\">" + subBadge + subRec.name + "</td>" +
           "<td onclick=\"event.stopPropagation()\" oncontextmenu=\"" + rowCtx + "\">" + (locked
             ? "<span style=\"font-family:var(--nc-mono);font-size:12px\">" + ri.qty + " " + lineUom + "</span>"
@@ -6735,7 +6803,7 @@
           "</td>" +
           "<td onclick=\"event.stopPropagation()\" oncontextmenu=\"" + rowCtx + "\" class=\"num\" style=\"font-family:var(--nc-mono);font-size:12px\">" + costPerUomDisplay + "</td>" +
           "<td oncontextmenu=\"" + rowCtx + "\" class=\"num\" style=\"font-family:var(--nc-mono);font-size:12px\">" + costDisplay + "</td>" +
-          "<td oncontextmenu=\"" + rowCtx + "\">—</td>" +
+          "<td oncontextmenu=\"" + rowCtx + "\" class=\"num\" style=\"font-family:var(--nc-mono);font-size:12px\">" + (lineCost > 0 ? "£" + (lineCost * batchFactor).toFixed(3) : "<span style=\"color:var(--nc-gray-300)\">—</span>") + "</td>" +
           "<td onclick=\"event.stopPropagation()\" oncontextmenu=\"" + rowCtx + "\">" + (locked ? "" : "<button class=\"btn btn-sm btn-danger\" onclick=\"removeSubRecipeFromRecipe('" + ri.subRecipeId.replace(/'/g, "\\'") + "')\">×</button>") + "</td></tr>";
       }
       var ing = ingredients.find(function (i) { return i.id === ri.ingredientId; });
@@ -6749,6 +6817,7 @@
       var qtyPerBuom = costBase;
       var lineCost = (ing.cost || 0) * costBase * lineScrapMultiplier;
       totalCost += lineCost;
+      totalBatchCost += lineCost * batchFactor;
       totalTallyCost += lineCost; // raw ingredients have no ownCost override — used cost is the tally
       var costDisplay = ing.cost > 0 ? "£" + lineCost.toFixed(3) : "<span style=\"color:var(--nc-gray-300)\">—</span>";
       var noNutBadge = (hasNoNutrition(ing) && !isPackagingItem(ing)) ? "<span title=\"No nutritional values\" style=\"margin-left:4px;color:var(--nc-amber);font-size:12px;cursor:help\">⚠</span>" : "";
@@ -6757,7 +6826,8 @@
       var ingNavClick = "openIngredientView('" + ri.ingredientId.replace(/'/g, "\\'") + "')";
       // Only the code/name cells navigate — clicking elsewhere in the row (qty, scrap, etc.)
       // must never jump away while someone's trying to edit those fields.
-      return "<tr oncontextmenu=\"" + ingCtx + "\">" +
+      return "<tr oncontextmenu=\"" + ingCtx + "\"" + rowDropAttrs + ">" +
+        "<td" + (locked ? " style=\"color:var(--nc-gray-200);text-align:center;width:20px;user-select:none\"" : " draggable=\"true\" ondragstart=\"recipeLineDragStart(event," + rowIdx + ")\" ondragend=\"recipeLineDragEnd(event)\" style=\"cursor:grab;color:var(--nc-gray-300);text-align:center;width:20px;user-select:none\" title=\"Drag to reorder\"") + ">&#8942;&#8942;</td>" +
         "<td class=\"recipe-line-nav\" onclick=\"" + ingNavClick + "\" oncontextmenu=\"" + ingCtx + "\" style=\"font-size:12px;color:var(--nc-gray-600);font-family:var(--nc-mono)\">" + (ing.code && ing.code.trim() ? ing.code : "—") + "</td><td class=\"recipe-line-nav bold\" onclick=\"" + ingNavClick + "\" oncontextmenu=\"" + ingCtx + "\">" + ingBadge + ing.name + noNutBadge + "</td>" +
         "<td onclick=\"event.stopPropagation()\" oncontextmenu=\"" + ingCtx + "\">" + (locked
           ? "<span style=\"font-family:var(--nc-mono);font-size:12px\">" + ri.qty + " " + lineUom + "</span>"
@@ -6770,7 +6840,7 @@
           : "<input type=\"number\" class=\"form-input\" min=\"0\" max=\"99\" step=\"any\" value=\"" + lineScrapPct + "\" style=\"width:55px;padding:4px 6px\" onchange=\"updateRecipeLineScrapPct('ing:" + ri.ingredientId.replace(/'/g, "\\'") + "', this.value)\" title=\"This ingredient's own scrap when used in this recipe.\" oncontextmenu=\"" + ingCtx + "\">%") + "</td>" +
         "<td oncontextmenu=\"" + ingCtx + "\"><span style=\"font-size:12px;font-family:var(--nc-mono);color:var(--nc-gray-600)\" title=\"Edit this ingredient's cost in Ingredient Centre\">" + (ing.cost > 0 ? "£" + Number(ing.cost).toFixed(3) : "<span style=\"color:var(--nc-gray-300)\">—</span>") + "</span></td>" +
         "<td oncontextmenu=\"" + ingCtx + "\" class=\"num\" style=\"font-family:var(--nc-mono);font-size:12px\">" + costDisplay + "</td>" +
-        "<td oncontextmenu=\"" + ingCtx + "\"></td>" + // FVN column left blank for now — not in use, kept as a slot for a future feature
+        "<td oncontextmenu=\"" + ingCtx + "\" class=\"num\" style=\"font-family:var(--nc-mono);font-size:12px\">" + (lineCost > 0 ? "£" + (lineCost * batchFactor).toFixed(3) : "<span style=\"color:var(--nc-gray-300)\">—</span>") + "</td>" +
         "<td onclick=\"event.stopPropagation()\" oncontextmenu=\"" + ingCtx + "\">" + (locked ? "" : "<button class=\"btn btn-sm btn-danger\" onclick=\"removeIngredientFromRecipe('" + ri.ingredientId + "')\">×</button>") + "</td></tr>";
     });
     // Dark figure = "cost per 1 unit of this recipe's own UOM" using whatever's actually used
@@ -6788,20 +6858,20 @@
     var noSystemCost = !r.approved && (!recCode || recCode === "NEW");
     var totalWeightCellText = totalW > 0 ? Data.round(totalW) + "g" : "";
     var totalRow = "<tr class=\"recipe-totals-row\" style=\"font-weight:700;background:var(--nc-gray-50);border-top:2px solid var(--nc-gray-300)\">" +
-      "<td colspan=\"2\">Total</td>" +
+      "<td colspan=\"3\">Total</td>" +
       "<td class=\"num\" style=\"font-family:var(--nc-mono)\">" + totalDisplay + "</td>" +
       "<td class=\"num\" style=\"font-family:var(--nc-mono);font-size:12px;color:var(--nc-gray-600)\" title=\"Total recipe weight\">" + totalWeightCellText + "</td>" +
-      "<td class=\"num\" onclick=\"event.stopPropagation()\">" + (totalW > 0 ? "<input type=\"number\" class=\"form-input\" min=\"0\" step=\"any\" value=\"" + Data.round(totalW * batchFactor) + "\" style=\"width:80px;padding:4px 6px\" title=\"Type a batch weight (g) to see each line scaled to it. Display only: the Qty column and the recipe are not changed.\" onchange=\"scaleRecipeToBatch(this.value)\">g" : "") + "</td>" +
+      "<td class=\"num\" onclick=\"event.stopPropagation()\" style=\"white-space:nowrap\">" + (totalW > 0 ? "<input type=\"number\" class=\"form-input\" min=\"0\" step=\"any\" value=\"" + Data.round(totalW * batchFactor) + "\" style=\"width:62px;padding:4px 6px;display:inline-block;vertical-align:middle\" title=\"Type a batch weight (g) to see each line scaled to it. Display only: the Qty column and the recipe are not changed.\" onchange=\"scaleRecipeToBatch(this.value)\">g" : "") + "</td>" +
       "<td class=\"num\">100%</td>" +
       "<td></td>" +
-      // A recipe still in development with no real code (e.g. a fresh duplicate, code NEW) has no system cost in the
-      // system — only the live tally is shown, not a "used" figure.
-      "<td class=\"num\" style=\"font-family:var(--nc-mono);font-size:12px\">" + (noSystemCost
-        ? (totalLiveTally > 0 ? "<span style=\"color:var(--nc-gray-400)\" title=\"Tally only: no system cost until this recipe has a code and is approved\">£" + totalLiveTally.toFixed(3) + "</span>" : "")
-        : "£" + totalCostPerUom.toFixed(3) + (totalLiveTally > 0 ? "<span style=\"color:var(--nc-gray-400);font-size:11px\"> / £" + totalLiveTally.toFixed(3) + "</span>" : "")) + "</td>" +
+      // A recipe still in development with no real code (e.g. a new or duplicated recipe) has no data feed, so there is no
+      // system cost to compare against: ONE figure only, the tally of its own lines (Cost per UOM = that tally per 1 UOM,
+      // e.g. per kg; Line Cost = the tally for the quantities entered). A data feed (approved/coded) keeps both figures.
+      "<td class=\"num\" style=\"font-family:var(--nc-mono);font-size:12px\">£" + totalCostPerUom.toFixed(3) +
+      (!noSystemCost && totalLiveTally > 0 ? "<span style=\"color:var(--nc-gray-400);font-size:11px\"> / £" + totalLiveTally.toFixed(3) + "</span>" : "") + "</td>" +
       "<td class=\"num\" style=\"font-family:var(--nc-mono);font-size:12px\">£" + totalCost.toFixed(3) +
-      (totalTallyCost > 0 ? "<span style=\"color:var(--nc-gray-400);font-size:11px\"> / £" + totalTallyCost.toFixed(3) + "</span>" : "") + "</td>" +
-      "<td></td><td></td></tr>";
+      (!noSystemCost && totalTallyCost > 0 ? "<span style=\"color:var(--nc-gray-400);font-size:11px\"> / £" + totalTallyCost.toFixed(3) + "</span>" : "") + "</td>" +
+      "<td class=\"num\" style=\"font-family:var(--nc-mono);font-size:12px\">£" + totalBatchCost.toFixed(3) + "</td><td></td></tr>";
     body.innerHTML = rowsHtml.join("") + totalRow;
   }
 
@@ -7424,24 +7494,41 @@
     document.getElementById("ingredient-declaration").innerHTML = decl;
   }
 
+  function toggleHfssFibre() {
+    var recipes = Recipes.getRecipes();
+    var r = recipes.find(function (rec) { return rec.id === currentRecipeId; });
+    if (!r || r.approved) return;
+    r.hfssFibreOn = !r.hfssFibreOn;
+    var idx = recipes.findIndex(function (rec) { return rec.id === currentRecipeId; });
+    if (idx >= 0) { recipes[idx] = r; Recipes.setRecipes(recipes); }  // an ordinary edit: stays local until Save
+    updateRecipeSaveButton();
+    renderHFSS(r);
+  }
+  window.toggleHfssFibre = toggleHfssFibre;
+
   function renderHFSS(recipe) {
     var ingredients = Ingredients.getIngredients();
     var h = HFSS.calcHFSS(recipe, ingredients);
     var badge = document.getElementById("hfss-badge");
     badge.textContent = h.isHFSS ? "HFSS" : "Non-HFSS";
     badge.className = "badge " + (h.isHFSS ? "badge-red" : "badge-green");
+    // the actual per-100g value behind each row's points, as small grey text
+    function hv(v, unit, dp) { return '<span style="font-weight:400;font-size:11px;color:var(--nc-gray-400);margin-left:6px">' + Data.round(v, dp === undefined ? 1 : dp) + unit + ' per 100g</span>'; }
+    // Fibre tick box: red cross = fibre NOT counted (default, worst case); green tick = counted. Click toggles it (unapproved only).
+    var fibreLocked = !!recipe.approved;
+    var fibreBox = '<span' + (fibreLocked ? '' : ' onclick="toggleHfssFibre()"') + ' title="' + (h.fibreCounted ? 'Fibre IS counted in this score' : 'Fibre is NOT counted (worst case)') + (fibreLocked ? '' : ' - click to switch') + '" style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;margin-right:8px;border-radius:4px;font-size:12px;font-weight:700;vertical-align:middle;cursor:' + (fibreLocked ? 'default' : 'pointer') + ';' + (h.fibreCounted ? 'background:#D1FAE5;color:#047857;border:1px solid #10B981' : 'background:#FEE2E2;color:#B91C1C;border:1px solid #EF4444') + '">' + (h.fibreCounted ? '&#10003;' : '&#10005;') + '</span>';
     var scoreColor = h.isHFSS ? "background:#FEE2E2;color:#991B1B;border:2px solid #EF4444" : "background:#D1FAE5;color:#065F46;border:2px solid #10B981";
     document.getElementById("hfss-display").innerHTML = '<div class="hfss-total" style="' + scoreColor + '"><div class="score">' + h.total + '</div><div class="label">Points</div></div>' +
       '<div class="hfss-breakdown"><div style="font-weight:600;font-size:12px;color:var(--nc-gray-400);margin-bottom:4px">A POINTS (less healthy)</div>' +
-      '<div class="hfss-row"><span>Energy</span><span class="pts">+' + h.energyPts + "</span></div>" +
-      '<div class="hfss-row"><span>Saturated Fat</span><span class="pts">+' + h.satPts + "</span></div>" +
-      '<div class="hfss-row"><span>Sugars</span><span class="pts">+' + h.sugarPts + "</span></div>" +
-      '<div class="hfss-row"><span>Sodium</span><span class="pts">+' + h.sodiumPts + "</span></div>" +
+      '<div class="hfss-row"><span>Energy ' + hv(h.values.kj, ' kJ') + '</span><span class="pts">+' + h.energyPts + "</span></div>" +
+      '<div class="hfss-row"><span>Saturated Fat ' + hv(h.values.sat, ' g') + '</span><span class="pts">+' + h.satPts + "</span></div>" +
+      '<div class="hfss-row"><span>Sugars ' + hv(h.values.sugar, ' g') + '</span><span class="pts">+' + h.sugarPts + "</span></div>" +
+      '<div class="hfss-row"><span>Sodium ' + hv(h.values.sodiumMg, ' mg', 0) + '</span><span class="pts">+' + h.sodiumPts + "</span></div>" +
       '<div class="hfss-row" style="font-weight:600;border-top:1px solid var(--nc-gray-200);padding-top:4px"><span>Total A</span><span class="pts">' + h.aPoints + "</span></div>" +
       '<div style="font-weight:600;font-size:12px;color:var(--nc-gray-400);margin:8px 0 4px">C POINTS (healthier)</div>' +
       '<div class="hfss-row"><span>FVN (' + Data.round(h.fvnPct) + '%)</span><span class="pts">−' + h.fvnPts + "</span></div>" +
-      '<div class="hfss-row"><span>Fibre</span><span class="pts">−' + h.fibrePts + "</span></div>" +
-      '<div class="hfss-row"><span>Protein ' + (h.proteinExcluded ? "(excluded)" : "") + '</span><span class="pts">−' + (h.proteinExcluded ? 0 : h.proteinPts) + "</span></div>" +
+      '<div class="hfss-row"><span>' + fibreBox + 'Fibre ' + hv(h.values.fibre, ' g') + (h.fibreCounted ? '' : '<span style="font-weight:400;font-size:11px;color:#B91C1C;margin-left:6px">not counted (would score ' + h.fibrePtsIfOn + ')</span>') + '</span><span class="pts">−' + h.fibrePts + "</span></div>" +
+      '<div class="hfss-row"><span>Protein ' + (h.proteinExcluded ? "(excluded) " : "") + hv(h.values.protein, ' g') + '</span><span class="pts">−' + (h.proteinExcluded ? 0 : h.proteinPts) + "</span></div>" +
       '<div class="hfss-row" style="font-weight:600;border-top:1px solid var(--nc-gray-200);padding-top:4px"><span>Total C</span><span class="pts">' + h.cPoints + "</span></div></div>";
     var tips = [];
     if (h.sugarPts >= 3) tips.push("High sugar score — consider reducing sugar content or substituting with natural alternatives.");
@@ -7773,6 +7860,13 @@
     var costPerUnit = totalCost / yieldCount;
     var sellPrice = parseFloat(document.getElementById("cost-sell-price").value);
     var annualVolume = parseFloat(document.getElementById("cost-annual-volume").value);
+    // Annual / Weekly toggle: the volume typed is units per year or per week; profit = profit per unit x that volume,
+    // labelled to match (Annual Profit / Year or Weekly Profit / Week). The volume is not stored, so this is display only.
+    var weekly = (document.getElementById("cost-volume-period") || {}).value === "weekly";
+    var volLabelEl = document.getElementById("cost-volume-label"), volInputEl = document.getElementById("cost-annual-volume"), profLabelEl = document.getElementById("margin-annual-profit-label");
+    if (volLabelEl) volLabelEl.textContent = weekly ? "Weekly Volume (units)" : "Annual Volume (units)";
+    if (volInputEl) volInputEl.placeholder = weekly ? "e.g. 1000" : "e.g. 50000";
+    if (profLabelEl) profLabelEl.textContent = weekly ? "Weekly Profit / Week" : "Annual Profit / Year";
     // VAT collected on a sale isn't revenue to the business — margin/profit must be measured
     // against the sell price with VAT stripped back out, not the VAT-inclusive price the
     // customer actually pays. Target Sell Price is always entered VAT-inclusive when the
@@ -7862,6 +7956,254 @@
     }
     if (event.target) event.target.value = "";
   }
+
+  // ---- Ingredient Data (Excel): a restore file keyed by ingredient code -------------------------------------------------
+  // Export = one row per ingredient with its nutrition, allergens and spec details. Import = read such a file, match each row to
+  // the ingredient already on the site BY CODE, and fill in the values. It only FILLS IN: a blank cell leaves the site's value
+  // alone; it never creates or deletes an ingredient and never touches cost, supplier, name, code or category (those come from
+  // the cost/code data feed). Shows a preview first and writes nothing until confirmed.
+  var INGDATA_COLS = [
+    { h: "Code", ref: true }, { h: "Name", ref: true }, { h: "Category", ref: true }, { h: "Supplier", ref: true },
+    { h: "Energy (kJ)", f: "kj", t: "n" }, { h: "Energy (kcal)", f: "kcal", t: "n" }, { h: "Fat (g)", f: "fat", t: "n" }, { h: "Saturates (g)", f: "sat", t: "n" },
+    { h: "Carbohydrate (g)", f: "carb", t: "n" }, { h: "Sugars (g)", f: "sugar", t: "n" }, { h: "Fibre (g)", f: "fibre", t: "n" },
+    { h: "Protein (g)", f: "protein", t: "n" }, { h: "Salt (g)", f: "salt", t: "n" },
+    { h: "Allergens", f: "allergens", t: "list" }, { h: "Allergen Notes", f: "allergenNotes", t: "s" },
+    { h: "Ingredients", f: "ingredientsList", t: "s" }, { h: "Pack Size", f: "packSize", t: "s" }, { h: "Pack Size Number", f: "packSizeValue", t: "n" },
+    { h: "Pack Size Unit", f: "packSizeUnit", t: "s" }, { h: "Pack Format", f: "packFormat", t: "s" }, { h: "Storage Conditions", f: "storageConditions", t: "s" },
+    { h: "Shelf Life", f: "shelfLife", t: "s" }, { h: "Unit Weight (g)", f: "unitWeightG", t: "n" }, { h: "FVN (Yes/No)", f: "fvn", t: "yn" }
+  ];
+  function exportIngredientDataExcel() {
+    if (typeof XLSX === "undefined") { alert("Excel export is not available right now."); return; }
+    var list = Ingredients.getIngredients().slice().sort(function (a, b) { return String(a.code || "").localeCompare(String(b.code || ""), undefined, { numeric: true }); });
+    var isNoCode = function (c) { var s = String(c || "").trim().toUpperCase(); return s === "" || s === "NEW"; };
+    var rowFor = function (ing) {
+      return [ing.code || "", ing.name || "", ing.cat || "", ing.supplier || ""].concat(INGDATA_COLS.slice(4).map(function (c) {
+        var v = ing[c.f];
+        if (c.t === "list") return (v || []).join(", ");
+        if (c.t === "yn") return v ? "Yes" : "No";
+        if (c.t === "n") return (v === null || v === undefined || v === "") ? "" : Number(v);
+        return v === null || v === undefined ? "" : String(v);
+      }));
+    };
+    // First tab: ingredients that HAVE a code (this is what Import matches on). Ingredients with no code go to the second tab.
+    var coded = list.filter(function (i) { return !isNoCode(i.code); });
+    var rows = [INGDATA_COLS.map(function (c) { return c.h; })];
+    coded.forEach(function (ing) { rows.push(rowFor(ing)); });
+    var ws = XLSX.utils.aoa_to_sheet(rows);
+    ws["!cols"] = INGDATA_COLS.map(function (c) { return { wch: c.h === "Name" || c.h === "Ingredients" || c.h === "Allergen Notes" ? 40 : c.h === "Code" ? 12 : 16 }; });
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Ingredient Data");
+    // Second tab: everything with NO code yet (code blank or NEW): its ingredients (same columns as above) and its recipes with every
+    // line, so nothing built on the site but not yet in the cost/code data feed is lost in a wipe. A record only: Import ignores it.
+    var allRecipes = Recipes.getRecipes();
+    var ingById = {}; Ingredients.getIngredients().forEach(function (i) { ingById[i.id] = i; });
+    var recById = {}; allRecipes.forEach(function (r) { recById[r.id] = r; });
+    var noCodeIngs = list.filter(function (i) { return isNoCode(i.code); });
+    var noCodeRecs = allRecipes.filter(function (r) { return isNoCode(r.code); }).sort(function (a, b) { return String(a.name || "").localeCompare(String(b.name || "")); });
+    var nc = [["INGREDIENTS WITH NO CODE (" + noCodeIngs.length + ")"], rows[0].concat(["Cost", "Cost UOM", "Density"])];
+    var codeShown = function (c) { return String(c || "").trim() === "" ? "(blank)" : String(c).trim(); };   // what is actually in the code field
+    noCodeIngs.forEach(function (ing) { var rw = rowFor(ing); rw[0] = codeShown(ing.code); nc.push(rw.concat([ing.cost === undefined || ing.cost === null ? "" : Number(ing.cost), ing.costUOM || ing.costUom || "", ing.density === undefined || ing.density === null ? "" : Number(ing.density)])); });
+    nc.push([], ["RECIPES WITH NO CODE (" + noCodeRecs.length + ")"],
+      ["Recipe", "Recipe code (as held on the site)", "Status", "Project tag", "Recipe type", "Serving (g)", "Line", "Line type", "Line code", "Line name", "Qty", "Unit", "Scrap %", "Description"]);
+    noCodeRecs.forEach(function (r) {
+      var proj = (r.descriptionTags || []).filter(function (t) { return /^project:/i.test(String(t)); }).join(", ");
+      var base = [r.name || "", codeShown(r.code), r.approved ? "Approved" : "In development", proj, r.recipeType || "", r.serving || ""];
+      var lines = r.ingredients || [];
+      if (!lines.length) { nc.push(base.concat(["", "", "", "(no lines)", "", "", "", r.desc || ""])); return; }
+      lines.forEach(function (ri, li) {
+        var tgt = ri.subRecipeId ? recById[ri.subRecipeId] : ingById[ri.ingredientId];
+        nc.push(base.concat([li + 1, ri.subRecipeId ? "Sub-recipe" : "Ingredient", tgt ? codeShown(tgt.code) : "", tgt ? (tgt.name || "") : "(missing: " + (ri.subRecipeId || ri.ingredientId) + ")", ri.qty, ri.uom || "", ri.scrapPct || 0, li === 0 ? (r.desc || "") : ""]));
+      });
+    });
+    var wsNc = XLSX.utils.aoa_to_sheet(nc);
+    wsNc["!cols"] = INGDATA_COLS.map(function (c, ci) { return { wch: ci === 1 || ci === 9 ? 40 : 16 }; });
+    XLSX.utils.book_append_sheet(wb, wsNc, "No Code Items");
+    var note = [["NutriCost ingredient data file"], ["One row per ingredient, matched by Code when imported (Import Ingredient Data (Excel))."], ["Code, Name, Category and Supplier are for reference only and are never changed by an import."], ["A blank cell leaves the site's value alone. Allergens: comma separated from the 14 allergens. FVN: Yes or No."], ["Exported", new Date().toISOString()], ["Ingredients with a code in the first tab", coded.length], ["Tab 'No Code Items' lists the " + noCodeIngs.length + " ingredient(s) and " + noCodeRecs.length + " recipe(s) that have no code yet, with every recipe line. It is a record only: Import ignores it."]];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(note), "About");
+    XLSX.writeFile(wb, "NutriCost ingredient data " + new Date().toISOString().slice(0, 10) + ".xlsx");
+    showToast("Exported " + coded.length + " ingredients (" + noCodeIngs.length + " ingredient(s) and " + noCodeRecs.length + " recipe(s) with no code on the second tab)");
+  }
+  async function importIngredientDataExcel(event) {
+    var file = event && event.target && event.target.files && event.target.files[0];
+    if (!file) return;
+    try {
+      if (typeof XLSX === "undefined") throw new Error("Excel support is not available");
+      var wb = XLSX.read(new Uint8Array(await file.arrayBuffer()), { type: "array" });
+      var sheet = wb.Sheets["Ingredient Data"] || wb.Sheets[wb.SheetNames[0]];
+      var aoa = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "", raw: true });
+      if (!aoa.length) throw new Error("The file is empty");
+      var head = aoa[0].map(function (h) { return String(h).trim().toLowerCase(); });
+      var colIdx = {}; INGDATA_COLS.forEach(function (c) { colIdx[c.h] = head.indexOf(c.h.toLowerCase()); });
+      if (colIdx["Code"] < 0) throw new Error("No 'Code' column found: this is not an Ingredient Data file");
+      var all = Ingredients.getIngredients();
+      var byCode = {}; all.forEach(function (i) { var k = String(i.code || "").trim(); if (k) (byCode[k] = byCode[k] || []).push(i); });
+      var euLower = {}; (Data.EU_ALLERGENS || []).forEach(function (a) { euLower[a.toLowerCase()] = a; });
+      var plan = [], unmatched = [], ambiguous = [], skippedNotes = [], rowsSeen = 0;
+      aoa.slice(1).forEach(function (row) {
+        var code = String(row[colIdx["Code"]] === undefined ? "" : row[colIdx["Code"]]).trim();
+        if (!code) return;
+        rowsSeen++;
+        var cands = byCode[code] || [];
+        if (cands.length === 0) { unmatched.push(code + (colIdx["Name"] >= 0 ? " (" + row[colIdx["Name"]] + ")" : "")); return; }
+        if (cands.length > 1) { ambiguous.push(code); return; }
+        var ing = cands[0], changes = {};
+        INGDATA_COLS.forEach(function (c) {
+          if (c.ref || colIdx[c.h] < 0) return;
+          var cell = row[colIdx[c.h]];
+          if (cell === "" || cell === null || cell === undefined) return;   // blank = leave the site's value alone
+          var nv;
+          if (c.t === "n") {
+            nv = typeof cell === "number" ? cell : parseFloat(String(cell).replace(/,/g, ""));
+            if (isNaN(nv)) { skippedNotes.push(code + ": \"" + cell + "\" is not a number in " + c.h); return; }
+          } else if (c.t === "yn") {
+            var s = String(cell).trim().toLowerCase(); nv = (s === "yes" || s === "y" || s === "true" || s === "1");
+          } else if (c.t === "list") {
+            nv = [];
+            String(cell).split(/[,;]/).map(function (s2) { return s2.trim(); }).filter(Boolean).forEach(function (s2) {
+              if (euLower[s2.toLowerCase()]) nv.push(euLower[s2.toLowerCase()]); else skippedNotes.push(code + ": unknown allergen \"" + s2 + "\" ignored");
+            });
+          } else nv = String(cell);
+          var cur = ing[c.f];
+          var same = c.t === "list" ? JSON.stringify((cur || []).slice().sort()) === JSON.stringify(nv.slice().sort())
+            : c.t === "n" ? Number(cur || 0) === nv
+            : c.t === "yn" ? !!cur === nv
+            : String(cur === null || cur === undefined ? "" : cur) === nv;
+          if (!same) changes[c.f] = nv;
+        });
+        if (Object.keys(changes).length) plan.push({ ing: ing, changes: changes });
+      });
+      var lines = ["Rows with a code: " + rowsSeen,
+        "Matched ingredients that would change: " + plan.length,
+        "Already identical: " + (rowsSeen - plan.length - unmatched.length - ambiguous.length),
+        "No ingredient with that code on the site (ignored): " + unmatched.length + (unmatched.length ? "   e.g. " + unmatched.slice(0, 8).join("; ") : ""),
+        "Code matches more than one ingredient (ignored): " + ambiguous.length + (ambiguous.length ? "   " + ambiguous.slice(0, 8).join(", ") : "")];
+      if (skippedNotes.length) lines.push("Cells ignored: " + skippedNotes.length + "   e.g. " + skippedNotes.slice(0, 5).join("; "));
+      lines.push("", "Blank cells never change anything. Nothing is created or deleted; cost, supplier, name, code and category are never touched.", "", plan.length ? "Apply these changes to " + plan.length + " ingredient(s)?" : "Nothing to change.");
+      if (!plan.length) { alert(lines.join("\n")); }
+      else if (confirm(lines.join("\n"))) {
+        plan.forEach(function (p) { Object.assign(p.ing, p.changes); });
+        Ingredients.setIngredients(Ingredients.getIngredients());
+        renderAll();
+        showToast("Updated " + plan.length + " ingredient(s) from the file");
+      }
+    } catch (err) {
+      alert("Import failed, nothing was changed: " + (err && err.message ? err.message : err));
+    }
+    if (event.target) event.target.value = "";
+  }
+  // ---- Import Development Codes & Recipes: re-creates the items on the "No Code Items" tab of an Ingredient Data export -----------
+  // Creates the no-code ingredients and no-code (development) recipes that were exported, so they can be rebuilt after a wipe.
+  // Recipe lines are matched to what is already on the site: by code (coded ingredients / recipes from the cost feed) or, for items
+  // with no code, by name. Nothing existing is changed or deleted; an item whose name already exists is skipped; lines that cannot
+  // be matched are skipped and listed. Preview first, nothing is written until confirmed.
+  async function importDevelopmentItems(event) {
+    var file = event && event.target && event.target.files && event.target.files[0];
+    if (!file) return;
+    try {
+      if (typeof XLSX === "undefined") throw new Error("Excel support is not available");
+      var wb = XLSX.read(new Uint8Array(await file.arrayBuffer()), { type: "array" });
+      var sheet = wb.Sheets["No Code Items"];
+      if (!sheet) throw new Error("No 'No Code Items' tab in this file. Use a file made by Export Ingredient Data (Excel).");
+      var aoa = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "", raw: true });
+      var cellS = function (v) { return v === null || v === undefined ? "" : String(v).trim(); };
+      var ingStart = -1, recStart = -1;
+      aoa.forEach(function (r, i) { var a = cellS(r[0]).toUpperCase(); if (a.indexOf("INGREDIENTS WITH NO CODE") === 0) ingStart = i; if (a.indexOf("RECIPES WITH NO CODE") === 0) recStart = i; });
+      if (ingStart < 0 || recStart < 0) throw new Error("The 'No Code Items' tab is not in the expected layout");
+      var ingHead = aoa[ingStart + 1].map(function (h) { return cellS(h).toLowerCase(); });
+      var recHead = aoa[recStart + 1].map(function (h) { return cellS(h).toLowerCase(); });
+      var hi = function (head, name) { return head.indexOf(name.toLowerCase()); };
+      var allIngs = Ingredients.getIngredients(), allRecs = Recipes.getRecipes();
+      var codeOf = function (v) { var s = cellS(v); return (s === "(blank)" || s.toUpperCase() === "NEW") ? s.replace("(blank)", "") : s; };
+      var isNoCode = function (c) { var s = String(c || "").trim().toUpperCase(); return s === "" || s === "NEW"; };
+      var byCode = function (list, code) { return list.filter(function (i) { return String(i.code || "").trim() === code; }); };
+      var byName = function (list, name) { var n = name.toLowerCase(); return list.filter(function (i) { return String(i.name || "").trim().toLowerCase() === n; }); };
+      var euLower = {}; (Data.EU_ALLERGENS || []).forEach(function (a) { euLower[a.toLowerCase()] = a; });
+      var report = { ingNew: [], ingSkip: [], recNew: [], recSkip: [], lineSkip: [], notes: [] };
+      // ---- ingredients
+      var newIngs = [];
+      for (var i = ingStart + 2; i < recStart; i++) {
+        var row = aoa[i]; var name = cellS(row[hi(ingHead, "Name")]);
+        if (!name) continue;
+        var same = byName(allIngs, name);
+        if (same.length) { report.ingSkip.push(name + (isNoCode(same[0].code) ? "" : " (now has code " + same[0].code + ")")); continue; }
+        var g = function (h) { var k = hi(ingHead, h); return k < 0 ? "" : row[k]; };
+        var num = function (h) { var v = g(h); if (v === "" || v === null || v === undefined) return 0; var n = typeof v === "number" ? v : parseFloat(String(v).replace(/,/g, "")); return isNaN(n) ? 0 : n; };
+        var alg = []; cellS(g("Allergens")).split(/[,;]/).map(function (s) { return s.trim(); }).filter(Boolean).forEach(function (s) { if (euLower[s.toLowerCase()]) alg.push(euLower[s.toLowerCase()]); else report.notes.push(name + ": unknown allergen \"" + s + "\" ignored"); });
+        var cuom = cellS(g("Cost UOM")) || "KG";
+        var spv = g("Pack Size Number");
+        var ing = {
+          id: Data.genId(), name: name, code: codeOf(row[hi(ingHead, "Code")]), altCodes: [], descriptionTags: [], cat: cellS(g("Category")) || "Raw Material",
+          kj: num("Energy (kJ)"), kcal: num("Energy (kcal)"), fat: num("Fat (g)"), sat: num("Saturates (g)"), carb: num("Carbohydrate (g)"), sugar: num("Sugars (g)"),
+          fibre: num("Fibre (g)"), protein: num("Protein (g)"), salt: num("Salt (g)"),
+          cost: num("Cost"), currency: "£", costUOM: cuom, costUom: cuom, density: num("Density") > 0 ? num("Density") : 1, unitWeightG: num("Unit Weight (g)"),
+          supplier: cellS(g("Supplier")), packSize: cellS(g("Pack Size")), packSizeValue: (spv === "" || spv === null) ? null : Number(spv), packSizeUnit: cellS(g("Pack Size Unit")),
+          packFormat: cellS(g("Pack Format")), storageConditions: cellS(g("Storage Conditions")), shelfLife: cellS(g("Shelf Life")), ingredientsList: cellS(g("Ingredients")),
+          allergens: alg, allergenNotes: cellS(g("Allergen Notes")), fvn: /^(yes|y|true|1)$/i.test(cellS(g("FVN (Yes/No)"))),
+          approved: false, approvedForCodeCreation: false, pendingApproval: false
+        };
+        newIngs.push(ing); report.ingNew.push(name);
+      }
+      // ---- recipes (rows grouped by recipe name, in order)
+      var groups = [];
+      for (var r = recStart + 2; r < aoa.length; r++) {
+        var rw = aoa[r]; var rname = cellS(rw[hi(recHead, "Recipe")]);
+        if (!rname) continue;
+        var grp = groups.length && groups[groups.length - 1].name === rname ? groups[groups.length - 1] : null;
+        if (!grp) { grp = { name: rname, row: rw, lines: [] }; groups.push(grp); }
+        var lt = cellS(rw[hi(recHead, "Line type")]);
+        if (lt) grp.lines.push({ type: lt, code: cellS(rw[hi(recHead, "Line code")]), name: cellS(rw[hi(recHead, "Line name")]), qty: rw[hi(recHead, "Qty")], uom: cellS(rw[hi(recHead, "Unit")]), scrap: rw[hi(recHead, "Scrap %")] });
+      }
+      var newRecs = [], newRecByName = {};
+      groups.forEach(function (gr) {
+        var exists = byName(allRecs, gr.name);
+        if (exists.length) { report.recSkip.push(gr.name + (isNoCode(exists[0].code) ? "" : " (now has code " + exists[0].code + ")")); return; }
+        var h = function (n) { return gr.row[hi(recHead, n)]; };
+        var tags = cellS(h("Project tag")).split(",").map(function (s) { return s.trim(); }).filter(Boolean);
+        var rec = { id: Data.genId(), name: gr.name, code: codeOf(h("Recipe code (as held on the site)")), desc: cellS(h("Description")) || "", type: "food",
+          recipeType: cellS(h("Recipe type")) || "finishedProduct", serving: Number(h("Serving (g)")) || 100, uom: "G", ingredients: [], approved: false,
+          descriptionTags: tags, created: new Date().toISOString() };
+        newRecs.push(rec); newRecByName[gr.name.toLowerCase()] = rec; gr.rec = rec; report.recNew.push(gr.name);
+        tags.forEach(function (t) { var m = /^project:(.+)$/i.exec(t); if (m && typeof getProjectFolderById === "function" && !getProjectFolderById(m[1])) report.notes.push(gr.name + ": project folder \"" + m[1] + "\" does not exist on the site (create it, the recipe will then appear in it)"); });
+      });
+      var ingPool = allIngs.concat(newIngs), recPool = allRecs.concat(newRecs);
+      groups.forEach(function (gr) {
+        if (!gr.rec) return;
+        gr.lines.forEach(function (ln, k) {
+          var isSub = /sub/i.test(ln.type), pool = isSub ? recPool : ingPool, hit = [];
+          if (ln.code && ln.code !== "(blank)" && ln.code.toUpperCase() !== "NEW") hit = byCode(pool, ln.code);
+          if (hit.length === 0) hit = byName(pool, ln.name);
+          if (hit.length !== 1) { report.lineSkip.push(gr.name + " line " + (k + 1) + " " + ln.name + (hit.length ? " (matches " + hit.length + " items)" : " (not found)")); return; }
+          var q = typeof ln.qty === "number" ? ln.qty : parseFloat(String(ln.qty).replace(/,/g, ""));
+          if (isNaN(q)) { report.lineSkip.push(gr.name + " line " + (k + 1) + " " + ln.name + " (no quantity)"); return; }
+          var line = { qty: q, uom: ln.uom || "G", scrapPct: Number(ln.scrap) || 0, fvnOverride: null };
+          if (isSub) line.subRecipeId = hit[0].id; else line.ingredientId = hit[0].id;
+          gr.rec.ingredients.push(line);
+        });
+      });
+      var lst = function (a) { return a.length ? "   " + a.slice(0, 8).join("; ") + (a.length > 8 ? "; ..." : "") : ""; };
+      var lines = ["Ingredients to create: " + report.ingNew.length + lst(report.ingNew),
+        "Ingredients skipped (name already on the site): " + report.ingSkip.length + lst(report.ingSkip),
+        "Recipes to create: " + report.recNew.length + lst(report.recNew),
+        "Recipes skipped (name already on the site): " + report.recSkip.length + lst(report.recSkip),
+        "Recipe lines that could not be matched and will be left out: " + report.lineSkip.length + lst(report.lineSkip)];
+      if (report.notes.length) lines.push("Notes: " + report.notes.length + lst(report.notes));
+      lines.push("", "Nothing existing is changed or deleted. New recipes are created as in development.", "", (newIngs.length || newRecs.length) ? "Create these items?" : "Nothing to create.");
+      if (!(newIngs.length || newRecs.length)) alert(lines.join("\n"));
+      else if (confirm(lines.join("\n"))) {
+        newIngs.forEach(function (ing) { Ingredients.saveIngredient(ing); });
+        newRecs.forEach(function (rec) { Recipes.saveRecipe(rec); });
+        renderAll();
+        showToast("Created " + newIngs.length + " ingredient(s) and " + newRecs.length + " recipe(s)");
+      }
+    } catch (err) {
+      alert("Import failed, nothing was changed: " + (err && err.message ? err.message : err));
+    }
+    if (event.target) event.target.value = "";
+  }
+  window.importDevelopmentItems = importDevelopmentItems;
+
+  window.exportIngredientDataExcel = exportIngredientDataExcel;
+  window.importIngredientDataExcel = importIngredientDataExcel;
 
   function renderAll() {
     renderIngredientsTable();

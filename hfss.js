@@ -67,15 +67,23 @@ window.NutriCalcHFSS = (function () {
     });
     var fvnPct = totalWeight > 0 ? (fvnWeight / totalWeight * 100) : 0;
     var fvnPts = 0;
-    if (fvnPct >= 80) fvnPts = 5;
-    else if (fvnPct >= 60) fvnPts = 2;
-    else if (fvnPct >= 40) fvnPts = 1;
+    // UK NPM 2004/5 (DHSC technical guidance, Jan 2011): strictly MORE than 40% = 1, more than 60% = 2, more than 80% = 5.
+    if (fvnPct > 80) fvnPts = 5;
+    else if (fvnPct > 60) fvnPts = 2;
+    else if (fvnPct > 40) fvnPts = 1;
 
-    var fibreThresholds = [3.0, 4.7, 6.3, 8.0, 9.7];
+    // AOAC fibre bands from the same guidance (g per 100g; points when strictly above): our specs/labels give AOAC fibre.
+    // (The guidance prefers NSP fibre where known: 0.7, 1.4, 2.1, 2.8, 3.5.)
+    var fibreThresholds = [0.9, 1.9, 2.8, 3.7, 4.7];
     var fibrePts = 0;
     for (var i = 0; i < fibreThresholds.length; i++) {
       if (n.fibre > fibreThresholds[i]) fibrePts = i + 1;
     }
+    // Supplier fibre figures are often not trusted: fibre only counts when the recipe has it switched ON (recipe.hfssFibreOn,
+    // set on the HFSS Score tab). Off = 0 fibre points = the worst case. fibrePtsIfOn is what it would score if counted.
+    var fibreCounted = !!recipe.hfssFibreOn;
+    var fibrePtsIfOn = fibrePts;
+    if (!fibreCounted) fibrePts = 0;
 
     var proteinThresholds = [1.6, 3.2, 4.8, 6.4, 8.0];
     var proteinPts = 0;
@@ -104,8 +112,12 @@ window.NutriCalcHFSS = (function () {
       sodiumPts: sodiumPts,
       fvnPts: fvnPts,
       fibrePts: fibrePts,
+      fibreCounted: fibreCounted,
+      fibrePtsIfOn: fibrePtsIfOn,
       proteinPts: proteinPts,
       fvnPct: fvnPct,
+      // the per-100g values that drive the points above (shown on the HFSS Score tab)
+      values: { kj: n.kj, kcal: n.kcal, sat: n.sat, sugar: n.sugar, sodiumMg: sodiumMg, fibre: n.fibre, protein: n.protein },
       proteinExcluded: aPoints >= 11 && fvnPts < 5
     };
   }

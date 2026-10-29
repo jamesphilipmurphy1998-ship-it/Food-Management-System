@@ -100,6 +100,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             e.Property(x => x.YieldPct).HasColumnName("yield_pct").HasDefaultValue(100m);
             e.Property(x => x.OwnCost).HasColumnName("own_cost").HasDefaultValue(0m);
             e.Property(x => x.SheetCost).HasColumnName("sheet_cost").HasDefaultValue(0m);
+            e.Property(x => x.HfssFibreOn).HasColumnName("hfss_fibre_on").HasDefaultValue(false);
             e.Property(x => x.UnitWeightG).HasColumnName("unit_weight_g").HasDefaultValue(0m);
             e.Property(x => x.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now()");
             e.Property(x => x.PendingApproval).HasColumnName("pending_approval").HasDefaultValue(false);

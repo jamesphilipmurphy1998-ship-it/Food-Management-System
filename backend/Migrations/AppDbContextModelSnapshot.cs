@@ -588,6 +588,12 @@ namespace NutriCost.Api.Migrations
                         .HasColumnType("text[]")
                         .HasColumnName("description_tags");
 
+                    b.Property<bool>("HfssFibreOn")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("hfss_fibre_on");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text")

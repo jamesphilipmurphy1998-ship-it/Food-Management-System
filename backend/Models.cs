@@ -127,6 +127,9 @@ public sealed class Recipe
     /// single-ingredient ones) purely for comparison against the tallied/computed cost.
     /// Display-only — unlike OwnCost, this never overrides what the app actually calculates.</summary>
     public decimal SheetCost { get; set; } = 0;
+    /// <summary>HFSS Score tab: whether this recipe counts fibre points. Supplier fibre figures are often not trusted, so the default
+    /// is false (fibre scores 0 = worst case); a user switches it on per recipe.</summary>
+    public bool HfssFibreOn { get; set; }
     /// <summary>Weight in grams of 1 unit of this recipe's own UOM (e.g. 1 EACH for a sushi
     /// piece). 0 = not known. Recorded alongside the UOM without changing it — not yet used in
     /// any cost/weight calculation.</summary>
